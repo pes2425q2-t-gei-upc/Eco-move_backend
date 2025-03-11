@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api_punts_carrega',
     'rest_framework',
+    'charging_stations',
 ]
 
 MIDDLEWARE = [
