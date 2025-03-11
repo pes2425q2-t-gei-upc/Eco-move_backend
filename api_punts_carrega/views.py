@@ -92,7 +92,7 @@ def punt_mes_proper(request):
         punts_query = EstacioCarrega.objects.all()
         
         ubicacio_ids = punts_query.values_list('ubicacio_estacio__id_ubicacio', flat=True).distinct()
-        
+
         if not ubicacio_ids:
             return Response(
                 {"detail": "No se encontraron puntos de carga."},
@@ -120,12 +120,14 @@ def punt_mes_proper(request):
                 status=404
             )
 
+        distancies = sorted(distancies, key=lambda x: x[1]) #The fourth element (x[3]) of each item in the list will be taken as the sorting criterion.
+    
         resultat = []
         for ubicacio, distance in distancies:
             estacio_carrega = punts_query.filter(ubicacio_estacio=ubicacio).first()
                     
             if estacio_carrega:
-                distancia = distance * 111 #convertir a km
+                distancia = distance #* 111 #convertir a km (ja esta en km)
                 resultat.append({
                     "ubicacio": UbicacioSerializer(ubicacio).data,
                     "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
