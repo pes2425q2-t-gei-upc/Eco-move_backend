@@ -4,6 +4,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view,action
 from rest_framework.response import Response
 
+import math
+
 from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega,TipusCarregador
 from .serializers import (
     UbicacioSerializer, 
@@ -35,7 +37,35 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
     serializer_class = EstacioCarregaSerializer
 
 
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    
+    # Earth radius in km
+    R = 6378.0
+    
+    # degree 2 radians
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+    
+    
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    
+    # Haversine forumla
+    # a = sin²(difLat/2) + cos(lat1) * cos(lat2) * sin²(difLon/2)
+    # c = 2*atan2(√a, √(1-a))
+    # distance = R * c
 
+
+
+    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    distance = R * c
+    
+    return distance
 
     
 @api_view(['GET'])
@@ -76,8 +106,12 @@ def punt_mes_proper(request):
         for ubicacio in Ubicacio.objects.filter(id_ubicacio__in=ubicacio_ids):
             ubicacio_lat = ubicacio.lat
             ubicacio_lng = ubicacio.lng
-            #if ubicacio_lat and ubicacio_lng:
-                #algorithme de calcul posicions, utilizar la variable distances, tambe ha de ordenar-les
+
+            
+            if ubicacio_lat and ubicacio_lng:
+                distance = haversine_distance(lat, lng, ubicacio_lat, ubicacio_lng)
+                ub = Ubicacio.objects.get(lat=ubicacio_lat, lng=ubicacio_lng)
+                distancies.append((ub, distance))
 
         
         if not distancies:
