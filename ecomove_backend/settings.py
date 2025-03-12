@@ -37,8 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'charging_stations',
+    'api_punts_carrega',
     'rest_framework',
+    'charging_stations',
 ]
 
 MIDDLEWARE = [
