@@ -131,7 +131,7 @@ def punt_mes_proper(request):
                 resultat.append({
                     "ubicacio": UbicacioSerializer(ubicacio).data,
                     "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
-                    "distancia_km": distancia
+                    "distancia_km": distancia                    
                 })
             
         return Response(resultat)
