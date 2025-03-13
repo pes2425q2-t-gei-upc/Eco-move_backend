@@ -1,5 +1,5 @@
 import requests
-from charging_stations.models import ChargingStation
+from api_punts_carrega.models import ChargingStation
 from django.core.management.base import BaseCommand
 
 API_url = "https://analisi.transparenciacatalunya.cat/resource/tb2m-m33b.json"
