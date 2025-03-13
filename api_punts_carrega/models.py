@@ -80,3 +80,13 @@ class TipusCarregador(models.Model):
 
     def __str__(self):
         return f"{self.nom_tipus} - {self.tipus_connector} ({self.tipus_corrent})"
+
+
+class Reserva(models.Model):
+    estacio = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name='reservas')
+    fecha = models.DateField()
+    hora = models.TimeField()
+    duracion = models.DurationField()
+
+    def __str__(self):
+        return f"Reserva en {self.estacio} el {self.fecha} a las {self.hora} por {self.duracion}"
