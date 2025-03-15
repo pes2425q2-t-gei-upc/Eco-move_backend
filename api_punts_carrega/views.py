@@ -1,12 +1,16 @@
+import json
 from urllib import request
+
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view,action
 from rest_framework.response import Response
 
 import math
 
-from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega,TipusCarregador
+from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
 from .serializers import (
     UbicacioSerializer, 
     PuntSerializer,
@@ -135,3 +139,25 @@ def punt_mes_proper(request):
                 })
             
         return Response(resultat)
+
+@csrf_exempt
+def crear_reserva(request):
+        if request.method == 'POST':
+            data = json.loads(request.body)
+            estacio_id = data.get('estacio_id')
+            fecha = data.get('fecha')
+            hora = data.get('hora')
+            duracion = data.get('duracion')
+
+            try:
+                estacio = EstacioCarrega.objects.get(id_estacio=estacio_id)
+                reserva = Reserva.objects.create(
+                    estacio=estacio,
+                    fecha=fecha,
+                    hora=hora,
+                    duracion=duracion
+                )
+                return JsonResponse({'message': 'Reserva creada con éxito'}, status=201)
+            except EstacioCarrega.DoesNotExist:
+                return JsonResponse({'error': 'Estación no encontrada'}, status=404)
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
