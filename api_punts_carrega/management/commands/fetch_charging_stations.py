@@ -1,10 +1,5 @@
 import requests
-<<<<<<< Updated upstream
 from charging_stations.models import ChargingStation
-=======
-from django.db import transaction
-from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador
->>>>>>> Stashed changes
 from django.core.management.base import BaseCommand
 
 API_url = "https://analisi.transparenciacatalunya.cat/resource/tb2m-m33b.json"
