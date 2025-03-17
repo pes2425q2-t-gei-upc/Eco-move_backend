@@ -42,6 +42,12 @@ class ReservaViewSet(viewsets.ModelViewSet):
     serializer_class = ReservaSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def get_queryset(self): # Only return the reservations of the logged in user or all if the user is admin
+        user = self.request.user
+        if user.is_staff:
+            return Reserva.objects.all()
+        return Reserva.objects.filter(user=user)
+    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
