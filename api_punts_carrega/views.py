@@ -1,12 +1,12 @@
 from urllib import request
 from django.shortcuts import render
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import api_view,action
 from rest_framework.response import Response
 
 import math
 
-from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega,TipusCarregador
+from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
 from .serializers import (
     UbicacioSerializer, 
     PuntSerializer,
@@ -14,6 +14,7 @@ from .serializers import (
     PuntCarregaSerializer,
     NearestPuntCarregaSerializer,
     TipusCarregadorSerializer,
+    ReservaSerializer
 )
 
 class UbicacioViewSet(viewsets.ModelViewSet):
@@ -35,6 +36,14 @@ class PuntCarregaViewSet(viewsets.ModelViewSet):
 class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.all()
     serializer_class = EstacioCarregaSerializer
+    
+class ReservaViewSet(viewsets.ModelViewSet):
+    queryset = Reserva.objects.all()
+    serializer_class = ReservaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -135,3 +144,4 @@ def punt_mes_proper(request):
                 })
             
         return Response(resultat)
+    
