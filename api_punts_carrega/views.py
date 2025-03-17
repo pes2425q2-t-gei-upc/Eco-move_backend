@@ -161,3 +161,42 @@ def crear_reserva(request):
             except EstacioCarrega.DoesNotExist:
                 return JsonResponse({'error': 'Estación no encontrada'}, status=404)
         return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def modificar_reserva(request, reserva_id):
+    if request.method == 'PUT':
+        try:
+            reserva = Reserva.objects.get(id=reserva_id)
+            data = json.loads(request.body)
+            
+            
+            if 'fecha' in data:
+                reserva.fecha = data['fecha']
+            if 'hora' in data:
+                reserva.hora = data['hora']
+            if 'duracion' in data:
+                reserva.duracion = data['duracion']
+            if 'estacio_id' in data:
+                try:
+                    estacio = EstacioCarrega.objects.get(id_estacio=data['estacio_id'])
+                    reserva.estacio = estacio
+                except EstacioCarrega.DoesNotExist:
+                    return JsonResponse({'error': 'Estación no encontrada'}, status=404)
+            
+            
+            reserva.save()
+            return JsonResponse({'message': 'Reserva actualizada con éxito'}, status=200)
+        except Reserva.DoesNotExist:
+            return JsonResponse({'error': 'Reserva no encontrada'}, status=404)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def eliminar_reserva(request, reserva_id):
+    if request.method == 'DELETE':
+        try:
+            reserva = Reserva.objects.get(id=reserva_id)
+            reserva.delete()
+            return JsonResponse({'message': 'Reserva eliminada con éxito'}, status=200)
+        except Reserva.DoesNotExist:
+            return JsonResponse({'error': 'Reserva no encontrada'}, status=404)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
