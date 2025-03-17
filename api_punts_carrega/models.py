@@ -1,4 +1,5 @@
 from enum import Enum
+from django.db import models
 
 class Velocitat_de_carrega(Enum):
     LENTA = "Càrrega lenta"
@@ -10,8 +11,6 @@ class Velocitat_de_carrega(Enum):
 class Tipus_de_Corrent(Enum):
     AC = "Corrent alterna"
     DC = "Corrent continua"
-
-from django.db import models
 
 
 class Ubicacio(models.Model):
