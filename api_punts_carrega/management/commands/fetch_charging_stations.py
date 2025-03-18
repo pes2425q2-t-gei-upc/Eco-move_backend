@@ -1,5 +1,5 @@
 import requests
-from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador, Punt
+from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador,Punt
 from django.db import transaction
 from django.core.management.base import BaseCommand
 
