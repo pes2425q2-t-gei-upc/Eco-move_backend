@@ -1,5 +1,8 @@
 from django.contrib import admin
-from api_punts_carrega.models import ChargingStation
+from .models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador
 
 # Register your models here.
-admin.site.register(ChargingStation)
+admin.site.register(Ubicacio)
+admin.site.register(EstacioCarrega)
+admin.site.register(PuntCarrega)
+admin.site.register(TipusCarregador)
