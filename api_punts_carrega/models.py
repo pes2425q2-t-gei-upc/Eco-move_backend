@@ -32,7 +32,7 @@ class Ubicacio(models.Model):
 
 class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
-    ubicacio_punt = models.OneToOneField(Ubicacio, on_delete=models.CASCADE, related_name='punt',null = True)
+    ubicacio_punt = models.ForeignKey(Ubicacio, on_delete=models.CASCADE, related_name='punt',null = True)
     
     def __str__(self):
         return f"Punto {self.id_punt} en {self.ubicacio_punt}"
@@ -44,7 +44,7 @@ class EstacioCarrega(Punt):
     
     id_estacio = models.CharField(max_length=100, unique=True)
     gestio = models.CharField(max_length=100)
-    tipus_acces =  models.CharField(max_length=20)
+    tipus_acces =  models.CharField(max_length=100)
     ubicacio_estacio = models.ForeignKey(Ubicacio, on_delete=models.CASCADE, related_name='estaciocarrega',null = True)
     nplaces = models.CharField(max_length=20,null=True)
     
@@ -54,13 +54,14 @@ class EstacioCarrega(Punt):
     def save(self, *args, **kwargs):
         if not self.id_punt:
             self.id_punt = self.id_estacio
+            self.ubicacio_punt = self.ubicacio_estacio
             self.ubicacio_estacio.save()
         super().save(*args, **kwargs)
 
 class PuntCarrega(models.Model):  
     id_punt_carrega = models.CharField(max_length=100)
     potencia = models.IntegerField()
-    tipus_velocitat = models.CharField(max_length=20,choices=Velocitat_de_carrega.__members__.items())
+    tipus_velocitat = models.CharField(max_length=100,choices=Velocitat_de_carrega.__members__.items())
     estacio = models.ForeignKey(EstacioCarrega, on_delete=models.SET_NULL, related_name='punt_carrega',null=True)
     
     class Meta:
@@ -76,7 +77,7 @@ class TipusCarregador(models.Model):
     id_carregador = models.CharField(max_length=100, primary_key=True)
     nom_tipus = models.CharField(max_length=100)
     tipus_connector = models.CharField(max_length=100)
-    tipus_corrent = models.CharField(max_length=20,choices=Tipus_de_Corrent.__members__.items())
+    tipus_corrent = models.CharField(max_length=100,choices=Tipus_de_Corrent.__members__.items())
     punt_carrega = models.ManyToManyField(PuntCarrega,related_name='TipusCarregador')
 
     def __str__(self):
