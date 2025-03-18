@@ -40,17 +40,21 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
+    # TODO: Uncomment the line above to require authentication for reservations when users are made
     
     def get_queryset(self):
-        user = self.request.user
+        # user = self.request.user
+        queryset = Reserva.objects.all()
         
-        if user.is_staff:
-            queryset = Reserva.objects.all()
-        else:
-            queryset = Reserva.objects.filter(user=user)
+        # TODO: Uncomment the lines below to filter reservations by user when users are made - now all users can access reservations
+        # if user.is_staff:
+        #     queryset = Reserva.objects.all()
+        # else:
+        #     queryset = Reserva.objects.filter(user=user)
         
         estacio_id = self.request.query_params.get('estacio_carrega', None)
+        
         if estacio_id:
             queryset = queryset.filter(estacio_carrega__id_estacio=estacio_id)
 
