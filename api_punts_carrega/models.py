@@ -32,7 +32,7 @@ class Ubicacio(models.Model):
 
 class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
-    ubicacio_punt = models.OneToOneField(Ubicacio, on_delete=models.CASCADE, related_name='punt',null = True)
+    ubicacio_punt = models.ForeignKey(Ubicacio, on_delete=models.CASCADE, related_name='punt',null = True)
     
     def __str__(self):
         return f"Punto {self.id_punt} en {self.ubicacio_punt}"
@@ -54,6 +54,7 @@ class EstacioCarrega(Punt):
     def save(self, *args, **kwargs):
         if not self.id_punt:
             self.id_punt = self.id_estacio
+            self.ubicacio_punt = self.ubicacio_estacio
             self.ubicacio_estacio.save()
         super().save(*args, **kwargs)
 

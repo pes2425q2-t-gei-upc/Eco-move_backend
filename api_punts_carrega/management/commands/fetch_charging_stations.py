@@ -1,5 +1,6 @@
 import requests
-from charging_stations.models import ChargingStation
+from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador, Punt
+from django.db import transaction
 from django.core.management.base import BaseCommand
 
 API_url = "https://analisi.transparenciacatalunya.cat/resource/tb2m-m33b.json"
@@ -15,6 +16,7 @@ class Command(BaseCommand):
             EstacioCarrega.objects.all().delete()
             PuntCarrega.objects.all().delete()
             TipusCarregador.objects.all().delete()
+            Punt.objects.all().delete()
             with transaction.atomic():
                 for station in data:
                     lat = float(station.get("latitud", 0))
@@ -30,6 +32,13 @@ class Command(BaseCommand):
                         }
                     )
 
+                    ubicacio.save()
+
+                    Punt.objects.create(
+                        id_punt = station.get("id", "Unknown"),
+                        ubicacio_punt = ubicacio,
+                    )
+                    
                     estacio_carrega = EstacioCarrega.objects.create(
                         id_estacio = station.get("id", "Unknown"),
                         gestio = station.get("promotor_gestor", "Unknown"),
