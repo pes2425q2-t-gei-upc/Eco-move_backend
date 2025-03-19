@@ -1,5 +1,5 @@
 from enum import Enum
-
+from django.db import models
 class Velocitat_de_carrega(Enum):
     LENTA = "Càrrega lenta"
     SEMI_RAPIDA = "Càrrega semi-ràpida"
