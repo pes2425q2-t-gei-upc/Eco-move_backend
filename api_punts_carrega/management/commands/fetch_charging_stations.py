@@ -1,5 +1,6 @@
 import requests
 from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador, Punt
+from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador, Punt
 from django.db import transaction
 from django.core.management.base import BaseCommand
 
@@ -24,6 +25,8 @@ class Command(BaseCommand):
                 for index, station in enumerate(data):
                     lat = float(station.get("latitud", 0))
                     lng = float(station.get("longitud", 0))
+                    
+                    # Procesar la estación de carga (como en el código original)
                     
                     # Procesar la estación de carga (como en el código original)
                     ubicacio, created = Ubicacio.objects.get_or_create(
