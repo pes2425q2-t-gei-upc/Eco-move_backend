@@ -1,7 +1,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UbicacioViewSet, PuntViewSet, EstacioCarregaViewSet, PuntCarregaViewSet, punt_mes_proper, \
-    TipusCarregadorViewSet, ReservaViewSet, crear_reserva, modificar_reserva, eliminar_reserva
+from .views import (
+    UbicacioViewSet, 
+    PuntViewSet, 
+    EstacioCarregaViewSet, 
+    PuntCarregaViewSet, 
+    punt_mes_proper, 
+    TipusCarregadorViewSet, 
+    ReservaViewSet
+)
+
 
 router = DefaultRouter()
 router.register(r'ubicacions', UbicacioViewSet)

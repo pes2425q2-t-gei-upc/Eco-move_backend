@@ -1,4 +1,6 @@
 from enum import Enum
+from django.db import models
+from django.contrib.auth.models import User
 
 class Velocitat_de_carrega(Enum):
     LENTA = "Càrrega lenta"
@@ -10,8 +12,6 @@ class Velocitat_de_carrega(Enum):
 class Tipus_de_Corrent(Enum):
     AC = "Corrent alterna"
     DC = "Corrent continua"
-
-from django.db import models
 
 
 class Ubicacio(models.Model):
@@ -45,7 +45,8 @@ class EstacioCarrega(Punt):
     id_estacio = models.CharField(max_length=100, unique=True)
     gestio = models.CharField(max_length=100)
     tipus_acces =  models.CharField(max_length=20)
-    ubicacio_estacio = models.OneToOneField(Ubicacio, on_delete=models.CASCADE, related_name='estaciocarrega',null = True)
+    ubicacio_estacio = models.ForeignKey(Ubicacio, on_delete=models.CASCADE, related_name='estaciocarrega',null = True)
+    nplaces = models.CharField(max_length=20,null=True)
     
     def __str__(self):
         return f"Estació {self.id_estacio} - {self.ubicacio_estacio.direccio}"

@@ -3,8 +3,7 @@ from urllib import request
 
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import api_view,action
 from rest_framework.response import Response
 
@@ -18,7 +17,7 @@ from .serializers import (
     PuntCarregaSerializer,
     NearestPuntCarregaSerializer,
     TipusCarregadorSerializer,
-    ReservaSerializer,  
+    ReservaSerializer
 )
 
 class UbicacioViewSet(viewsets.ModelViewSet):
@@ -40,6 +39,20 @@ class PuntCarregaViewSet(viewsets.ModelViewSet):
 class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.all()
     serializer_class = EstacioCarregaSerializer
+    
+class ReservaViewSet(viewsets.ModelViewSet):
+    queryset = Reserva.objects.all()
+    serializer_class = ReservaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self): # Only return the reservations of the logged in user or all if the user is admin
+        user = self.request.user
+        if user.is_staff:
+            return Reserva.objects.all()
+        return Reserva.objects.filter(user=user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
@@ -139,7 +152,7 @@ def punt_mes_proper(request):
                 resultat.append({
                     "ubicacio": UbicacioSerializer(ubicacio).data,
                     "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
-                    "distancia_km": distancia
+                    "distancia_km": distancia                    
                 })
             
         return Response(resultat)
