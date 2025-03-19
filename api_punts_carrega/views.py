@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view,action
 from rest_framework.response import Response
-
+from datetime import datetime, timedelta, date
 import math
 
 from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
@@ -140,24 +140,45 @@ def punt_mes_proper(request):
             
         return Response(resultat)
 
+
+
 @csrf_exempt
 def crear_reserva(request):
-        if request.method == 'POST':
-            data = json.loads(request.body)
-            estacio_id = data.get('estacio_id')
-            fecha = data.get('fecha')
-            hora = data.get('hora')
-            duracion = data.get('duracion')
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        estacio_id = data.get('estacio_id')
+        fecha = data.get('fecha')
+        hora = data.get('hora')
+        duracion = data.get('duracion')
 
-            try:
-                estacio = EstacioCarrega.objects.get(id_estacio=estacio_id)
-                reserva = Reserva.objects.create(
-                    estacio=estacio,
-                    fecha=fecha,
-                    hora=hora,
-                    duracion=duracion
-                )
-                return JsonResponse({'message': 'Reserva creada con éxito'}, status=201)
-            except EstacioCarrega.DoesNotExist:
-                return JsonResponse({'error': 'Estación no encontrada'}, status=404)
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
+        try:
+            estacio = EstacioCarrega.objects.get(id_estacio=estacio_id)
+
+            # Convertir la hora y duración
+            hora_inicio = datetime.strptime(hora, '%H:%M:%S').time()
+            horas, minutos, segundos = map(int, duracion.split(':'))
+            duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+            hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
+
+            # Verificar si hay solapamiento
+            reservas_existentes = Reserva.objects.filter(estacio=estacio, fecha=fecha)
+
+            for reserva in reservas_existentes:
+                hora_reserva_fin = (datetime.combine(date.today(), reserva.hora) + reserva.duracion).time()
+
+                if not (hora_fin <= reserva.hora or hora_inicio >= hora_reserva_fin):
+                    return JsonResponse({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
+
+            # Crear reserva
+            reserva = Reserva.objects.create(
+                estacio=estacio,
+                fecha=fecha,
+                hora=hora_inicio,
+                duracion=duracion_td
+            )
+            return JsonResponse({'message': 'Reserva creada amn éxit'}, status=201)
+
+        except EstacioCarrega.DoesNotExist:
+            return JsonResponse({'error': 'Estació no trobada'}, status=404)
+
+    return JsonResponse({'error': 'Métode no permés'}, status=405)
