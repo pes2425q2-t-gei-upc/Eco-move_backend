@@ -1,5 +1,6 @@
 from enum import Enum
 from django.db import models
+from django.contrib.auth.models import User
 
 class Velocitat_de_carrega(Enum):
     LENTA = "Càrrega lenta"
@@ -81,4 +82,15 @@ class TipusCarregador(models.Model):
 
     def __str__(self):
         return f"{self.nom_tipus} - {self.tipus_connector} ({self.tipus_corrent})"
+    
+
+class Reserva(models.Model):
+    user=models.ForeignKey(User, on_delete=models.CASCADE)
+    estacio_carrega = models.ForeignKey('EstacioCarrega', on_delete=models.CASCADE)
+    hora_inici = models.DateTimeField()
+    hora_fi = models.DateTimeField()
+    data_creacio = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Reservation by {self.user} at {self.estacio_carrega} from {self.hora_inici} to {self.hora_fi}"
     
