@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PuntCarrega, EstacioCarrega, Punt, Ubicacio, TipusCarregador
+from .models import PuntCarrega, EstacioCarrega, Punt, Ubicacio, TipusCarregador, Reserva
 
 class UbicacioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -83,3 +83,8 @@ class NearestPuntCarregaSerializer(serializers.ModelSerializer):
     latitud = serializers.FloatField(required=True)
     longitud = serializers.FloatField(required=True)
 
+
+class ReservaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reserva
+        fields = '__all__'

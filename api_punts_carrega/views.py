@@ -18,6 +18,7 @@ from .serializers import (
     PuntCarregaSerializer,
     NearestPuntCarregaSerializer,
     TipusCarregadorSerializer,
+    ReservaSerializer,  
 )
 
 class UbicacioViewSet(viewsets.ModelViewSet):
@@ -40,6 +41,9 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.all()
     serializer_class = EstacioCarregaSerializer
 
+class ReservaViewSet(viewsets.ModelViewSet):
+    queryset = Reserva.objects.all()
+    serializer_class = ReservaSerializer
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     
@@ -176,12 +180,14 @@ def modificar_reserva(request, reserva_id):
                 reserva.hora = data['hora']
             if 'duracion' in data:
                 reserva.duracion = data['duracion']
+            
+            '''
             if 'estacio_id' in data:
                 try:
                     estacio = EstacioCarrega.objects.get(id_estacio=data['estacio_id'])
                     reserva.estacio = estacio
                 except EstacioCarrega.DoesNotExist:
-                    return JsonResponse({'error': 'Estación no encontrada'}, status=404)
+                    return JsonResponse({'error': 'Estación no encontrada'}, status=404)'''
             
             
             reserva.save()

@@ -90,3 +90,6 @@ class Reserva(models.Model):
 
     def __str__(self):
         return f"Reserva en {self.estacio} el {self.fecha} a las {self.hora} por {self.duracion}"
+    
+
+    
