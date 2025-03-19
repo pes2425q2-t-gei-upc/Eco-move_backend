@@ -131,7 +131,7 @@ def punt_mes_proper(request):
     
         min_distancia = float('inf')
         
-        for ubicacio in Ubicacio.objects.filter(id_ubicacio__in=ubicacio_ids):
+        for ubicacio in Ubicacio.objects.filter(id_ubicacio__in=ubicacio_ids)[:50]:
             ubicacio_lat = ubicacio.lat
             ubicacio_lng = ubicacio.lng
 
@@ -151,13 +151,12 @@ def punt_mes_proper(request):
         distancies = sorted(distancies, key=lambda x: x[1]) #The fourth element (x[3]) of each item in the list will be taken as the sorting criterion.
     
         resultat = []
-        for ubicacio, distance in distancies:
+        for ubicacio, distance in distancies[:40]:
             estacio_carrega = punts_query.filter(ubicacio_estacio=ubicacio).first()
                     
             if estacio_carrega:
                 distancia = distance #* 111 #convertir a km (ja esta en km)
                 resultat.append({
-                    "ubicacio": UbicacioSerializer(ubicacio).data,
                     "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
                     "distancia_km": distancia                    
                 })

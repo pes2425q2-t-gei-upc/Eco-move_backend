@@ -1,5 +1,6 @@
 import requests
 from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador, Punt
+from api_punts_carrega.models import Ubicacio, EstacioCarrega, PuntCarrega, TipusCarregador, Punt
 from django.db import transaction
 from django.core.management.base import BaseCommand
 
@@ -14,36 +15,35 @@ class Command(BaseCommand):
             data = response.json()
             total_stations = len(data)  # Total de estaciones de carga a procesar
             self.stdout.write(f"Total stations to process: {total_stations}")
-            
-            Ubicacio.objects.all().delete()
             EstacioCarrega.objects.all().delete()
             PuntCarrega.objects.all().delete()
             TipusCarregador.objects.all().delete()
             Punt.objects.all().delete()
-            
+            Ubicacio.objects.all().delete()
+            num = 1
             with transaction.atomic():
                 for index, station in enumerate(data):
                     lat = float(station.get("latitud", 0))
                     lng = float(station.get("longitud", 0))
                     
                     # Procesar la estación de carga (como en el código original)
+                    
+                    # Procesar la estación de carga (como en el código original)
                     ubicacio, created = Ubicacio.objects.get_or_create(
                         lat = lat,
                         lng = lng,
                         defaults={
-                            'id_ubicacio': station.get("id", "Unknown"),
+                            'id_ubicacio': str(num),
                             'direccio': station.get("adre_a", "No address available"),
                             'ciutat': station.get("municipi", "Unknown"),
                             'provincia': station.get("provincia", "Unknown"),
                         }
                     )
                     ubicacio.save()
-
                     Punt.objects.create(
                         id_punt = station.get("id", "Unknown"),
                         ubicacio_punt = ubicacio,
                     )
-                    
                     estacio_carrega = EstacioCarrega.objects.create(
                         id_estacio = station.get("id", "Unknown"),
                         gestio = station.get("promotor_gestor", "Unknown"),
@@ -72,7 +72,7 @@ class Command(BaseCommand):
                     tipus_carregador.punt_carrega.set([punt_carrega_obj])
                     
                     progress = (index + 1) / total_stations * 100
-                    
+                    num += 1
                     self.stdout.write(f"\rProcessing station {index + 1}/{total_stations} ({progress:.2f}%)", ending="")
                 
                 self.stdout.write(self.style.SUCCESS("Charging stations updated successfully"))
