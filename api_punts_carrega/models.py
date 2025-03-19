@@ -91,7 +91,7 @@ class TipusCarregador(models.Model):
 
 class Reserva(models.Model):
     user=models.ForeignKey(User, on_delete=models.CASCADE)
-    estacio_carrega = models.ForeignKey('EstacioCarrega', on_delete=models.CASCADE)
+    estacio_carrega = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE)
     hora_inici = models.DateTimeField()
     hora_fi = models.DateTimeField()
     data_creacio = models.DateTimeField(auto_now_add=True)
