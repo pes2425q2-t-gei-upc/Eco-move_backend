@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 import math
 
@@ -46,23 +47,14 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
-'''    
+    
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
-    # permission_classes = [permissions.IsAuthenticated]
-    # TODO: Uncomment the line above to require authentication for reservations when users are made
     
     def get_queryset(self):
-        # user = self.request.user
+        """Filter the reservations by charging station if query param is provided."""
         queryset = Reserva.objects.all()
-        
-        # TODO: Uncomment the lines below to filter reservations by user when users are made - now all users can access reservations
-        # if user.is_staff:
-        #     queryset = Reserva.objects.all()
-        # else:
-        #     queryset = Reserva.objects.filter(user=user)
-        
         estacio_id = self.request.query_params.get('estacio_carrega', None)
         
         if estacio_id:
@@ -70,13 +62,9 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
         return queryset
         
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-'''
-@csrf_exempt
-def crear_reserva(request):
-    if request.method == 'POST':
+    @action(detail=False, methods=['post'])
+    def crear(self, request):
+        """Create a new reservation."""
         data = json.loads(request.body)
         estacio_id = data.get('estacio_id')
         fecha = data.get('fecha')
@@ -108,45 +96,33 @@ def crear_reserva(request):
                 hora=hora_inicio,
                 duracion=duracion_td
             )
-            return JsonResponse({'message': 'Reserva creada amn éxit'}, status=201)
+            return Response({'message': 'Reserva creada amn éxit'}, status=201)
 
         except EstacioCarrega.DoesNotExist:
-            return JsonResponse({'error': 'Estació no trobada'}, status=404)
+            return Response({'error': 'Estació no trobada'}, status=404)
 
-    return JsonResponse({'error': 'Métode no permés'}, status=405)
+    @action(detail=True, methods=['put'])
+    def modificar(self, request, pk=None):
+        """Edit a reservation."""
+        reserva = get_object_or_404(Reserva, id=pk)
+        data = request.data
+        
+        if 'fecha' in data:
+            reserva.fecha = data['fecha']
+        if 'hora' in data:
+            reserva.hora = data['hora']
+        if 'duracion' in data:
+            reserva.duracion = data['duracion']
+        
+        reserva.save()
+        return Response({'message': 'Reserva actualizada con éxito'}, status=200)
 
-
-
-@csrf_exempt
-def modificar_reserva(request, reserva_id):
-    if request.method == 'PUT':
-        try:
-            reserva = Reserva.objects.get(id=reserva_id)
-            data = json.loads(request.body)
-            
-            if 'fecha' in data:
-                reserva.fecha = data['fecha']
-            if 'hora' in data:
-                reserva.hora = data['hora']
-            if 'duracion' in data:
-                reserva.duracion = data['duracion']
-            
-            reserva.save()
-            return JsonResponse({'message': 'Reserva actualizada con éxito'}, status=200)
-        except Reserva.DoesNotExist:
-            return JsonResponse({'error': 'Reserva no encontrada'}, status=404)
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
-
-@csrf_exempt
-def eliminar_reserva(request, reserva_id):
-    if request.method == 'DELETE':
-        try:
-            reserva = Reserva.objects.get(id=reserva_id)
-            reserva.delete()
-            return JsonResponse({'message': 'Reserva eliminada con éxito'}, status=200)
-        except Reserva.DoesNotExist:
-            return JsonResponse({'error': 'Reserva no encontrada'}, status=404)
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    @action(detail=True, methods=['delete'])
+    def eliminar(self, request, pk=None):
+        """Delete a reservation."""
+        reserva = get_object_or_404(Reserva, id=pk)
+        reserva.delete()
+        return Response({'message': 'Reserva eliminada con éxito'}, status=200)
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     # Earth radius in km
