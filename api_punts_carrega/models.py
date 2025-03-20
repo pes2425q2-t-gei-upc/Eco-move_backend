@@ -84,13 +84,13 @@ class TipusCarregador(models.Model):
 
 
 class Reserva(models.Model):
-    estacio = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name='reservas')
+    estacion = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name='reservas')
     fecha = models.DateField()
     hora = models.TimeField()
     duracion = models.DurationField()
 
     def __str__(self):
-        return f"Reserva en {self.estacio} el {self.fecha} a las {self.hora} por {self.duracion}"
+        return f"Reserva en {self.estacion} el {self.fecha} a las {self.hora} por {self.duracion}"
     
 
     

@@ -7,9 +7,11 @@ from .views import (
     PuntCarregaViewSet, 
     punt_mes_proper, 
     TipusCarregadorViewSet, 
-    ReservaViewSet
+    ReservaViewSet,
+    crear_reserva,
+    modificar_reserva,
+    eliminar_reserva
 )
-
 
 router = DefaultRouter()
 router.register(r'ubicacions', UbicacioViewSet)
