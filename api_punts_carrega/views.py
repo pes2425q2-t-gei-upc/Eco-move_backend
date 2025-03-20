@@ -50,13 +50,26 @@ class ReservaViewSet(viewsets.ModelViewSet):
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
+    # TODO: Uncomment the line above to require authentication for reservations when users are made
     
-    def get_queryset(self): # Only return the reservations of the logged in user or all if the user is admin
-        user = self.request.user
-        if user.is_staff:
-            return Reserva.objects.all()
-        return Reserva.objects.filter(user=user)
+    def get_queryset(self):
+        # user = self.request.user
+        queryset = Reserva.objects.all()
+        
+        # TODO: Uncomment the lines below to filter reservations by user when users are made - now all users can access reservations
+        # if user.is_staff:
+        #     queryset = Reserva.objects.all()
+        # else:
+        #     queryset = Reserva.objects.filter(user=user)
+        
+        estacio_id = self.request.query_params.get('estacio_carrega', None)
+        
+        if estacio_id:
+            queryset = queryset.filter(estacio_carrega__id_estacio=estacio_id)
+
+        return queryset
+        
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -192,7 +205,13 @@ def punt_mes_proper(request):
             status=404
         )
     
-    distancies = []
+
+        min_distancia = float('inf')
+        
+        for ubicacio in Ubicacio.objects.filter(id_ubicacio__in=ubicacio_ids)[:50]:
+            ubicacio_lat = ubicacio.lat
+            ubicacio_lng = ubicacio.lng
+
 
     min_distancia = float('inf')
     
@@ -205,6 +224,22 @@ def punt_mes_proper(request):
             distance = haversine_distance(lat, lng, ubicacio_lat, ubicacio_lng)
             ub = Ubicacio.objects.get(lat=ubicacio_lat, lng=ubicacio_lng)
             distancies.append((ub, distance))
+
+
+        distancies = sorted(distancies, key=lambda x: x[1]) #The fourth element (x[3]) of each item in the list will be taken as the sorting criterion.
+    
+        resultat = []
+        for ubicacio, distance in distancies[:40]:
+            estacio_carrega = punts_query.filter(ubicacio_estacio=ubicacio).first()
+                    
+            if estacio_carrega:
+                distancia = distance #* 111 #convertir a km (ja esta en km)
+                resultat.append({
+                    "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
+                    "distancia_km": distancia                    
+                })
+            
+        return Response(resultat)
 
     
     if not distancies:
