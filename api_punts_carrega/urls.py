@@ -7,9 +7,11 @@ from .views import (
     PuntCarregaViewSet, 
     punt_mes_proper, 
     TipusCarregadorViewSet, 
-    ReservaViewSet
+    ReservaViewSet,
+    crear_reserva,
+    modificar_reserva,
+    eliminar_reserva
 )
-
 
 router = DefaultRouter()
 router.register(r'ubicacions', UbicacioViewSet)
@@ -22,4 +24,7 @@ router.register(r'reservas', ReservaViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('punt_mes_proper/', punt_mes_proper, name='punt_mes_proper'),
+    path('reservar/', crear_reserva, name='crear_reserva'),
+    path('reservas/<int:reserva_id>/modificar/', modificar_reserva, name='modificar_reserva'),
+    path('reservas/<int:reserva_id>/eliminar/', eliminar_reserva, name='eliminar_reserva'),
 ]
