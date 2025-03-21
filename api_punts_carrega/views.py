@@ -1,14 +1,19 @@
+from datetime import date, datetime, timedelta
+import json
 from urllib import request
+
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
-from rest_framework.decorators import api_view,action
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 import math
 
-from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
-from .serializers import (
-    UbicacioSerializer, 
+from .models import  Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
+from .serializers import ( 
     PuntSerializer,
     EstacioCarregaSerializer, 
     PuntCarregaSerializer,
@@ -17,9 +22,6 @@ from .serializers import (
     ReservaSerializer
 )
 
-class UbicacioViewSet(viewsets.ModelViewSet):
-    queryset = Ubicacio.objects.all()
-    serializer_class = UbicacioSerializer
 
 class PuntViewSet(viewsets.ModelViewSet):
     queryset = Punt.objects.all()
@@ -36,37 +38,89 @@ class PuntCarregaViewSet(viewsets.ModelViewSet):
 class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.all()
     serializer_class = EstacioCarregaSerializer
+
+
+class ReservaViewSet(viewsets.ModelViewSet):
+    queryset = Reserva.objects.all()
+    serializer_class = ReservaSerializer
     
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
-    # permission_classes = [permissions.IsAuthenticated]
-    # TODO: Uncomment the line above to require authentication for reservations when users are made
     
     def get_queryset(self):
-        # user = self.request.user
+        """Filter the reservations by charging station if query param is provided."""
         queryset = Reserva.objects.all()
-        
-        # TODO: Uncomment the lines below to filter reservations by user when users are made - now all users can access reservations
-        # if user.is_staff:
-        #     queryset = Reserva.objects.all()
-        # else:
-        #     queryset = Reserva.objects.filter(user=user)
-        
         estacio_id = self.request.query_params.get('estacio_carrega', None)
         
         if estacio_id:
-            queryset = queryset.filter(estacio_carrega__id_estacio=estacio_id)
+            queryset = queryset.filter(estacio_carrega_id_punt=estacio_id)
 
         return queryset
         
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    @action(detail=False, methods=['post'])
+    def crear(self, request):
+        """Create a new reservation."""
+        data = json.loads(request.body)
+        estacio_id = data.get('id_punt')
+        fecha = data.get('fecha')
+        hora = data.get('hora')
+        duracion = data.get('duracion')
 
+        try:
+            estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
+
+            # Convertir la hora y duración
+            hora_inicio = datetime.strptime(hora, '%H:%M:%S').time()
+            horas, minutos, segundos = map(int, duracion.split(':'))
+            duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+            hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
+
+            # Verificar si hay solapamiento
+            reservas_existentes = Reserva.objects.filter(estacio=estacio, fecha=fecha)
+
+            for reserva in reservas_existentes:
+                hora_reserva_fin = (datetime.combine(date.today(), reserva.hora) + reserva.duracion).time()
+
+                if not (hora_fin <= reserva.hora or hora_inicio >= hora_reserva_fin):
+                    return JsonResponse({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
+
+            # Crear reserva
+            reserva = Reserva.objects.create(
+                estacio=estacio,
+                fecha=fecha,
+                hora=hora_inicio,
+                duracion=duracion_td
+            )
+            return Response({'message': 'Reserva creada amn éxit'}, status=201)
+
+        except EstacioCarrega.DoesNotExist:
+            return Response({'error': 'Estació no trobada'}, status=404)
+
+    @action(detail=True, methods=['put'])
+    def modificar(self, request, pk=None):
+        """Edit a reservation."""
+        reserva = get_object_or_404(Reserva, id=pk)
+        data = request.data
+        
+        if 'fecha' in data:
+            reserva.fecha = data['fecha']
+        if 'hora' in data:
+            reserva.hora = data['hora']
+        if 'duracion' in data:
+            reserva.duracion = data['duracion']
+        
+        reserva.save()
+        return Response({'message': 'Reserva actualizada con éxito'}, status=200)
+
+    @action(detail=True, methods=['delete'])
+    def eliminar(self, request, pk=None):
+        """Delete a reservation."""
+        reserva = get_object_or_404(Reserva, id=pk)
+        reserva.delete()
+        return Response({'message': 'Reserva eliminada con éxito'}, status=200)
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    
     # Earth radius in km
     R = 6378.0
     
@@ -76,7 +130,6 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     lat2_rad = math.radians(lat2)
     lon2_rad = math.radians(lon2)
     
-    
     dlat = lat2_rad - lat1_rad
     dlon = lon2_rad - lon1_rad
     
@@ -84,8 +137,6 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     # a = sin²(difLat/2) + cos(lat1) * cos(lat2) * sin²(difLon/2)
     # c = 2*atan2(√a, √(1-a))
     # distance = R * c
-
-
 
     a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
 
@@ -95,58 +146,43 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     
     return distance
 
-    
 @api_view(['GET'])
 def punt_mes_proper(request):
-        #es podria posar altres criteris de filtratge com potencia, tipus de carrega, etc.
-        lat = request.query_params.get('lat')
-        lng = request.query_params.get('lng')
-        
-        if not lat or not lng:
-            return Response(
-                {"error": "Se requieren los parámetros 'lat' y 'lng'"},
-                status=400
-            )
-        
-        try:
-            lat = float(lat)
-            lng = float(lng)
-        except ValueError:
-            return Response(
-                {"error": "Los valores de 'lat' y 'lng' no son numeros"},
-                status=404
-            )
-        
-        punts_query = EstacioCarrega.objects.all()
-        
-        ubicacio_ids = punts_query.values_list('ubicacio_estacio__id_ubicacio', flat=True).distinct()
-
-        if not ubicacio_ids:
-            return Response(
-                {"detail": "No se encontraron puntos de carga."},
-                status=404
-            )
-        
-        distancies = []
+    #es podria posar altres criteris de filtratge com potencia, tipus de carrega, etc.
+    lat = request.query_params.get('lat')
+    lng = request.query_params.get('lng')
     
-        min_distancia = float('inf')
-        
-        for ubicacio in Ubicacio.objects.filter(id_ubicacio__in=ubicacio_ids)[:50]:
-            ubicacio_lat = ubicacio.lat
-            ubicacio_lng = ubicacio.lng
+    if not lat or not lng:
+        return Response(
+            {"error": "Se requieren los parámetros 'lat' y 'lng'"},
+            status=400
+        )
+    
+    try:
+        lat = float(lat)
+        lng = float(lng)
+    except ValueError:
+        return Response(
+            {"error": "Los valores de 'lat' y 'lng' no son numeros"},
+            status=404
+        )
 
-            
-            if ubicacio_lat and ubicacio_lng:
-                distance = haversine_distance(lat, lng, ubicacio_lat, ubicacio_lng)
-                ub = Ubicacio.objects.get(lat=ubicacio_lat, lng=ubicacio_lng)
-                distancies.append((ub, distance))
 
+    min_distancia = float('inf')
         
-        if not distancies:
-            return Response(
-                {"detail": "No se pudo calcular la distancia."},
-                status=404
-            )
+    punts_query = EstacioCarrega.objects.all()
+
+    min_distancia = float('inf')
+    
+    for estacio in punts_query:
+        ubicacio_lat = estacio.lat
+        ubicacio_lng = estacio.lng
+        
+        if ubicacio_lat and ubicacio_lng:
+            distance = haversine_distance(lat, lng, ubicacio_lat, ubicacio_lng)
+            ub = EstacioCarrega.objects.get(lat=ubicacio_lat, lng=ubicacio_lng)
+            distancies.append((ub, distance))
+
 
         distancies = sorted(distancies, key=lambda x: x[1]) #The fourth element (x[3]) of each item in the list will be taken as the sorting criterion.
     
@@ -158,19 +194,17 @@ def punt_mes_proper(request):
                 distancia = distance #* 111 #convertir a km (ja esta en km)
                 resultat.append({
                     "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
-                    "ubicacio": UbicacioSerializer(ubicacio).data,
                     "distancia_km": distancia,
                     "punts_de_carrega": PuntCarregaSerializer(estacio_carrega.punt_carrega.all(), many=True).data,                  
                 })
             
         return Response(resultat)
-    
 
 @api_view(['GET'])
 def tots_els_punts(request):
-    punts = PuntCarrega.objects.all()
+    punts = Punt.objects.all()
     resultats = []
     resultats.append({
-        "punts_de_carrega": PuntCarregaSerializer(punts, many=True).data
+        "punts": PuntSerializer(punts, many=True).data,
     })
     return Response(resultats)
