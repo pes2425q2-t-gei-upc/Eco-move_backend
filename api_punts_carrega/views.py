@@ -158,8 +158,19 @@ def punt_mes_proper(request):
                 distancia = distance #* 111 #convertir a km (ja esta en km)
                 resultat.append({
                     "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
-                    "distancia_km": distancia                    
+                    "ubicacio": UbicacioSerializer(ubicacio).data,
+                    "distancia_km": distancia,
+                    "punts_de_carrega": PuntCarregaSerializer(estacio_carrega.punt_carrega.all(), many=True).data,                  
                 })
             
         return Response(resultat)
     
+
+@api_view(['GET'])
+def tots_els_punts(request):
+    punts = PuntCarrega.objects.all()
+    resultats = []
+    resultats.append({
+        "punts_de_carrega": PuntCarregaSerializer(punts, many=True).data
+    })
+    return Response(resultats)
