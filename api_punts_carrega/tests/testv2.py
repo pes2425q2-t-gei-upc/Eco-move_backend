@@ -3,31 +3,27 @@ from django.urls import reverse
 from rest_framework import status
 import json
 from datetime import date, datetime, timedelta, time
-from api_punts_carrega.models import EstacioCarrega, Reserva, Ubicacio
+from api_punts_carrega.models import EstacioCarrega, Reserva, Punt
 
 class ReservaAPITests(TestCase):
     def setUp(self):
         self.client = Client()
         print("\n=== Configurando tests de Reserva ===")
         
-        self.ubicacio = Ubicacio.objects.create(
-            id_ubicacio="loc_001",
+        # Ya no necesitamos crear un objeto Ubicacio separado
+        # Creamos directamente la EstacioCarrega con los campos de ubicación
+        self.estacio = EstacioCarrega.objects.create(
+            id_punt="12345",  # Ahora id_punt es la clave primaria
             lat=41.3851,
             lng=2.1734,
             direccio="Carrer de Barcelona, 123",
             ciutat="Barcelona",
-            provincia="Barcelona"
-        )
-        print(f"✓ Ubicación creada: {self.ubicacio.id_ubicacio}")
-        
-        self.estacio = EstacioCarrega.objects.create(
-            id_estacio="12345",
+            provincia="Barcelona",
             gestio="Public",
             tipus_acces="targeta",
-            ubicacio_estacio=self.ubicacio,
             nplaces="2",
         )
-        print(f"✓ Estación creada: {self.estacio.id_estacio} (id_punt: {self.estacio.id_punt})")
+        print(f"✓ Estación creada: {self.estacio.id_punt} en {self.estacio.direccio}")
         
         self.reserva = Reserva.objects.create(
             estacion=self.estacio,
@@ -39,7 +35,7 @@ class ReservaAPITests(TestCase):
         
         # Definir los datos para crear una nueva reserva
         self.reserva_data = {
-            "estacion": self.estacio.id_punt,
+            "estacion": self.estacio.id_punt,  # Usamos id_punt como identificador
             "fecha": "2025-03-20",
             "hora": "14:00",
             "duracion": "03:00:00"
