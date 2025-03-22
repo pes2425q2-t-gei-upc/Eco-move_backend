@@ -12,9 +12,8 @@ from django.shortcuts import get_object_or_404
 
 import math
 
-from .models import Ubicacio, Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
-from .serializers import (
-    UbicacioSerializer, 
+from .models import  Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
+from .serializers import ( 
     PuntSerializer,
     EstacioCarregaSerializer, 
     PuntCarregaSerializer,
@@ -23,9 +22,6 @@ from .serializers import (
     ReservaSerializer
 )
 
-class UbicacioViewSet(viewsets.ModelViewSet):
-    queryset = Ubicacio.objects.all()
-    serializer_class = UbicacioSerializer
 
 class PuntViewSet(viewsets.ModelViewSet):
     queryset = Punt.objects.all()
@@ -54,7 +50,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
         estacio_id = self.request.query_params.get('estacio_carrega', None)
         
         if estacio_id:
-            queryset = queryset.filter(estacio_carrega__id_estacio=estacio_id)
+            queryset = queryset.filter(estacio_carrega_id_punt=estacio_id)
 
         return queryset
         
@@ -186,35 +182,21 @@ def punt_mes_proper(request):
             {"error": "Los valores de 'lat' y 'lng' no son numeros"},
             status=404
         )
-    
-    punts_query = EstacioCarrega.objects.all()
-    
-    ubicacio_ids = punts_query.values_list('ubicacio_estacio__id_ubicacio', flat=True).distinct()
-
-    if not ubicacio_ids:
-        return Response(
-            {"detail": "No se encontraron puntos de carga."},
-            status=404
-        )
-    
-
-        min_distancia = float('inf')
-        
-        for ubicacio in Ubicacio.objects.filter(id_ubicacio__in=ubicacio_ids)[:50]:
-            ubicacio_lat = ubicacio.lat
-            ubicacio_lng = ubicacio.lng
 
 
     min_distancia = float('inf')
-    
-    for ubicacio in Ubicacio.objects.filter(id_ubicacio__in=ubicacio_ids):
-        ubicacio_lat = ubicacio.lat
-        ubicacio_lng = ubicacio.lng
+        
+    punts_query = EstacioCarrega.objects.all()
 
+    min_distancia = float('inf')
+    
+    for estacio in punts_query:
+        ubicacio_lat = estacio.lat
+        ubicacio_lng = estacio.lng
         
         if ubicacio_lat and ubicacio_lng:
             distance = haversine_distance(lat, lng, ubicacio_lat, ubicacio_lng)
-            ub = Ubicacio.objects.get(lat=ubicacio_lat, lng=ubicacio_lng)
+            ub = EstacioCarrega.objects.get(lat=ubicacio_lat, lng=ubicacio_lng)
             distancies.append((ub, distance))
 
 
@@ -228,32 +210,17 @@ def punt_mes_proper(request):
                 distancia = distance #* 111 #convertir a km (ja esta en km)
                 resultat.append({
                     "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
-                    "distancia_km": distancia                    
+                    "distancia_km": distancia,
+                    "punts_de_carrega": PuntCarregaSerializer(estacio_carrega.punt_carrega.all(), many=True).data,                  
                 })
             
         return Response(resultat)
 
-    
-    if not distancies:
-        return Response(
-            {"detail": "No se pudo calcular la distancia."},
-            status=404
-        )
-
-    distancies = sorted(distancies, key=lambda x: x[1]) #The fourth element (x[3]) of each item in the list will be taken as the sorting criterion.
-
-    resultat = []
-    for ubicacio, distance in distancies:
-        estacio_carrega = punts_query.filter(ubicacio_estacio=ubicacio).first()
-                
-        if estacio_carrega:
-            distancia = distance #* 111 #convertir a km (ja esta en km)
-            resultat.append({
-                "ubicacio": UbicacioSerializer(ubicacio).data,
-                "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
-                "distancia_km": distancia                    
-            })
-        
-    return Response(resultat)
-
-
+@api_view(['GET'])
+def tots_els_punts(request):
+    punts = Punt.objects.all()
+    resultats = []
+    resultats.append({
+        "punts": PuntSerializer(punts, many=True).data,
+    })
+    return Response(resultats)
