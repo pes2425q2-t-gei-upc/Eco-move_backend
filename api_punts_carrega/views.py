@@ -43,10 +43,6 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.all()
     serializer_class = EstacioCarregaSerializer
 
-
-class ReservaViewSet(viewsets.ModelViewSet):
-    queryset = Reserva.objects.all()
-    serializer_class = ReservaSerializer
     
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
@@ -66,22 +62,42 @@ class ReservaViewSet(viewsets.ModelViewSet):
     def crear(self, request):
         """Create a new reservation."""
         data = json.loads(request.body)
-        estacio_id = data.get('estacio_id')
-        fecha = data.get('fecha')
-        hora = data.get('hora')
-        duracion = data.get('duracion')
+        
+        # Obtener el ID de la estación (adaptado para aceptar tanto 'estacion' como 'estacio_id')
+        estacio_id = data.get('estacion') or data.get('estacio_id')
+        fecha_str = data.get('fecha')
+        hora_str = data.get('hora')
+        duracion_str = data.get('duracion')
 
         try:
-            estacio = EstacioCarrega.objects.get(id_estacio=estacio_id)
+            # Buscar la estación por id_punt o id_estacio
+            try:
+                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
+            except EstacioCarrega.DoesNotExist:
+                estacio = EstacioCarrega.objects.get(id_estacio=estacio_id)
 
-            # Convertir la hora y duración
-            hora_inicio = datetime.strptime(hora, '%H:%M:%S').time()
-            horas, minutos, segundos = map(int, duracion.split(':'))
-            duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+            # Convertir la fecha
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            
+            # Convertir la hora
+            hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
+            
+            # Convertir la duración
+            if ':' in duracion_str:
+                # Formato "HH:MM:SS"
+                partes = duracion_str.split(':')
+                horas = int(partes[0])
+                minutos = int(partes[1])
+                segundos = int(partes[2]) if len(partes) > 2 else 0
+                duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+            else:
+                # Formato en segundos
+                duracion_td = timedelta(seconds=int(duracion_str))
+            
             hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
 
             # Verificar si hay solapamiento
-            reservas_existentes = Reserva.objects.filter(estacio=estacio, fecha=fecha)
+            reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha)
 
             for reserva in reservas_existentes:
                 hora_reserva_fin = (datetime.combine(date.today(), reserva.hora) + reserva.duracion).time()
@@ -91,12 +107,12 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
             # Crear reserva
             reserva = Reserva.objects.create(
-                estacio=estacio,
+                estacion=estacio,
                 fecha=fecha,
                 hora=hora_inicio,
                 duracion=duracion_td
             )
-            return Response({'message': 'Reserva creada amn éxit'}, status=201)
+            return Response({'message': 'Reserva creada amb éxit'}, status=201)
 
         except EstacioCarrega.DoesNotExist:
             return Response({'error': 'Estació no trobada'}, status=404)
