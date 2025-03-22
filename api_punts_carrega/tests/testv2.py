@@ -1,3 +1,14 @@
+'''
+/api_punts_carrega/reservas/crear/
+/api_punts_carrega/reservas/4/modificar/
+/api_punts_carrega/reservas/3/eliminar/
+
+'''
+
+
+
+
+
 from django.test import TestCase, Client
 from django.urls import reverse
 from rest_framework import status
