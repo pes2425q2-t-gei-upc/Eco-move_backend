@@ -60,20 +60,22 @@ class ReservaViewSet(viewsets.ModelViewSet):
         data = json.loads(request.body)
         
         # Obtener el ID de la estación (adaptado para aceptar tanto 'estacion' como 'estacio_id')
-        estacio_id = data.get('estacion') or data.get('estacio_id')
+        estacio_id = data.get('estacion')
         fecha_str = data.get('fecha')
         hora_str = data.get('hora')
         duracion_str = data.get('duracion')
 
         try:
             # Buscar la estación por id_punt o id_estacio
+            
             try:
                 estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
             except EstacioCarrega.DoesNotExist:
-                estacio = EstacioCarrega.objects.get(id_estacio=estacio_id)
+                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
+            
 
             # Convertir la fecha
-            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
             
             # Convertir la hora
             hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
@@ -99,7 +101,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
                 hora_reserva_fin = (datetime.combine(date.today(), reserva.hora) + reserva.duracion).time()
 
                 if not (hora_fin <= reserva.hora or hora_inicio >= hora_reserva_fin):
-                    return JsonResponse({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
+                    return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
 
             # Crear reserva
             reserva = Reserva.objects.create(
@@ -119,14 +121,60 @@ class ReservaViewSet(viewsets.ModelViewSet):
         reserva = get_object_or_404(Reserva, id=pk)
         data = request.data
         
-        if 'fecha' in data:
-            reserva.fecha = data['fecha']
-        if 'hora' in data:
-            reserva.hora = data['hora']
-        if 'duracion' in data:
-            reserva.duracion = data['duracion']
+        # Get current values or updated values from request
+        fecha = reserva.fecha
+        hora_inicio = reserva.hora
+        duracion_td = reserva.duracion
+        estacio = reserva.estacion
         
+        # Update values if provided in request
+        if 'fecha' in data:
+            fecha_str = data.get('fecha')
+            fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
+        
+        if 'hora' in data:
+            hora_str = data.get('hora')
+            if isinstance(hora_str, str):
+                hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
+            else:
+                hora_inicio = hora_str
+        
+        if 'duracion' in data:
+            duracion_str = data.get('duracion')
+            if isinstance(duracion_str, str):
+                if ':' in duracion_str:
+                    # Format "HH:MM:SS"
+                    partes = duracion_str.split(':')
+                    horas = int(partes[0])
+                    minutos = int(partes[1])
+                    segundos = int(partes[2]) if len(partes) > 2 else 0
+                    duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+                else:
+                    # Format in seconds
+                    duracion_td = timedelta(seconds=int(duracion_str))
+            else:
+                duracion_td = duracion_str
+        
+        # Calculate end time
+        hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
+        
+        # Check for overlapping reservations
+        reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha).exclude(id=pk)
+        
+        for reserva_existente in reservas_existentes:
+            hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
+                            reserva_existente.duracion).time()
+            
+            if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
+                return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, 
+                            status=409)
+        
+        # Update reservation
+        reserva.fecha = fecha
+        reserva.hora = hora_inicio
+        reserva.duracion = duracion_td
         reserva.save()
+    
         return Response({'message': 'Reserva actualizada con éxito'}, status=200)
 
     @action(detail=True, methods=['delete'])
