@@ -13,61 +13,38 @@ class Tipus_de_Corrent(Enum):
     AC = "Corrent alterna"
     DC = "Corrent continua"
 
-
-class Ubicacio(models.Model):
-    id_ubicacio = models.CharField(max_length=100, primary_key=True)
-    lat = models.FloatField()
-    lng = models.FloatField()
-    direccio = models.CharField(max_length=255)
-    ciutat = models.CharField(max_length=100)
-    provincia = models.CharField(max_length=100)
-    
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['lat', 'lng'], name='unique_lat_lng')
-        ]
-    def __str__(self):
-        return f"{self.lat}, {self.lng}"
-
 class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
-    ubicacio_punt = models.ForeignKey(Ubicacio, on_delete=models.CASCADE, related_name='punt',null = True)
-    
+    lat = models.FloatField(null= True)
+    lng = models.FloatField(null= True)
+    direccio = models.CharField(max_length=255,null=True)
+    ciutat = models.CharField(max_length=100,null= True)
+    provincia = models.CharField(max_length=100,null= True)
+
     def __str__(self):
-        return f"Punto {self.id_punt} en {self.ubicacio_punt}"
+        return f"Punto {self.id_punt} en {self.lat}, {self.lng}"
     
     class Meta:
         abstract = False
 
 class EstacioCarrega(Punt):
-    
-    id_estacio = models.CharField(max_length=100, unique=True)
     gestio = models.CharField(max_length=100)
     tipus_acces =  models.CharField(max_length=100)
-    ubicacio_estacio = models.ForeignKey(Ubicacio, on_delete=models.CASCADE, related_name='estaciocarrega',null = True)
     nplaces = models.CharField(max_length=20,null=True)
     
     def __str__(self):
-        return f"Estació {self.id_estacio} - {self.ubicacio_estacio.direccio}"
+        return f"Estació {self.id_punt} - {self.lat}, {self.lng}"
     
-    def save(self, *args, **kwargs):
-        if not self.id_punt:
-            self.id_punt = self.id_estacio
-            self.ubicacio_punt = self.ubicacio_estacio
-            self.ubicacio_punt = self.ubicacio_estacio
-            self.ubicacio_estacio.save()
-        super().save(*args, **kwargs)
 
-class PuntCarrega(models.Model):  
-    id_punt_carrega = models.CharField(max_length=100)
+class PuntCarrega(models.Model):
+    id_punt_carrega = models.CharField(max_length=100, primary_key=True)
     potencia = models.IntegerField()
     tipus_velocitat = models.CharField(max_length=100,choices=Velocitat_de_carrega.__members__.items())
     estacio = models.ForeignKey(EstacioCarrega, on_delete=models.SET_NULL, related_name='punt_carrega',null=True)
     
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['estacio', 'id_punt_carrega'], name='unique_p_carrega')
+            models.UniqueConstraint(fields=['estacio','id_punt_carrega'], name='unique_p_carrega')
         ] 
     
     def __str__(self):
