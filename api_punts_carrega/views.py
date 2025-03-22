@@ -58,37 +58,59 @@ class ReservaViewSet(viewsets.ModelViewSet):
     def crear(self, request):
         """Create a new reservation."""
         data = json.loads(request.body)
-        estacio_id = data.get('id_punt')
-        fecha = data.get('fecha')
-        hora = data.get('hora')
-        duracion = data.get('duracion')
+        
+        # Obtener el ID de la estación (adaptado para aceptar tanto 'estacion' como 'estacio_id')
+        estacio_id = data.get('estacion')
+        fecha_str = data.get('fecha')
+        hora_str = data.get('hora')
+        duracion_str = data.get('duracion')
 
         try:
-            estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
+            # Buscar la estación por id_punt o id_estacio
+            
+            try:
+                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
+            except EstacioCarrega.DoesNotExist:
+                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
+            
 
-            # Convertir la hora y duración
-            hora_inicio = datetime.strptime(hora, '%H:%M:%S').time()
-            horas, minutos, segundos = map(int, duracion.split(':'))
-            duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+            # Convertir la fecha
+            fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
+            
+            # Convertir la hora
+            hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
+            
+            # Convertir la duración
+            if ':' in duracion_str:
+                # Formato "HH:MM:SS"
+                partes = duracion_str.split(':')
+                horas = int(partes[0])
+                minutos = int(partes[1])
+                segundos = int(partes[2]) if len(partes) > 2 else 0
+                duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+            else:
+                # Formato en segundos
+                duracion_td = timedelta(seconds=int(duracion_str))
+            
             hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
 
             # Verificar si hay solapamiento
-            reservas_existentes = Reserva.objects.filter(estacio=estacio, fecha=fecha)
+            reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha)
 
             for reserva in reservas_existentes:
                 hora_reserva_fin = (datetime.combine(date.today(), reserva.hora) + reserva.duracion).time()
 
                 if not (hora_fin <= reserva.hora or hora_inicio >= hora_reserva_fin):
-                    return JsonResponse({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
+                    return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
 
             # Crear reserva
             reserva = Reserva.objects.create(
-                estacio=estacio,
+                estacion=estacio,
                 fecha=fecha,
                 hora=hora_inicio,
                 duracion=duracion_td
             )
-            return Response({'message': 'Reserva creada amn éxit'}, status=201)
+            return Response({'message': 'Reserva creada amb éxit'}, status=201)
 
         except EstacioCarrega.DoesNotExist:
             return Response({'error': 'Estació no trobada'}, status=404)
@@ -99,14 +121,60 @@ class ReservaViewSet(viewsets.ModelViewSet):
         reserva = get_object_or_404(Reserva, id=pk)
         data = request.data
         
-        if 'fecha' in data:
-            reserva.fecha = data['fecha']
-        if 'hora' in data:
-            reserva.hora = data['hora']
-        if 'duracion' in data:
-            reserva.duracion = data['duracion']
+        # Get current values or updated values from request
+        fecha = reserva.fecha
+        hora_inicio = reserva.hora
+        duracion_td = reserva.duracion
+        estacio = reserva.estacion
         
+        # Update values if provided in request
+        if 'fecha' in data:
+            fecha_str = data.get('fecha')
+            fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
+        
+        if 'hora' in data:
+            hora_str = data.get('hora')
+            if isinstance(hora_str, str):
+                hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
+            else:
+                hora_inicio = hora_str
+        
+        if 'duracion' in data:
+            duracion_str = data.get('duracion')
+            if isinstance(duracion_str, str):
+                if ':' in duracion_str:
+                    # Format "HH:MM:SS"
+                    partes = duracion_str.split(':')
+                    horas = int(partes[0])
+                    minutos = int(partes[1])
+                    segundos = int(partes[2]) if len(partes) > 2 else 0
+                    duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+                else:
+                    # Format in seconds
+                    duracion_td = timedelta(seconds=int(duracion_str))
+            else:
+                duracion_td = duracion_str
+        
+        # Calculate end time
+        hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
+        
+        # Check for overlapping reservations
+        reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha).exclude(id=pk)
+        
+        for reserva_existente in reservas_existentes:
+            hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
+                            reserva_existente.duracion).time()
+            
+            if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
+                return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, 
+                            status=409)
+        
+        # Update reservation
+        reserva.fecha = fecha
+        reserva.hora = hora_inicio
+        reserva.duracion = duracion_td
         reserva.save()
+    
         return Response({'message': 'Reserva actualizada con éxito'}, status=200)
 
     @action(detail=True, methods=['delete'])
