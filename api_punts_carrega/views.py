@@ -39,10 +39,6 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.all()
     serializer_class = EstacioCarregaSerializer
 
-
-class ReservaViewSet(viewsets.ModelViewSet):
-    queryset = Reserva.objects.all()
-    serializer_class = ReservaSerializer
     
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
@@ -166,45 +162,30 @@ def punt_mes_proper(request):
             {"error": "Los valores de 'lat' y 'lng' no son numeros"},
             status=404
         )
-
+        
+    estacions = EstacioCarrega.objects.all()
 
     min_distancia = float('inf')
-        
-    punts_query = EstacioCarrega.objects.all()
-
-    min_distancia = float('inf')
+    distancies = []
     
-    for estacio in punts_query:
-        ubicacio_lat = estacio.lat
-        ubicacio_lng = estacio.lng
-        
-        if ubicacio_lat and ubicacio_lng:
-            distance = haversine_distance(lat, lng, ubicacio_lat, ubicacio_lng)
-            ub = EstacioCarrega.objects.get(lat=ubicacio_lat, lng=ubicacio_lng)
-            distancies.append((ub, distance))
+    for estacio in estacions:      
+        if estacio.lat is not None and estacio.lng is not None:
+            distance = haversine_distance(lat, lng, estacio.lat, estacio.lng)
+            distancies.append((estacio, distance))
 
 
-        distancies = sorted(distancies, key=lambda x: x[1]) #The fourth element (x[3]) of each item in the list will be taken as the sorting criterion.
+    distancies = sorted(distancies, key=lambda x: x[1]) #The second element (x[1]) of each item in the list will be taken as the sorting criterion.
+    distancies = distancies[:60]
+    resultat = []
     
-        resultat = []
-        for ubicacio, distance in distancies[:40]:
-            estacio_carrega = punts_query.filter(ubicacio_estacio=ubicacio).first()
-                    
-            if estacio_carrega:
-                distancia = distance #* 111 #convertir a km (ja esta en km)
-                resultat.append({
-                    "estacio_carrega": EstacioCarregaSerializer(estacio_carrega).data,
-                    "distancia_km": distancia,
-                    "punts_de_carrega": PuntCarregaSerializer(estacio_carrega.punt_carrega.all(), many=True).data,                  
-                })
+    for estacio, distance in distancies:
+        # Get charging points for this station
+        punts_carrega = estacio.punt_carrega.all()
+        
+        resultat.append({
+            "estacio_carrega": EstacioCarregaSerializer(estacio).data,
+            "distancia_km": distance,
+            "punts_de_carrega": PuntCarregaSerializer(punts_carrega, many=True).data,                  
+        })
             
-        return Response(resultat)
-
-@api_view(['GET'])
-def tots_els_punts(request):
-    punts = Punt.objects.all()
-    resultats = []
-    resultats.append({
-        "punts": PuntSerializer(punts, many=True).data,
-    })
-    return Response(resultats)
+    return Response(resultat)

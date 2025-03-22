@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
-from api_punts_carrega.models import EstacioCarrega, Reserva, Ubicacio
+from api_punts_carrega.models import EstacioCarrega, Reserva
 import json
 from datetime import date, time, timedelta
 
@@ -13,22 +13,16 @@ class ReservaTests(APITestCase):
         """Set up the reservations"""
         self.client = Client()
         
-        # Create location
-        self.ubicacio = Ubicacio.objects.create(
-            id_ubicacio="loc_001",
+        # Create charging station
+        self.estacio = EstacioCarrega.objects.create(
+            id_punt="12345",
             lat=41.3851,
             lng=2.1734,
             direccio="Carrer de Barcelona, 123",
             ciutat="Barcelona",
-            provincia="Barcelona"
-        )
-        
-        # Create charging station
-        self.estacio = EstacioCarrega.objects.create(
-            id_estacio="12345",
+            provincia="Barcelona",
             gestio="Public",
             tipus_acces="targeta",
-            ubicacio_estacio=self.ubicacio,
             nplaces="2",
         )
         
@@ -66,7 +60,7 @@ class ReservaTests(APITestCase):
         response = self.client.get(reverse('reserva-detail', kwargs={'pk': self.reserva.id}))
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["estacion"], self.estacio.id_estacio)
+        self.assertEqual(response.data["estacion"], self.estacio.id_punt)
 
     def test_crear_reserva(self):
         # Asegúrate de que la URL coincida con la definida en urls.py
