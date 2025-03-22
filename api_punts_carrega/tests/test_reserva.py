@@ -8,7 +8,10 @@ from api_punts_carrega.models import EstacioCarrega, Reserva
 class ReservaAPITests(TestCase):
     def setUp(self):
         self.client = Client()
-        
+        self.reserva_url = "/api_punts_carrega/reservas/"
+
+        # Create charging station
+
         self.estacio = EstacioCarrega.objects.create(
             id_punt="12345",
             lat=41.3851,
@@ -35,8 +38,21 @@ class ReservaAPITests(TestCase):
             "duracion": "03:00:00"
         }
         
+
+    def test_get_all_reservations(self):
+        response = self.client.get(self.reserva_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        
+    def test_get_reservation_by_id(self):
+        response = self.client.get(reverse('reserva-detail', kwargs={'pk': self.reserva.id}))
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["estacion"], self.estacio.id_punt)
+
+
     def test_crear_reserva(self):
-        url = reverse('reserva-crear')
+        url = self.reserva_url + "crear/"
         response = self.client.post(
             url,
             data=json.dumps(self.reserva_data),
@@ -58,7 +74,7 @@ class ReservaAPITests(TestCase):
             "duracion": "04:00:00"
         }
         
-        url = reverse('reserva-modificar', kwargs={'pk': self.reserva.pk})
+        url = self.reserva_url + f"{self.reserva.pk}/modificar/"
         response = self.client.put(
             url,
             data=json.dumps(modificar_data),
@@ -73,7 +89,7 @@ class ReservaAPITests(TestCase):
         self.assertEqual(self.reserva.duracion, timedelta(hours=4))
         
     def test_eliminar_reserva(self):
-        url = reverse('reserva-eliminar', kwargs={'pk': self.reserva.pk})
+        url = self.reserva_url + f"{self.reserva.pk}/eliminar/"
         response = self.client.delete(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
