@@ -21,7 +21,9 @@ class Command(BaseCommand):
                 for index, station in enumerate(data):
                     lat = float(station.get("latitud", 0))
                     lng = float(station.get("longitud", 0))
-                    numero = random.randint(1, 10)
+                    num_get = station.get("nplaces_estaci","Unknown")
+                    if num_get == "" or num_get == "Unknown":
+                        num_places = str(random.randint(1,10))
 
                     estacio_carrega = EstacioCarrega.objects.create(
                         id_punt = station.get("id", "Unknown"),
@@ -32,8 +34,10 @@ class Command(BaseCommand):
                         provincia = station.get("provincia", "Unknown"),
                         gestio = station.get("promotor_gestor", "Unknown"),
                         tipus_acces = station.get("acces", "Unknown"),
-                        nplaces = station.get("nplaces_estaci", numero),
-                        nplaces_lliures = station.get("nplaces_lliures", numero),
+                        nplaces = num_places,
+                        potencia = station.get("kw","Unknow"),
+                        tipus_velocitat = station.get("tipus_velocitat", "Unknow"),
+                        nplaces_lliures = num_places,
                     )
 
                     tipus_carregador, created = TipusCarregador.objects.get_or_create(

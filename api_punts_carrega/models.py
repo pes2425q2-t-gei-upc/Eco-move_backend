@@ -1,25 +1,29 @@
-from enum import Enum
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractBaseUser
 
-class Velocitat_de_carrega(Enum):
+class Velocitat_de_carrega(models.TextChoices):
     LENTA = "Càrrega lenta"
     SEMI_RAPIDA = "Càrrega semi-ràpida"
     RAPIDA = "Càrrega ràpida"
     ULTRA_RAPIDA = "Càrrega ultra-ràpida"
     
 
-class Tipus_de_Corrent(Enum):
+class Tipus_de_Corrent(models.TextChoices):
     AC = "Corrent alterna"
     DC = "Corrent continua"
+
+class Resolucio(models.TextChoices):
+    USUARI_BLOQUEJAT = "Usuari bloquejat"
+    MISSATGE_ELIMINAT = "Missatge eliminat"
+    ABSOLT = "Absolt"
 
 class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
     lat = models.FloatField(null= True)
     lng = models.FloatField(null= True)
-    direccio = models.CharField(max_length=255,null=True)
-    ciutat = models.CharField(max_length=100,null= True)
-    provincia = models.CharField(max_length=100,null= True)
+    direccio = models.CharField(max_length=255,null=True,blank=True)
+    ciutat = models.CharField(max_length=100,null= True,blank=True)
+    provincia = models.CharField(max_length=100,null= True,blank=True)
 
     def __str__(self):
         return f"Punto {self.id_punt} en {self.lat}, {self.lng}"
@@ -50,7 +54,7 @@ class TipusCarregador(models.Model):
     def __str__(self):
         return f"{self.nom_tipus} - {self.tipus_connector} ({self.tipus_corrent})"
 
-
+#Por revisar
 class Reserva(models.Model):
 
     estacion = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name='reservas')
