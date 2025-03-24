@@ -2,8 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     PuntViewSet, 
-    EstacioCarregaViewSet, 
-    PuntCarregaViewSet, 
+    EstacioCarregaViewSet,  
     punt_mes_proper, 
     TipusCarregadorViewSet, 
     ReservaViewSet,
@@ -12,7 +11,6 @@ from .views import (
 router = DefaultRouter()
 router.register(r'punts', PuntViewSet)
 router.register(r'estacions', EstacioCarregaViewSet)
-router.register(r'punts_de_carrega', PuntCarregaViewSet)
 router.register(r'tipus_carregador', TipusCarregadorViewSet)
 router.register(r'reservas', ReservaViewSet)
 

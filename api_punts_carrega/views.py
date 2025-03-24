@@ -12,11 +12,10 @@ from django.shortcuts import get_object_or_404
 
 import math
 
-from .models import  Punt, EstacioCarrega, PuntCarrega, TipusCarregador, Reserva
+from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva
 from .serializers import ( 
     PuntSerializer,
     EstacioCarregaSerializer, 
-    PuntCarregaSerializer,
     NearestPuntCarregaSerializer,
     TipusCarregadorSerializer,
     ReservaSerializer
@@ -31,12 +30,9 @@ class TipusCarregadorViewSet(viewsets.ModelViewSet):
     queryset = TipusCarregador.objects.all()
     serializer_class = TipusCarregadorSerializer
 
-class PuntCarregaViewSet(viewsets.ModelViewSet):
-    queryset = PuntCarrega.objects.all()
-    serializer_class = PuntCarregaSerializer
 
 class EstacioCarregaViewSet(viewsets.ModelViewSet):
-    queryset = EstacioCarrega.objects.all()
+    queryset = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
     serializer_class = EstacioCarregaSerializer
 
     
@@ -248,12 +244,10 @@ def punt_mes_proper(request):
     
     for estacio, distance in distancies:
         # Get charging points for this station
-        punts_carrega = estacio.punt_carrega.all()
         
         resultat.append({
             "estacio_carrega": EstacioCarregaSerializer(estacio).data,
             "distancia_km": distance,
-            "punts_de_carrega": PuntCarregaSerializer(punts_carrega, many=True).data,                  
         })
             
     return Response(resultat)
