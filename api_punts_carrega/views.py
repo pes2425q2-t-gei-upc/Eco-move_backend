@@ -9,7 +9,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-
+from rest_framework import serializers
 import math
 
 from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva
@@ -35,7 +35,22 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
     serializer_class = EstacioCarregaSerializer
 
-    
+
+class ReservaSerializer(serializers.ModelSerializer):
+    fecha = serializers.DateField(format='%d/%m/%Y')
+    hora = serializers.TimeField(format='%H:%M')
+
+    class Meta:
+        model = Reserva
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
+        representation['hora'] = instance.hora.strftime('%H:%M')
+        return representation
+
+
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
