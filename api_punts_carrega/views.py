@@ -93,12 +93,18 @@ class ReservaViewSet(viewsets.ModelViewSet):
             # Verificar si hay solapamiento
             reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha)
 
-            for reserva in reservas_existentes:
-                hora_reserva_fin = (datetime.combine(date.today(), reserva.hora) + reserva.duracion).time()
+            placesReservades = 0
 
-                if not (hora_fin <= reserva.hora or hora_inicio >= hora_reserva_fin):
-                    return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
+            for reserva_existente in reservas_existentes:
+                hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
+                                reserva_existente.duracion).time()
+                
+                if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
+                    placesReservades += 1
+                    if placesReservades >= int(estacio.nplaces):
+                        return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
 
+           
             # Crear reserva
             reserva = Reserva.objects.create(
                 estacion=estacio,
@@ -106,6 +112,8 @@ class ReservaViewSet(viewsets.ModelViewSet):
                 hora=hora_inicio,
                 duracion=duracion_td
             )
+
+            
             return Response({'message': 'Reserva creada amb éxit'}, status=201)
 
         except EstacioCarrega.DoesNotExist:
@@ -157,13 +165,17 @@ class ReservaViewSet(viewsets.ModelViewSet):
         # Check for overlapping reservations
         reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha).exclude(id=pk)
         
+        placesReservades = 0
+
         for reserva_existente in reservas_existentes:
             hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
                             reserva_existente.duracion).time()
             
             if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
-                return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, 
-                            status=409)
+                placesReservades += 1
+                if placesReservades >= int(estacio.nplaces):
+                    return Response({'error': 'No hi ha places lliures en aquest punt de càrrega'}, status=409)
+                
         
         # Update reservation
         reserva.fecha = fecha
