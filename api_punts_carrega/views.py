@@ -189,7 +189,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
             if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
                 placesReservades += 1
                 if placesReservades >= int(estacio.nplaces):
-                    return Response({'error': 'No hi ha places lliures en aquest punt de càrrega'}, status=409)
+                    return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
                 
         
         # Update reservation
