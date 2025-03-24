@@ -35,6 +35,9 @@ INSTALLED_APPS = [
     'django_extensions',
 ]
 
+AUTH_USER_MODEL = 'api_punts_carrega.Persona'
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
