@@ -9,7 +9,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-
+from rest_framework import serializers
 import math
 
 from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva
@@ -35,7 +35,22 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
     queryset = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
     serializer_class = EstacioCarregaSerializer
 
-    
+
+class ReservaSerializer(serializers.ModelSerializer):
+    fecha = serializers.DateField(format='%d/%m/%Y')
+    hora = serializers.TimeField(format='%H:%M')
+
+    class Meta:
+        model = Reserva
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
+        representation['hora'] = instance.hora.strftime('%H:%M')
+        return representation
+
+
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
@@ -93,12 +108,18 @@ class ReservaViewSet(viewsets.ModelViewSet):
             # Verificar si hay solapamiento
             reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha)
 
-            for reserva in reservas_existentes:
-                hora_reserva_fin = (datetime.combine(date.today(), reserva.hora) + reserva.duracion).time()
+            placesReservades = 0
 
-                if not (hora_fin <= reserva.hora or hora_inicio >= hora_reserva_fin):
-                    return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, status=409)
+            for reserva_existente in reservas_existentes:
+                hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
+                                reserva_existente.duracion).time()
+                
+                if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
+                    placesReservades += 1
+                    if placesReservades >= int(estacio.nplaces):
+                        return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
 
+           
             # Crear reserva
             reserva = Reserva.objects.create(
                 estacion=estacio,
@@ -106,6 +127,8 @@ class ReservaViewSet(viewsets.ModelViewSet):
                 hora=hora_inicio,
                 duracion=duracion_td
             )
+
+            
             return Response({'message': 'Reserva creada amb éxit'}, status=201)
 
         except EstacioCarrega.DoesNotExist:
@@ -157,13 +180,17 @@ class ReservaViewSet(viewsets.ModelViewSet):
         # Check for overlapping reservations
         reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha).exclude(id=pk)
         
+        placesReservades = 0
+
         for reserva_existente in reservas_existentes:
             hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
                             reserva_existente.duracion).time()
             
             if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
-                return Response({'error': 'El punt de càrrega ja està reservat en aquest horari'}, 
-                            status=409)
+                placesReservades += 1
+                if placesReservades >= int(estacio.nplaces):
+                    return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
+                
         
         # Update reservation
         reserva.fecha = fecha
