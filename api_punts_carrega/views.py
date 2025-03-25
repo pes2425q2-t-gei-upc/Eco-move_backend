@@ -278,3 +278,27 @@ def punt_mes_proper(request):
         })
             
     return Response(resultat)
+
+import requests
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET'])
+def obtenir_preu_actual_kwh(request):
+    """Obtiene el precio actual del kWh en Cataluña desde una API externa."""
+    url = "https://api.preciodelaluz.org/v1/prices/now?zone=PCB"  # Zona PCB para Cataluña
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+
+        if "price" in data:
+            return Response({
+                "precio_kwh": data["price"],  # Precio en €/MWh
+                "unidad": "€/MWh"
+            })
+        else:
+            return Response({"error": "No se pudo obtener el precio"}, status=500)
+
+    except requests.RequestException:
+        return Response({"error": "Error al conectar con la API"}, status=500)

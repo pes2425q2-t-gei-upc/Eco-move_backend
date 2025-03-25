@@ -1,11 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    PuntViewSet, 
-    EstacioCarregaViewSet,  
-    punt_mes_proper, 
-    TipusCarregadorViewSet, 
-    ReservaViewSet,
+    PuntViewSet,
+    EstacioCarregaViewSet,
+    punt_mes_proper,
+    TipusCarregadorViewSet,
+    ReservaViewSet, obtenir_preu_actual_kwh,
 )
 
 router = DefaultRouter()
@@ -17,4 +17,5 @@ router.register(r'reservas', ReservaViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('punt_mes_proper/', punt_mes_proper, name='punt_mes_proper'),
+    path('api/preu_kwh/', obtenir_preu_actual_kwh, name='obtenir_preu_actual_kwh'),
 ]
