@@ -1,14 +1,18 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UbicacioViewSet, PuntViewSet,EstacioCarregaViewSet, PuntCarregaViewSet, punt_mes_proper,TipusCarregadorViewSet
-
+from .views import (
+    PuntViewSet, 
+    EstacioCarregaViewSet,  
+    punt_mes_proper, 
+    TipusCarregadorViewSet, 
+    ReservaViewSet,
+)
 
 router = DefaultRouter()
-router.register(r'ubicacions', UbicacioViewSet)
 router.register(r'punts', PuntViewSet)
 router.register(r'estacions', EstacioCarregaViewSet)
-router.register(r'punts_de_carrega', PuntCarregaViewSet)
 router.register(r'tipus_carregador', TipusCarregadorViewSet)
+router.register(r'reservas', ReservaViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
