@@ -1,57 +1,29 @@
 name: Django CI
 
-on:
-  push:
-    branches:
-      - develop
-      - main
-  pull_request:
-    branches: ["**"]
+# Run this every time a push or pull request is made
+on: [push, pull_request]
 
 jobs:
-  build:
+  test: # Name of the job
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-      matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11]
-
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_DB: ecomove_test_db
-          POSTGRES_USER: ecomove_user
-          POSTGRES_PASSWORD: ecomove_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3 # Pull the repo into the runner
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Migrations
-        env:
-          DATABASE_URL: postgres://ecomove_user:ecomove_password@localhost:5432/ecomove_test_db
+      - name: Run migrations
         run: |
           python manage.py migrate
 
-      - name: Run Tests
-        env:
-          DATABASE_URL: postgres://ecomove_user:ecomove_password@localhost:5432/ecomove_test_db
+      - name: Run tests
         run: |
           python manage.py test
