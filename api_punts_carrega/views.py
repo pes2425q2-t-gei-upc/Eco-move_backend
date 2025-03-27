@@ -285,20 +285,42 @@ from rest_framework.response import Response
 
 @api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
-    """Obtiene el precio actual del kWh en Cataluña desde una API externa."""
-    url = "https://api.preciodelaluz.org/v1/prices/now?zone=PCB"  # Zona PCB para Cataluña
+    """Obtiene el precio del kWh en Cataluña desde la API de Red Eléctrica de España (REE)."""
+
+    
+    ahora = datetime.utcnow()
+    fecha_inicio = ahora.strftime("%Y-%m-%dT%H:00")
+    fecha_fin = (ahora + timedelta(hours=1)).strftime("%Y-%m-%dT%H:00")
+
+
+    url = f"https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date={fecha_inicio}&end_date={fecha_fin}&time_trunc=hour&geo_limit=ccaa&geo_ids=9"
 
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()  # Verifica si la respuesta es 200 OK
+
         data = response.json()
 
-        if "price" in data:
-            return Response({
-                "precio_kwh": data["price"],  # Precio en €/MWh
-                "unidad": "€/MWh"
-            })
-        else:
-            return Response({"error": "No se pudo obtener el precio"}, status=500)
+        # Extraer el precio más reciente
+        if "included" in data and data["included"]:
+            precios = data["included"][0]["attributes"]["values"]
+            if precios:
+                precio_mwh = precios[-1]["value"]
+                precio_kwh = precio_mwh / 1000  # Convertimos de €/MWh a €/kWh
 
-    except requests.RequestException:
-        return Response({"error": "Error al conectar con la API"}, status=500)
+                return Response({
+                    "precio_kwh": round(precio_kwh, 4),
+                    "unidad": "€/kWh",
+                    "fuente": "Red Eléctrica de España (REE)"
+                })
+
+        return Response({"error": "No se encontraron datos de precios"}, status=500)
+
+    except requests.Timeout:
+        return Response({"error": "Tiempo de espera agotado al conectar con la API"}, status=504)
+
+    except requests.HTTPError as e:
+        return Response({"error": f"Error HTTP {response.status_code}: {str(e)}"}, status=response.status_code)
+
+    except requests.RequestException as e:
+        return Response({"error": f"Fallo en la conexión: {str(e)}"}, status=500)
