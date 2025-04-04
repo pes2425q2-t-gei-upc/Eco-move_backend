@@ -17,5 +17,5 @@ router.register(r'reservas', ReservaViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('punt_mes_proper/', punt_mes_proper, name='punt_mes_proper'),
-    path('api/preu_kwh/', obtenir_preu_actual_kwh, name='obtenir_preu_actual_kwh'),
+    path('preu_kwh/', obtenir_preu_actual_kwh, name='obtenir_preu_actual_kwh'),
 ]
