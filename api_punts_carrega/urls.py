@@ -6,6 +6,8 @@ from .views import (
     punt_mes_proper, 
     TipusCarregadorViewSet, 
     ReservaViewSet,
+    VehicleViewSet,
+    ModelCotxeViewSet,
 )
 
 router = DefaultRouter()
@@ -13,7 +15,8 @@ router.register(r'punts', PuntViewSet)
 router.register(r'estacions', EstacioCarregaViewSet)
 router.register(r'tipus_carregador', TipusCarregadorViewSet)
 router.register(r'reservas', ReservaViewSet)
-
+router.register(r'vehicles', VehicleViewSet)
+router.register(r'models', ModelCotxeViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('punt_mes_proper/', punt_mes_proper, name='punt_mes_proper'),
