@@ -12,14 +12,24 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 import math
 
-from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva
+from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe
 from .serializers import ( 
     PuntSerializer,
     EstacioCarregaSerializer, 
     NearestPuntCarregaSerializer,
     TipusCarregadorSerializer,
-    ReservaSerializer
+    ReservaSerializer,
+    VehicleSerializer,
+    ModelCotxeSerializer
 )
+
+class VehicleViewSet(viewsets.ModelViewSet):
+    queryset = Vehicle.objects.all()
+    serializer_class = VehicleSerializer
+
+class ModelCotxeViewSet(viewsets.ModelViewSet):
+    queryset = ModelCotxe.objects.all()
+    serializer_class = ModelCotxeSerializer
 
 
 class PuntViewSet(viewsets.ModelViewSet):
@@ -67,17 +77,14 @@ class ReservaViewSet(viewsets.ModelViewSet):
         
     @action(detail=False, methods=['post'])
     def crear(self, request):
-        """Create a new reservation."""
         data = json.loads(request.body)
         
-        # Obtener el ID de la estación (adaptado para aceptar tanto 'estacion' como 'estacio_id')
         estacio_id = data.get('estacion')
         fecha_str = data.get('fecha')
         hora_str = data.get('hora')
         duracion_str = data.get('duracion')
 
         try:
-            # Buscar la estación por id_punt o id_estacio
             
             try:
                 estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
