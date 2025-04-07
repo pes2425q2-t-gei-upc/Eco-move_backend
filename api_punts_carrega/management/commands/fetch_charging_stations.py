@@ -37,7 +37,6 @@ class Command(BaseCommand):
                         nplaces = num_places,
                         potencia = station.get("kw","Unknow"),
                         tipus_velocitat = station.get("tipus_velocitat", "Unknow"),
-                        nplaces_lliures = num_places,
                     )
 
                     tipus_carregador, created = TipusCarregador.objects.get_or_create(
