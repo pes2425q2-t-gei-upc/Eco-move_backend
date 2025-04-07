@@ -33,7 +33,7 @@ class Usuario(AbstractUser):
     dni = models.CharField(max_length=20, unique=True)
     idioma = models.CharField(max_length=20, choices=Idiomas.choices, default=Idiomas.CATALA)
     telefon = models.CharField(max_length=15, blank=True, null=True)
-    foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
+    #foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
     descripcio = models.TextField(blank=True, null=True)
 
     # Forzamos que el email sea único y lo usamos para login
@@ -117,7 +117,7 @@ class ModelCotxe(models.Model):
     model = models.CharField(max_length=100)
     marca = models.CharField(max_length=100)
     any_model = models.IntegerField()
-    #tipus_carregador = models.ManyToManyField(TipusCarregador, related_name="models_compatibles")
+    tipus_carregador = models.ManyToManyField(TipusCarregador, related_name='tipus_carregador')
 
     def __str__(self):
         return f"Model {self.marca} {self.model} ({self.any_model})"
@@ -169,7 +169,7 @@ class Report(models.Model):
         limit_choices_to={'is_admin': True}
     )
     missatge = models.TextField()
-    imatge = models.ImageField(upload_to='reports/')
+    #imatge = models.ImageField(upload_to='reports/')
     data = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -188,7 +188,7 @@ class Descomptes(models.Model):
     id_descompte = models.CharField(max_length=20, primary_key=True)
     nom = models.CharField(max_length=100)
     descripcio = models.TextField()
-    icona = models.ImageField(upload_to='icones/')
+    #icona = models.ImageField(upload_to='icones/')
     punts_necessaris = models.IntegerField()
     usuaris = models.ManyToManyField(Usuario, through='DataDescompte', related_name="descomptes")
 
