@@ -298,17 +298,17 @@ def obtenir_preu_actual_kwh(request):
         f"?start_date={fecha_inicio}&end_date={fecha_fin}&time_trunc=hour"
     )
 
-    # *** AÑADIR ESTA CABECERA ***
+
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'application/json' # Añadir Accept por si acaso
     }
-    # ***************************
+
 
     try:
-        # *** PASAR LA CABECERA A requests.get ***
+
         response = requests.get(url, headers=headers, timeout=10)
-        # *****************************************
+
 
         response.raise_for_status()
 
