@@ -1,16 +1,14 @@
 from datetime import date, datetime, timedelta
 import json
-from urllib import request
+import math
+import requests
 
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from rest_framework import serializers
-import math
 
 from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe
 from .serializers import ( 
@@ -285,3 +283,88 @@ def punt_mes_proper(request):
         })
             
     return Response(resultat)
+
+@api_view(['GET'])
+def obtenir_preu_actual_kwh(request):
+    """Obtiene el precio del kWh en Cataluña desde la API de Red Eléctrica de España (REE)."""
+
+    hoy = datetime.now().date()
+    fecha_str = hoy.strftime("%Y-%m-%d")
+    fecha_inicio = f"{fecha_str}T00:00"
+    fecha_fin = f"{fecha_str}T23:59"
+
+    url = (
+        "https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real"
+        f"?start_date={fecha_inicio}&end_date={fecha_fin}&time_trunc=hour"
+    )
+
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json' # Añadir Accept por si acaso
+    }
+
+
+    try:
+
+        response = requests.get(url, headers=headers, timeout=10)
+
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        precios_kwh_hoy = []
+        if "included" in data and data["included"]:
+            indicador_precios = data["included"][0]
+            if "attributes" in indicador_precios and "values" in indicador_precios["attributes"]:
+                valores_horarios = indicador_precios["attributes"]["values"]
+
+                for valor_hora in valores_horarios:
+                    precio_mwh = valor_hora.get("value")
+                    timestamp_str = valor_hora.get("datetime")
+
+                    if precio_mwh is not None and timestamp_str:
+                        try:
+                            precio_kwh = float(precio_mwh) / 1000
+                            hora_dt = datetime.fromisoformat(timestamp_str)
+                            hora_simple = hora_dt.strftime("%H:%M")
+
+                            precios_kwh_hoy.append({
+                                "hora": hora_simple,
+                                "precio_kwh": round(precio_kwh, 5)
+                            })
+                        except (ValueError, TypeError) as e:
+                            print(f"Error procesando valor horario {valor_hora}: {e}")
+                            continue
+
+        if not precios_kwh_hoy:
+            return Response(
+                {"error": "No se encontraron datos de precios horarios para hoy en la respuesta de la API"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response({
+            "fecha": fecha_str,
+            "precios_hoy": precios_kwh_hoy,
+            "unidad": "€/kWh",
+            "fuente": "Red Eléctrica de España (REE)"
+        }, status=status.HTTP_200_OK)
+
+    except requests.Timeout:
+        return Response({"error": "Tiempo de espera agotado al conectar con la API de REE"}, status=status.HTTP_504_GATEWAY_TIMEOUT)
+    except requests.HTTPError as e:
+        error_detail = f"Error HTTP {response.status_code}"
+        try:
+            error_data = response.json()
+            if "errors" in error_data and error_data["errors"]:
+                error_detail = error_data["errors"][0].get("detail", error_detail)
+        except json.JSONDecodeError:
+            pass
+        # Devolvemos el detalle del error y el status code original del error HTTP
+        return Response({"error": f"Error al obtener datos de REE: {error_detail}"}, status=response.status_code)
+    except requests.RequestException as e:
+        return Response({"error": f"Fallo en la conexión con la API de REE: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except Exception as e:
+        print(f"Error inesperado en obtener_preus_dia_actual: {e}")
+        return Response({'error': 'Ocurrió un error inesperado en el servidor'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
