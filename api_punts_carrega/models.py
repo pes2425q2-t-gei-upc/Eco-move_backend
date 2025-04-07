@@ -66,7 +66,6 @@ class EstacioCarrega(Punt):
     gestio = models.CharField(max_length=100)
     tipus_acces = models.CharField(max_length=100)
     nplaces = models.CharField(max_length=20, null=True)
-    #nplaces_lliures = models.CharField(max_length=20,null=True)
     potencia = models.IntegerField(null=True)
     tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
