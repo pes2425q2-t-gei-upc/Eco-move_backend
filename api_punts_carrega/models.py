@@ -29,6 +29,25 @@ class Idiomas(models.TextChoices):
 
 # ---------------- MODELOS ---------------- #
 
+class Usuario(AbstractUser):
+    dni = models.CharField(max_length=20, unique=True)
+    idioma = models.CharField(max_length=20, choices=Idiomas.choices, default=Idiomas.CATALA)
+    telefon = models.CharField(max_length=15, blank=True, null=True)
+    foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
+    descripcio = models.TextField(blank=True, null=True)
+
+    # Forzamos que el email sea único y lo usamos para login
+    email = models.EmailField(unique=True)
+
+    #valorar si permitir iniciar sesion con email y/o username, mas trabajo
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+    
+    is_admin = models.BooleanField(default=False)  # Campo para distinguir administradores
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.email})"
+
 class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
     lat = models.FloatField(null=False)
@@ -103,25 +122,6 @@ class ModelCotxe(models.Model):
 
     def __str__(self):
         return f"Model {self.marca} {self.model} ({self.any_model})"
-
-class Usuario(AbstractUser):
-    dni = models.CharField(max_length=20, unique=True)
-    idioma = models.CharField(max_length=20, choices=Idiomas.choices, default=Idiomas.CATALA)
-    telefon = models.CharField(max_length=15, blank=True, null=True)
-    foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
-    descripcio = models.TextField(blank=True, null=True)
-
-    # Forzamos que el email sea único y lo usamos para login
-    email = models.EmailField(unique=True)
-
-    #valorar si permitir iniciar sesion con email y/o username, mas trabajo
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
-    
-    is_admin = models.BooleanField(default=False)  # Campo para distinguir administradores
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.email})"
 
 class Valoracio(models.Model):
     reserva = models.OneToOneField(ReservaFinalitzada, on_delete=models.CASCADE, related_name="valoracio")

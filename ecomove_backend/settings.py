@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     'django_extensions',
 ]
 
-AUTH_USER_MODEL = 'api_punts_carrega.Persona'
+AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
 
 
 MIDDLEWARE = [
