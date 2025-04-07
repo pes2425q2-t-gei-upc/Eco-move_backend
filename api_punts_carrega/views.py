@@ -1,16 +1,14 @@
 from datetime import date, datetime, timedelta
 import json
-from urllib import request
+import math
+import requests
 
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from rest_framework import serializers
-import math
 
 from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva
 from .serializers import ( 
@@ -278,10 +276,6 @@ def punt_mes_proper(request):
         })
             
     return Response(resultat)
-
-import requests
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 
 @api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
