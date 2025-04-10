@@ -289,7 +289,7 @@ def obtenir_preu_actual_kwh(request):
     """Obtiene el precio del kWh en Cataluña desde la API de Red Eléctrica de España (REE)."""
 
     hoy = datetime.now().date()
-    fecha_str = hoy.strftime("%Y-%m-%d")
+    fecha_str = hoy.strftime("%d/%m/%Y")
     fecha_inicio = f"{fecha_str}T00:00"
     fecha_fin = f"{fecha_str}T23:59"
 
