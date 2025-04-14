@@ -10,7 +10,7 @@ from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 
-from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe
+from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe,PuntEmergencia
 from .serializers import ( 
     PuntSerializer,
     EstacioCarregaSerializer, 
@@ -18,8 +18,52 @@ from .serializers import (
     TipusCarregadorSerializer,
     ReservaSerializer,
     VehicleSerializer,
-    ModelCotxeSerializer
+    ModelCotxeSerializer,
+    PuntEmergenciaSerializer
 )
+
+
+DISTANCIA_MAXIMA_KM = 5
+
+class PuntEmergenciaViewSet(viewsets.ModelViewSet):
+    queryset = PuntEmergencia.objects.all()
+    serializer_class = PuntEmergenciaSerializer
+
+    @action(detail=False, methods=['get'], url_path='get_updates')
+    def ultims_punts(self, request):
+        lat_usuario = request.query_params.get('lat')
+        lng_usuario = request.query_params.get('lng')
+        
+        if not lat_usuario or not lng_usuario:
+            return Response({'error': 'Faltan parámetros de ubicación (lat, lon)'}, status=400)
+
+        lat_usuario = float(lat_usuario)
+        lng_usuario = float(lng_usuario)
+
+        puntos_cercanos = []
+        for punt in PuntEmergencia.objects.all():
+            distancia = haversine_distance(lat_usuario, lng_usuario, punt.lat, punt.lng)
+            if distancia <= DISTANCIA_MAXIMA_KM:
+                puntos_cercanos.append(punt)
+
+        serializer = PuntEmergenciaSerializer(puntos_cercanos, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['put'], url_path='modificar')
+    def modificar_punt(self, request, pk=None):
+        punt = get_object_or_404(PuntEmergencia, pk=pk)
+        serializer = PuntEmergenciaSerializer(punt, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Punt d\'emergència modificat correctament'})
+        return Response(serializer.errors, status=400)
+
+    @action(detail=True, methods=['delete'], url_path='eliminar')
+    def eliminar_punt(self, request, pk=None):
+        punt = get_object_or_404(PuntEmergencia, pk=pk)
+        punt.delete()
+        return Response({'message': 'Punt d\'emergència eliminat correctament'}, status=200)
+
 
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.all()
