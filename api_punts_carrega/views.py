@@ -333,6 +333,22 @@ def filtrar_per_velocitat(request):
 
 
 @api_view(['GET'])
+def filtrar_per_carregador(request):
+    
+    estacions = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
+    
+    
+    carregador_id = request.query_params.get('id')
+    if carregador_id is not None:
+        
+        carregador_ids = carregador_id.split(',')
+        estacions = estacions.filter(tipus_carregador__id_carregador__in=carregador_ids)
+    
+    
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
     """Obtiene el precio del kWh en Cataluña desde la API de Red Eléctrica de España (REE)."""
 
