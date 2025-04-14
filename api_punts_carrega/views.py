@@ -284,6 +284,40 @@ def punt_mes_proper(request):
             
     return Response(resultat)
 
+
+@api_view(['GET'])
+def filtrar_per_potencia(request):
+   
+    estacions = EstacioCarrega.objects.all()
+    
+
+    potencia_min = request.query_params.get('min')
+    if potencia_min is not None:
+        try:
+            potencia_min = int(potencia_min)
+            estacions = estacions.filter(potencia__gte=potencia_min)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'min' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    potencia_max = request.query_params.get('max')
+    if potencia_max is not None:
+        try:
+            potencia_max = int(potencia_max)
+            estacions = estacions.filter(potencia__lte=potencia_max)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'max' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+
 @api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
     """Obtiene el precio del kWh en Cataluña desde la API de Red Eléctrica de España (REE)."""
