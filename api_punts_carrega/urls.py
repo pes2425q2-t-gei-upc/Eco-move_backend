@@ -12,6 +12,8 @@ from .views import (
     RefugioClimaticoViewSet,
     sincronizar_refugios,
     refugios_mas_cercanos,
+    PuntEmergenciaViewSet,
+
 )
 
 router = DefaultRouter()
@@ -22,6 +24,7 @@ router.register(r'reservas', ReservaViewSet)
 router.register(r'vehicles', VehicleViewSet)
 router.register(r'models', ModelCotxeViewSet)
 router.register(r'refugios', RefugioClimaticoViewSet)
+router.register(r'punts_emergencia', PuntEmergenciaViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
