@@ -25,23 +25,6 @@ from .serializers import (
 
 DISTANCIA_MAXIMA_KM = 5
 
-def calcular_distancia(lat1, lon1, lat2, lon2):
-    R = 6371.0
-    
-    lat1 = math.radians(lat1)
-    lon1 = math.radians(lon1)
-    lat2 = math.radians(lat2)
-    lon2 = math.radians(lon2)
-    
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-
-    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    distance = R * c
-    return distance
-
 class PuntEmergenciaViewSet(viewsets.ModelViewSet):
     queryset = PuntEmergencia.objects.all()
     serializer_class = PuntEmergenciaSerializer
@@ -59,7 +42,7 @@ class PuntEmergenciaViewSet(viewsets.ModelViewSet):
 
         puntos_cercanos = []
         for punt in PuntEmergencia.objects.all():
-            distancia = calcular_distancia(lat_usuario, lng_usuario, punt.lat, punt.lng)
+            distancia = haversine_distance(lat_usuario, lng_usuario, punt.lat, punt.lng)
             if distancia <= DISTANCIA_MAXIMA_KM:
                 puntos_cercanos.append(punt)
 
