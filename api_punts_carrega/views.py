@@ -1,14 +1,17 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import json
 import math
 import requests
 
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
+from django.utils.dateparse import parse_datetime, parse_date, parse_time
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from .serializers import ReservaSerializer
 
 from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe
 from .serializers import ( 
@@ -44,7 +47,7 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
     serializer_class = EstacioCarregaSerializer
 
 
-class ReservaSerializer(serializers.ModelSerializer):
+class ReservaSerializerr(serializers.ModelSerializer):
     fecha = serializers.DateField(format='%d/%m/%Y')
     hora = serializers.TimeField(format='%H:%M')
 
@@ -62,155 +65,157 @@ class ReservaSerializer(serializers.ModelSerializer):
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
-    
-    def get_queryset(self):
-        """Filter the reservations by charging station if query param is provided."""
-        queryset = Reserva.objects.all()
-        estacio_id = self.request.query_params.get('estacio_carrega', None)
-        
-        if estacio_id:
-            queryset = queryset.filter(estacio_carrega_id_punt=estacio_id)
+    permission_classes = [permissions.IsAuthenticated]
 
-        return queryset
-        
-    @action(detail=False, methods=['post'])
+    def get_queryset(self):
+        try:
+            user = self.request.user
+            queryset = Reserva.objects.filter(usuario=user)
+        except AttributeError:
+            return Reserva.objects.none()
+
+        estacion_id = self.request.query_params.get('estacion_id')
+        if estacion_id:
+            queryset = queryset.filter(estacion__id_punt=estacion_id)
+
+        overlaps_start_str = self.request.query_params.get('overlaps_start')
+        overlaps_end_str = self.request.query_params.get('overlaps_end')
+        if overlaps_start_str and overlaps_end_str:
+            overlaps_start = parse_datetime(overlaps_start_str)
+            overlaps_end = parse_datetime(overlaps_end_str)
+            if overlaps_start and overlaps_end and overlaps_end > overlaps_start:
+                queryset = queryset.filter(hora_inicio__lt=overlaps_end, hora_fin__gt=overlaps_start)
+
+        return queryset.select_related('usuario', 'estacion')
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except serializers.ValidationError as e:
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error en create estándar: {e}")
+            return Response({"error": "Error interno al procesar la petición"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def crear(self, request):
-        data = json.loads(request.body)
-        
+        if not request.user.is_authenticated:
+            return Response({'error': 'Autenticación requerida'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return Response({'error': 'JSON inválido'}, status=status.HTTP_400_BAD_REQUEST)
+
         estacio_id = data.get('estacion')
         fecha_str = data.get('fecha')
         hora_str = data.get('hora')
         duracion_str = data.get('duracion')
 
-        try:
-            
-            try:
-                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
-            except EstacioCarrega.DoesNotExist:
-                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
-            
+        if not all([estacio_id, fecha_str, hora_str, duracion_str]):
+            return Response({'error': 'Faltan datos'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Convertir la fecha
+        try:
+            estacio = get_object_or_404(EstacioCarrega, id_punt=estacio_id)
             fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
-            
-            # Convertir la hora
-            hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
-            
-            # Convertir la duración
+            hora_inicio_time = datetime.strptime(hora_str, '%H:%M').time()
+
             if ':' in duracion_str:
-                # Formato "HH:MM:SS"
                 partes = duracion_str.split(':')
                 horas = int(partes[0])
                 minutos = int(partes[1])
                 segundos = int(partes[2]) if len(partes) > 2 else 0
                 duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
             else:
-                # Formato en segundos
                 duracion_td = timedelta(seconds=int(duracion_str))
-            
-            hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
 
-            # Verificar si hay solapamiento
-            reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha)
+            hora_inicio_dt = timezone.make_aware(datetime.combine(fecha, hora_inicio_time))
+            hora_fin_dt = hora_inicio_dt + duracion_td
 
-            placesReservades = 0
+            reservas_existentes = Reserva.objects.filter(estacion=estacio, hora_inicio__lt=hora_fin_dt, hora_fin__gt=hora_inicio_dt)
 
-            for reserva_existente in reservas_existentes:
-                hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
-                                reserva_existente.duracion).time()
-                
-                if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
-                    placesReservades += 1
-                    if placesReservades >= int(estacio.nplaces):
-                        return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
+            try:
+                n_places_disponibles = int(estacio.nplaces)
+            except (ValueError, TypeError):
+                print(f"WARN: nplaces no es numérico para estación {estacio.id_punt}. Usando 1 por defecto.")
+                n_places_disponibles = 1
 
-           
-            # Crear reserva
+            if reservas_existentes.count() >= n_places_disponibles:
+                return Response({'error': 'No hi ha places lliures...'}, status=status.HTTP_409_CONFLICT)
+
             reserva = Reserva.objects.create(
+                usuario=request.user,
                 estacion=estacio,
-                fecha=fecha,
-                hora=hora_inicio,
-                duracion=duracion_td
+                hora_inicio=hora_inicio_dt,
+                hora_fin=hora_fin_dt
             )
 
-            
-            return Response({'message': 'Reserva creada amb éxit'}, status=201)
+            serializer_response = self.get_serializer(reserva)
+            return Response(serializer_response.data, status=status.HTTP_201_CREATED)
 
         except EstacioCarrega.DoesNotExist:
-            return Response({'error': 'Estació no trobada'}, status=404)
+            return Response({'error': 'Estació no trobada'}, status=status.HTTP_404_NOT_FOUND)
+        except (ValueError, TypeError) as e:
+            return Response({'error': f'Error formato datos: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error creando reserva (acción): {e}")
+            return Response({'error': 'Error intern'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @action(detail=True, methods=['put'])
+    @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
     def modificar(self, request, pk=None):
-        """Edit a reservation."""
-        reserva = get_object_or_404(Reserva, id=pk)
+        try:
+            reserva = get_object_or_404(Reserva, id=pk, usuario=request.user)
+        except Reserva.DoesNotExist:
+            return Response({'error': 'Reserva no encontrada o sin permiso'}, status=status.HTTP_404_NOT_FOUND)
+
         data = request.data
-        
-        # Get current values or updated values from request
-        fecha = reserva.fecha
-        hora_inicio = reserva.hora
-        duracion_td = reserva.duracion
-        estacio = reserva.estacion
-        
-        # Update values if provided in request
-        if 'fecha' in data:
-            fecha_str = data.get('fecha')
-            fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
-        
-        if 'hora' in data:
-            hora_str = data.get('hora')
-            if isinstance(hora_str, str):
-                hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
-            else:
-                hora_inicio = hora_str
-        
-        if 'duracion' in data:
-            duracion_str = data.get('duracion')
-            if isinstance(duracion_str, str):
-                if ':' in duracion_str:
-                    # Format "HH:MM:SS"
-                    partes = duracion_str.split(':')
-                    horas = int(partes[0])
-                    minutos = int(partes[1])
-                    segundos = int(partes[2]) if len(partes) > 2 else 0
-                    duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
-                else:
-                    # Format in seconds
-                    duracion_td = timedelta(seconds=int(duracion_str))
-            else:
-                duracion_td = duracion_str
-        
-        # Calculate end time
-        hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
-        
-        # Check for overlapping reservations
-        reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha).exclude(id=pk)
-        
-        placesReservades = 0
 
-        for reserva_existente in reservas_existentes:
-            hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) + 
-                            reserva_existente.duracion).time()
-            
-            if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
-                placesReservades += 1
-                if placesReservades >= int(estacio.nplaces):
-                    return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
-                
-        
-        # Update reservation
-        reserva.fecha = fecha
-        reserva.hora = hora_inicio
-        reserva.duracion = duracion_td
-        reserva.save()
-    
-        return Response({'message': 'Reserva actualizada con éxito'}, status=200)
+        try:
+            # Parsear datos (usando parse_date/parse_time para flexibilidad)
+            fecha_str = data.get('fecha', reserva.hora_inicio.strftime('%Y-%m-%d'))
+            fecha = parse_date(fecha_str)
+            if fecha is None: raise ValueError(f"Formato de fecha inválido: '{fecha_str}'")
 
-    @action(detail=True, methods=['delete'])
-    def eliminar(self, request, pk=None):
-        """Delete a reservation."""
-        reserva = get_object_or_404(Reserva, id=pk)
-        reserva.delete()
-        return Response({'message': 'Reserva eliminada con éxito'}, status=200)
+            hora_str = data.get('hora', reserva.hora_inicio.strftime('%H:%M'))
+            hora_inicio_time = parse_time(hora_str)
+            if hora_inicio_time is None: raise ValueError(f"Formato de hora inválido: '{hora_str}'")
+
+            # Parsear duración (tu lógica)
+            current_duration = reserva.duracion
+            duracion_str = data.get('duracion', str(current_duration) if current_duration else None)
+            if duracion_str is None: return Response({'error': 'Falta la duración'}, status=status.HTTP_400_BAD_REQUEST)
+            if isinstance(duracion_str, timedelta): duracion_td = duracion_str
+            elif ':' in duracion_str: partes = duracion_str.split(':'); horas, minutos = int(partes[0]), int(partes[1]); segundos = int(partes[2]) if len(partes) > 2 else 0; duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+            else: duracion_td = timedelta(seconds=int(duracion_str))
+
+            # --- Recalcular DateTime de inicio y fin (Usando django.utils.timezone) ---
+            naive_datetime = datetime.combine(fecha, hora_inicio_time)
+            hora_inicio_dt = timezone.make_aware(naive_datetime) # <--- CORREGIDO
+            hora_fin_dt = hora_inicio_dt + duracion_td
+
+            # ... (resto de la validación de solapamiento y guardado) ...
+            reservas_existentes = Reserva.objects.filter(estacion=reserva.estacion, hora_inicio__lt=hora_fin_dt, hora_fin__gt=hora_inicio_dt).exclude(id=pk)
+            try: n_places_disponibles = int(reserva.estacion.nplaces)
+            except(ValueError, TypeError): n_places_disponibles=1
+            if reservas_existentes.count() >= n_places_disponibles: return Response({'error': 'No hi ha places lliures...'}, status=status.HTTP_409_CONFLICT)
+            reserva.hora_inicio = hora_inicio_dt; reserva.hora_fin = hora_fin_dt; reserva.save()
+            serializer = self.get_serializer(reserva)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except (ValueError, TypeError) as e:
+            return Response({'error': f'Error en formato de datos: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error modificando reserva {pk}: {e}")
+            return Response({'error': 'Error intern servidor'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     # Earth radius in km

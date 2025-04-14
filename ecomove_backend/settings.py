@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api_punts_carrega',
     'rest_framework',
+    'rest_framework.authtoken',
     'django_extensions',
 ]
 

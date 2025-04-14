@@ -1,7 +1,10 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+
 
 
 # ---------------- ENUMS ---------------- #
@@ -65,7 +68,7 @@ class Punt(models.Model):
 class EstacioCarrega(Punt):
     gestio = models.CharField(max_length=100)
     tipus_acces = models.CharField(max_length=100)
-    nplaces = models.CharField(max_length=20, null=True)
+    nplaces = models.PositiveIntegerField(default=1, help_text="Número de vehículos que pueden cargar simultáneamente")
     potencia = models.IntegerField(null=True)
     tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
@@ -83,16 +86,54 @@ class TipusCarregador(models.Model):
         return f"{self.nom_tipus} - {self.tipus_connector} ({self.tipus_corrent})"
 
 class Reserva(models.Model):
-    estacion = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name='reservas')
-    fecha = models.DateField()
-    hora = models.TimeField()
-    duracion = models.DurationField(
-        help_text="Reserva mínima 15 min, Reserva máxima 24 h",
-        validators=[MinValueValidator(timedelta(minutes=15)), MaxValueValidator(timedelta(hours=24))]
-    )
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reservas')
+    estacion = models.ForeignKey('EstacioCarrega', on_delete=models.CASCADE, related_name='reservas')
+    hora_inicio = models.DateTimeField()
+    hora_fin = models.DateTimeField()
+    google_calendar_event_id = models.CharField(max_length=255, null=True, blank=True, editable=False)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    modificado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['hora_inicio']
 
     def __str__(self):
         return f"Reserva en {self.estacion} el {self.fecha} a las {self.hora} por {self.duracion}"
+
+    @property
+    def duracion(self):
+        if self.hora_fin and self.hora_inicio and self.hora_fin > self.hora_inicio:
+            return self.hora_fin - self.hora_inicio
+        return None
+
+    def clean(self):
+        if self.hora_inicio and self.hora_fin:
+            if self.hora_fin <= self.hora_inicio:
+                raise ValidationError("La hora de fin debe ser posterior a la hora de inicio.")
+            calculated_duration = self.hora_fin - self.hora_inicio
+            min_duration = timedelta(minutes=15)
+            max_duration = timedelta(hours=24)
+            if not (min_duration <= calculated_duration <= max_duration):
+                raise ValidationError(f"La duración de la reserva ({calculated_duration}) debe estar entre {min_duration} y {max_duration}.")
+
+        if self.estacion_id and self.hora_inicio and self.hora_fin:
+            try:
+                solapamientos = Reserva.objects.filter(
+                    estacion_id=self.estacion_id,
+                    hora_inicio__lt=self.hora_fin,
+                    hora_fin__gt=self.hora_inicio
+                )
+                if self.pk:
+                    solapamientos = solapamientos.exclude(pk=self.pk)
+
+                n_places_disponibles = EstacioCarrega.objects.get(pk=self.estacion_id).nplaces
+                if solapamientos.count() >= n_places_disponibles:
+                    raise ValidationError(f"Conflicto: No hay plazas ({solapamientos.count()}/{n_places_disponibles}) en '{self.estacion_id}' para este horario.")
+            except EstacioCarrega.DoesNotExist:
+                raise ValidationError("La estación especificada no existe.")
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
 
 class ReservaFinalitzada(models.Model):
     reserva = models.OneToOneField(Reserva, on_delete=models.CASCADE, related_name="finalitzada")
