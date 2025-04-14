@@ -79,8 +79,8 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
         dia_str = self.request.query_params.get('dia')
         if dia_str:
-            dia = parse_date(dia_str)
-            if dia:
+            try:
+                dia = datetime.strptime(dia_str, '%d/%m/%Y').date()
                 start_of_day = timezone.make_aware(datetime.combine(dia, time.min))
                 end_of_day = timezone.make_aware(datetime.combine(dia, time.max))
                 queryset = queryset.filter(
@@ -88,6 +88,9 @@ class ReservaViewSet(viewsets.ModelViewSet):
                     hora_fin__gt=start_of_day - timedelta(microseconds=1)
                 )
                 return queryset.select_related('usuario', 'estacion')
+            except ValueError:
+                print(f"WARN: Formato de fecha inválido para ?dia= : {dia_str}. Se esperaba DD/MM/YYYY.")
+                pass
 
         overlaps_start_str = self.request.query_params.get('overlaps_start')
         overlaps_end_str = self.request.query_params.get('overlaps_end')
