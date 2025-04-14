@@ -141,7 +141,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
-        """Edit a reservation."""
+        
         reserva = get_object_or_404(Reserva, id=pk)
         data = request.data
         
@@ -207,7 +207,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['delete'])
     def eliminar(self, request, pk=None):
-        """Delete a reservation."""
+        
         reserva = get_object_or_404(Reserva, id=pk)
         reserva.delete()
         return Response({'message': 'Reserva eliminada con éxito'}, status=200)
@@ -314,6 +314,20 @@ def filtrar_per_potencia(request):
             )
     
 
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def filtrar_per_velocitat(request):
+    
+    estacions = EstacioCarrega.objects.all()
+    
+    velocitat = request.query_params.get('velocitat')
+    if velocitat is not None:
+        # los tipos de velocidades se separan por comas en la query
+        velocitats = velocitat.split(',')
+        estacions = estacions.filter(tipus_velocitat__in=velocitats)
+    
     serializer = EstacioCarregaSerializer(estacions, many=True)
     return Response(serializer.data)
 

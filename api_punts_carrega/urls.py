@@ -10,6 +10,7 @@ from .views import (
     VehicleViewSet,
     ModelCotxeViewSet,
     filtrar_per_potencia,
+    filtrar_per_velocitat,
 )
 
 router = DefaultRouter()
@@ -24,4 +25,5 @@ urlpatterns = [
     path('punt_mes_proper/', punt_mes_proper, name='punt_mes_proper'),
     path('preu_kwh/', obtenir_preu_actual_kwh, name='obtenir_preu_actual_kwh'),
     path('filtrar_per_potencia/', filtrar_per_potencia, name='filtrar_per_potencia'),
+    path('filtrar_per_velocitat/', filtrar_per_velocitat, name='filtrar_per_velocitat'),
 ]
