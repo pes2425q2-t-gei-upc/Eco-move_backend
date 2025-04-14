@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone, time
 import json
 import math
 import requests
@@ -66,7 +66,6 @@ class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
     permission_classes = [permissions.IsAuthenticated]
-
     def get_queryset(self):
         try:
             user = self.request.user
@@ -78,15 +77,30 @@ class ReservaViewSet(viewsets.ModelViewSet):
         if estacion_id:
             queryset = queryset.filter(estacion__id_punt=estacion_id)
 
+        dia_str = self.request.query_params.get('dia')
+        if dia_str:
+            dia = parse_date(dia_str)
+            if dia:
+                start_of_day = timezone.make_aware(datetime.combine(dia, time.min))
+                end_of_day = timezone.make_aware(datetime.combine(dia, time.max))
+                queryset = queryset.filter(
+                    hora_inicio__lt=end_of_day + timedelta(microseconds=1),
+                    hora_fin__gt=start_of_day - timedelta(microseconds=1)
+                )
+                return queryset.select_related('usuario', 'estacion')
+
         overlaps_start_str = self.request.query_params.get('overlaps_start')
         overlaps_end_str = self.request.query_params.get('overlaps_end')
         if overlaps_start_str and overlaps_end_str:
             overlaps_start = parse_datetime(overlaps_start_str)
             overlaps_end = parse_datetime(overlaps_end_str)
             if overlaps_start and overlaps_end and overlaps_end > overlaps_start:
-                queryset = queryset.filter(hora_inicio__lt=overlaps_end, hora_fin__gt=overlaps_start)
+                queryset = queryset.filter(
+                    hora_inicio__lt=overlaps_end, hora_fin__gt=overlaps_start
+                )
 
         return queryset.select_related('usuario', 'estacion')
+
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
