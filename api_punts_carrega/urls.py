@@ -13,7 +13,9 @@ from .views import (
     sincronizar_refugios,
     refugios_mas_cercanos,
     PuntEmergenciaViewSet,
-
+    filtrar_per_potencia,
+    filtrar_per_velocitat,
+    filtrar_per_carregador,
 )
 
 router = DefaultRouter()
@@ -32,4 +34,7 @@ urlpatterns = [
     path('preu_kwh/', obtenir_preu_actual_kwh, name='obtenir_preu_actual_kwh'),
     path('sincronizar_refugios/', sincronizar_refugios, name='sincronizar_refugios'),
     path('refugios_mas_cercanos/', refugios_mas_cercanos, name='refugios_mas_cercanos'),
+    path('filtrar_per_potencia/', filtrar_per_potencia, name='filtrar_per_potencia'),
+    path('filtrar_per_velocitat/', filtrar_per_velocitat, name='filtrar_per_velocitat'),
+    path('filtrar_per_carregador/', filtrar_per_carregador, name='filtrar_per_carregador'),
 ]
