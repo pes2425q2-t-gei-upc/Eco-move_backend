@@ -185,7 +185,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
-        """Edit a reservation."""
+        
         reserva = get_object_or_404(Reserva, id=pk)
         data = request.data
         
@@ -251,7 +251,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['delete'])
     def eliminar(self, request, pk=None):
-        """Delete a reservation."""
+        
         reserva = get_object_or_404(Reserva, id=pk)
         reserva.delete()
         return Response({'message': 'Reserva eliminada con éxito'}, status=200)
@@ -327,6 +327,70 @@ def punt_mes_proper(request):
         })
             
     return Response(resultat)
+
+
+@api_view(['GET'])
+def filtrar_per_potencia(request):
+   
+    estacions = EstacioCarrega.objects.all()
+    
+
+    potencia_min = request.query_params.get('min')
+    if potencia_min is not None:
+        try:
+            potencia_min = int(potencia_min)
+            estacions = estacions.filter(potencia__gte=potencia_min)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'min' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    potencia_max = request.query_params.get('max')
+    if potencia_max is not None:
+        try:
+            potencia_max = int(potencia_max)
+            estacions = estacions.filter(potencia__lte=potencia_max)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'max' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def filtrar_per_velocitat(request):
+    
+    estacions = EstacioCarrega.objects.all()
+    
+    velocitat = request.query_params.get('velocitat')
+    if velocitat is not None:
+        # los tipos de velocidades se separan por comas en la query
+        velocitats = velocitat.split(',')
+        estacions = estacions.filter(tipus_velocitat__in=velocitats)
+    
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def filtrar_per_carregador(request):
+    
+    estacions = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
+    
+    
+    carregador_id = request.query_params.get('id')
+    if carregador_id is not None:
+        
+        carregador_ids = carregador_id.split(',')
+        estacions = estacions.filter(tipus_carregador__id_carregador__in=carregador_ids)
+    
+    
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
