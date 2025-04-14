@@ -90,6 +90,7 @@ class Reserva(models.Model):
         help_text="Reserva mínima 15 min, Reserva máxima 24 h",
         validators=[MinValueValidator(timedelta(minutes=15)), MaxValueValidator(timedelta(hours=24))]
     )
+    vehicle = models.ForeignKey('Vehicle', on_delete=models.SET_NULL, null=True, blank=True, related_name='reservas')
 
     def __str__(self):
         return f"Reserva en {self.estacion} el {self.fecha} a las {self.hora} por {self.duracion}"
