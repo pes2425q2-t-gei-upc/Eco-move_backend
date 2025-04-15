@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
-from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia
+from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario
 
 from .serializers import ( 
     PuntSerializer,
@@ -20,7 +20,8 @@ from .serializers import (
     VehicleSerializer,
     ModelCotxeSerializer,
     RefugioClimaticoSerializer,
-    PuntEmergenciaSerializer
+    PuntEmergenciaSerializer,
+    UsuarioSerializer,
 
 )
 
@@ -575,3 +576,7 @@ def obtenir_preu_actual_kwh(request):
     except Exception as e:
         print(f"Error inesperado en obtener_preus_dia_actual: {e}")
         return Response({'error': 'Ocurrió un error inesperado en el servidor'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UsuarioViewSet(viewsets.ModelViewSet):
+    queryset = Usuario.objects.all()
+    serializer_class = UsuarioSerializer
