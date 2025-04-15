@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404, render
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from .models import  (
     PuntEmergencia,
@@ -62,8 +63,20 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path="my_chats")
     def my_chats(self, request):
         user = request.user
-        chat = chat.objects.filter(creador=user) | chat.objects.filter(receptor=user)
-        serializer = self.get_serializer(chat.distinct(), many=True)
+        chats = Chat.objects.filter(creador=user) | Chat.objects.filter(receptor=user)
+        serializer = self.get_serializer(chats.distinct(), many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'], url_path="messages", name="chat-get-messages")
+    def get_messages(self, request, pk=None):
+        chat = get_object_or_404(Chat, pk=pk)
+        
+        # Ensure that the sender is part of the chat
+        if self.request.user not in [chat.creador, chat.receptor]:
+            raise PermissionDenied("You are not part of this chat.")
+        
+        messages = chat.missatges.all().order_by('timestamp')
+        serializer = MessagesSerializer(messages, many=True)
         return Response(serializer.data)
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -75,10 +88,16 @@ class MessageViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # assume chatid
         chat_id = self.request.data.get("chat")
-        chat = self.get_object(Chat, id=chat_id)
+        chat = get_object_or_404(Chat, id=chat_id)
         
         # Ensure that the sender is part of the chat
         if self.request.user not in [chat.creador, chat.receptor]:
             raise PermissionDenied("You are not part of this chat.")
         
-        serializer.save(remitent=self.request.user, chat=chat)
+        serializer.save(sender=self.request.user, chat=chat)
+        
+    def partial_update(self, request, *args, **kwargs):
+        if 'is_read' in request.data and request.data['is_read'] is False:
+            raise ValidationError("Cannot mark a message as unread.")
+
+        return super().partial_update(request, *args, **kwargs)
