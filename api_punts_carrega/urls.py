@@ -16,6 +16,7 @@ from .views import (
     filtrar_per_potencia,
     filtrar_per_velocitat,
     filtrar_per_carregador,
+    UsuarioViewSet,
 )
 
 router = DefaultRouter()
@@ -27,6 +28,7 @@ router.register(r'vehicles', VehicleViewSet)
 router.register(r'models', ModelCotxeViewSet)
 router.register(r'refugios', RefugioClimaticoViewSet)
 router.register(r'punts_emergencia', PuntEmergenciaViewSet)
+router.register(r'usuari', UsuarioViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
