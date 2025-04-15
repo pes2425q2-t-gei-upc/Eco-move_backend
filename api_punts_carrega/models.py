@@ -38,7 +38,7 @@ class Usuario(AbstractUser):
 
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
-
+    
     #valorar si permitir iniciar sesion con email y/o username, mas trabajo
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

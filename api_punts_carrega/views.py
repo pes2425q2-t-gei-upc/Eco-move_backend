@@ -340,8 +340,10 @@ class ReservaViewSet(viewsets.ModelViewSet):
             else:
                 duracion_td = duracion_str
         
+        vehicle_matricula = None
         if 'vehicle' in data:
             vehicle_matricula = data.get('vehicle')
+        
         if vehicle_matricula:
             try:
                 vehicle = Vehicle.objects.get(matricula=vehicle_matricula)
