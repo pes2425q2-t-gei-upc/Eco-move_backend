@@ -225,6 +225,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
         fecha_str = data.get('fecha')
         hora_str = data.get('hora')
         duracion_str = data.get('duracion')
+        vehicle_matricula = data.get('vehicle')
 
         try:
             
@@ -268,13 +269,28 @@ class ReservaViewSet(viewsets.ModelViewSet):
                     if placesReservades >= int(estacio.nplaces):
                         return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
 
+
+            vehicle = None
+            if vehicle_matricula:
+                try:
+                    vehicle = Vehicle.objects.get(matricula=vehicle_matricula)
+                except Vehicle.DoesNotExist:
+                    return Response({'error': 'Vehicle no trobat'}, status=404)
+                
+                
+                vehicle_carregadors = set(vehicle.model_cotxe.tipus_carregador.all().values_list('id_carregador', flat=True))
+                estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
+                
+                if not vehicle_carregadors.intersection(estacio_carregadors):
+                    return Response({'error': 'El vehicle no és compatible amb aquesta estació de càrrega'}, status=400)
            
-            # Crear reserva
+            
             reserva = Reserva.objects.create(
                 estacion=estacio,
                 fecha=fecha,
                 hora=hora_inicio,
-                duracion=duracion_td
+                duracion=duracion_td,
+                vehicle=vehicle
             )
 
             
@@ -289,13 +305,14 @@ class ReservaViewSet(viewsets.ModelViewSet):
         reserva = get_object_or_404(Reserva, id=pk)
         data = request.data
         
-        # Get current values or updated values from request
+       
         fecha = reserva.fecha
         hora_inicio = reserva.hora
         duracion_td = reserva.duracion
         estacio = reserva.estacion
+        vehicle = reserva.vehicle
         
-        # Update values if provided in request
+        
         if 'fecha' in data:
             fecha_str = data.get('fecha')
             fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
@@ -323,6 +340,23 @@ class ReservaViewSet(viewsets.ModelViewSet):
             else:
                 duracion_td = duracion_str
         
+        vehicle_matricula = None
+        if 'vehicle' in data:
+            vehicle_matricula = data.get('vehicle')
+        
+        if vehicle_matricula:
+            try:
+                vehicle = Vehicle.objects.get(matricula=vehicle_matricula)
+                
+                # Verificar compatibilidad entre el vehículo y la estación de carga
+                vehicle_carregadors = set(vehicle.model_cotxe.tipus_carregador.all().values_list('id_carregador', flat=True))
+                estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
+                
+                if not vehicle_carregadors.intersection(estacio_carregadors):
+                    return Response({'error': 'El vehicle no és compatible amb aquesta estació de càrrega'}, status=400)
+            except Vehicle.DoesNotExist:
+                return Response({'error': 'Vehicle no trobat'}, status=404)
+            
         # Calculate end time
         hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
         
@@ -339,12 +373,16 @@ class ReservaViewSet(viewsets.ModelViewSet):
                 placesReservades += 1
                 if placesReservades >= int(estacio.nplaces):
                     return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
-                
+        
+        
+        else:
+            vehicle = None
         
         # Update reservation
         reserva.fecha = fecha
         reserva.hora = hora_inicio
         reserva.duracion = duracion_td
+        reserva.vehicle = vehicle
         reserva.save()
     
         return Response({'message': 'Reserva actualizada con éxito'}, status=200)
