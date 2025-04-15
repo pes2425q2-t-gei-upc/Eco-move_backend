@@ -135,13 +135,12 @@ class Valoracio(models.Model):
         return f"Valoració {self.puntuat}/5"
 
 #quiza deberia heredar de Punt (debatible)
-class PuntEmergencia(models.Model):
-    id_emergencia = models.CharField(max_length=20, primary_key=True)
+class PuntEmergencia(Punt):
     titol = models.CharField(max_length=100)
     descripcio = models.TextField()
     actiu = models.BooleanField(default=True)
-    lat = models.FloatField(null=False)
-    lng = models.FloatField(null=False)
+    creat_per = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="punts_emergencia_creats")
+    data_creacio = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return f"Emergència: {self.titol}"
@@ -206,3 +205,11 @@ class DataDescompte(models.Model):
     
     class Meta:
         unique_together = ('usuari', 'descompte')
+
+
+class RefugioClimatico(Punt):
+    nombre = models.CharField(max_length=255)
+    numero_calle = models.CharField(max_length=20, null=True, blank=True)
+    
+    def __str__(self):
+        return f"Refugio {self.nombre} - {self.lat}, {self.lng}"

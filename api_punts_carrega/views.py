@@ -9,8 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario
 
-from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe
 from .serializers import ( 
     PuntSerializer,
     EstacioCarregaSerializer, 
@@ -18,8 +18,55 @@ from .serializers import (
     TipusCarregadorSerializer,
     ReservaSerializer,
     VehicleSerializer,
-    ModelCotxeSerializer
+    ModelCotxeSerializer,
+    RefugioClimaticoSerializer,
+    PuntEmergenciaSerializer,
+    UsuarioSerializer,
+
 )
+
+
+DISTANCIA_MAXIMA_KM = 5
+
+class PuntEmergenciaViewSet(viewsets.ModelViewSet):
+    queryset = PuntEmergencia.objects.all()
+    serializer_class = PuntEmergenciaSerializer
+
+    @action(detail=False, methods=['get'], url_path='get_updates')
+    def ultims_punts(self, request):
+        lat_usuario = request.query_params.get('lat')
+        lng_usuario = request.query_params.get('lng')
+        
+        if not lat_usuario or not lng_usuario:
+            return Response({'error': 'Faltan parámetros de ubicación (lat, lon)'}, status=400)
+
+        lat_usuario = float(lat_usuario)
+        lng_usuario = float(lng_usuario)
+
+        puntos_cercanos = []
+        for punt in PuntEmergencia.objects.all():
+            distancia = haversine_distance(lat_usuario, lng_usuario, punt.lat, punt.lng)
+            if distancia <= DISTANCIA_MAXIMA_KM:
+                puntos_cercanos.append(punt)
+
+        serializer = PuntEmergenciaSerializer(puntos_cercanos, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['put'], url_path='modificar')
+    def modificar_punt(self, request, pk=None):
+        punt = get_object_or_404(PuntEmergencia, pk=pk)
+        serializer = PuntEmergenciaSerializer(punt, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Punt d\'emergència modificat correctament'})
+        return Response(serializer.errors, status=400)
+
+    @action(detail=True, methods=['delete'], url_path='eliminar')
+    def eliminar_punt(self, request, pk=None):
+        punt = get_object_or_404(PuntEmergencia, pk=pk)
+        punt.delete()
+        return Response({'message': 'Punt d\'emergència eliminat correctament'}, status=200)
+
 
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.all()
@@ -58,6 +105,103 @@ class ReservaSerializer(serializers.ModelSerializer):
         representation['hora'] = instance.hora.strftime('%H:%M')
         return representation
 
+class RefugioClimaticoViewSet(viewsets.ModelViewSet):
+    queryset = RefugioClimatico.objects.all()
+    serializer_class = RefugioClimaticoSerializer
+
+@api_view(['GET'])
+def sincronizar_refugios(request):
+    try:
+        
+        response = requests.get('http://nattech.fib.upc.edu:40430/api/refugios/listar/', timeout=10)
+        response.raise_for_status()
+        
+        refugios_data = response.json()
+        contador_nuevos = 0
+        contador_actualizados = 0
+        
+        for refugio_data in refugios_data:
+            
+            refugio_id = refugio_data['id']
+            
+            # Intentar encontrar el refugio existente o crear uno nuevo
+            refugio, created = RefugioClimatico.objects.update_or_create(
+                id_punt=refugio_id,
+                defaults={
+                    'nombre': refugio_data['nombre'],
+                    'lat': float(refugio_data['latitud']),
+                    'lng': float(refugio_data['longitud']),
+                    'direccio': refugio_data['direccion'],
+                    'numero_calle': refugio_data['numero_calle'],
+                }
+            )
+            
+            if created:
+                contador_nuevos += 1
+            else:
+                contador_actualizados += 1
+        
+        return Response({
+            'mensaje': f'Sincronización completada. {contador_nuevos} refugios nuevos, {contador_actualizados} actualizados.',
+            'total_refugios': RefugioClimatico.objects.count()
+        }, status=status.HTTP_200_OK)
+        
+    except requests.Timeout:
+        return Response({"error": "Tiempo de espera agotado al conectar con la API de refugios"}, 
+                       status=status.HTTP_504_GATEWAY_TIMEOUT)
+    except requests.HTTPError as e:
+        return Response({"error": f"Error HTTP {e.response.status_code} al obtener datos de refugios"}, 
+                       status=e.response.status_code)
+    except requests.RequestException as e:
+        return Response({"error": f"Error de conexión con la API de refugios: {str(e)}"}, 
+                       status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except Exception as e:
+        print(f"Error inesperado en sincronizar_refugios: {e}")
+        return Response({'error': 'Ocurrió un error inesperado en el servidor'}, 
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def refugios_mas_cercanos(request):
+    
+    lat = request.query_params.get('lat')
+    lng = request.query_params.get('lng')
+    
+    if not lat or not lng:
+        return Response(
+            {"error": "Se requieren los parámetros 'lat' y 'lng'"},
+            status=400
+        )
+    
+    try:
+        lat = float(lat)
+        lng = float(lng)
+    except ValueError:
+        return Response(
+            {"error": "Los valores de 'lat' y 'lng' no son números"},
+            status=404
+        )
+        
+    refugios = RefugioClimatico.objects.all()
+    
+    distancias = []
+    
+    for refugio in refugios:      
+        if refugio.lat is not None and refugio.lng is not None:
+            distance = haversine_distance(lat, lng, refugio.lat, refugio.lng)
+            distancias.append((refugio, distance))
+
+    distancias = sorted(distancias, key=lambda x: x[1])
+    distancias = distancias[:60]  # Limitamos a los 60 más cercanos
+    
+    resultado = []
+    
+    for refugio, distance in distancias:
+        resultado.append({
+            "refugio": RefugioClimaticoSerializer(refugio).data,
+            "distancia_km": distance,
+        })
+            
+    return Response(resultado)
 
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
@@ -157,7 +301,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
-        """Edit a reservation."""
+        
         reserva = get_object_or_404(Reserva, id=pk)
         data = request.data
         
@@ -243,7 +387,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['delete'])
     def eliminar(self, request, pk=None):
-        """Delete a reservation."""
+        
         reserva = get_object_or_404(Reserva, id=pk)
         reserva.delete()
         return Response({'message': 'Reserva eliminada con éxito'}, status=200)
@@ -319,6 +463,70 @@ def punt_mes_proper(request):
         })
             
     return Response(resultat)
+
+
+@api_view(['GET'])
+def filtrar_per_potencia(request):
+   
+    estacions = EstacioCarrega.objects.all()
+    
+
+    potencia_min = request.query_params.get('min')
+    if potencia_min is not None:
+        try:
+            potencia_min = int(potencia_min)
+            estacions = estacions.filter(potencia__gte=potencia_min)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'min' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    potencia_max = request.query_params.get('max')
+    if potencia_max is not None:
+        try:
+            potencia_max = int(potencia_max)
+            estacions = estacions.filter(potencia__lte=potencia_max)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'max' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def filtrar_per_velocitat(request):
+    
+    estacions = EstacioCarrega.objects.all()
+    
+    velocitat = request.query_params.get('velocitat')
+    if velocitat is not None:
+        # los tipos de velocidades se separan por comas en la query
+        velocitats = velocitat.split(',')
+        estacions = estacions.filter(tipus_velocitat__in=velocitats)
+    
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def filtrar_per_carregador(request):
+    
+    estacions = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
+    
+    
+    carregador_id = request.query_params.get('id')
+    if carregador_id is not None:
+        
+        carregador_ids = carregador_id.split(',')
+        estacions = estacions.filter(tipus_carregador__id_carregador__in=carregador_ids)
+    
+    
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
@@ -404,3 +612,7 @@ def obtenir_preu_actual_kwh(request):
     except Exception as e:
         print(f"Error inesperado en obtener_preus_dia_actual: {e}")
         return Response({'error': 'Ocurrió un error inesperado en el servidor'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UsuarioViewSet(viewsets.ModelViewSet):
+    queryset = Usuario.objects.all()
+    serializer_class = UsuarioSerializer
