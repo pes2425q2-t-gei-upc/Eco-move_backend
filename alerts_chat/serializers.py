@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Missatge, Chat
+from .models import Missatge, Chat, PuntEmergencia
 
 class ChatSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,10 +8,11 @@ class ChatSerializer(serializers.ModelSerializer):
         
 class AlertSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Missatge
+        model = PuntEmergencia
         fields = '__all__'
         
 class MessagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Missatge
         fields = '__all__'
+        read_only_fields = ['id_emergencia', 'timestamp', 'sender']
