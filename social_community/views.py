@@ -1,4 +1,5 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from .models import  (
     Missatge,
     Chat,
 )
+from api_punts_carrega.models import Usuario
 from .serializers import ( 
     ChatSerializer,
     AlertSerializer,
@@ -40,8 +42,8 @@ class ChatViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     # Create a new chat from an alert
-    @action(detail=True, methods=['post'], url_path='create_chat')
-    def create_chat(self, request, pk=None):
+    @action(detail=True, methods=['post'], url_path='create_alert_chat')
+    def create_alert_chat(self, request, pk=None):
         alert = get_object_or_404(PuntEmergencia, pk=pk)
         
         # Check that the alert is active
@@ -57,6 +59,33 @@ class ChatViewSet(viewsets.ModelViewSet):
             creador=request.user,
             receptor=alert.sender,
         )
+        serializer = self.get_serializer(chat)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    # Start a chat with another user
+    @action(detail=False, methods=['post'], url_path='create_chat')
+    def create_chat(self, request):
+        receptor_email = request.data.get("receptor_email")
+        if not receptor_email:
+            return Response({"error": "Missing 'receptor_email'."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if receptor_email == request.user.email:
+            return Response({"error": "Cannot create a chat with yourself."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        receptor = get_object_or_404(Usuario, email=receptor_email)
+        
+        # Prevent duplicate chats between users that do not involve an alert
+        existing = Chat.objects.filter(
+            alerta__isnull=True
+        ).filter(
+            Q(creador=request.user, receptor=receptor) | 
+            Q(creador=receptor, receptor=request.user)
+        ).first()
+        
+        if existing:
+            return Response({"error": "Chat already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        chat = Chat.objects.create(creador=request.user, receptor=receptor, alerta=None)
         serializer = self.get_serializer(chat)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     

@@ -13,6 +13,7 @@ class Missatge(models.Model):
     def __str__(self):
         return f"{self.remitent} dice: {self.text[:30]}"
     
+    
 class PuntEmergencia(models.Model):
     id_emergencia = models.AutoField(primary_key=True)
     sender = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="emergencies_sent")
@@ -27,11 +28,13 @@ class PuntEmergencia(models.Model):
         return f"Emergència: {self.titol}"
 
 class Chat(models.Model):
-    alerta = models.ForeignKey(PuntEmergencia, on_delete=models.CASCADE, related_name="chats")
+    alerta = models.ForeignKey(PuntEmergencia, on_delete=models.CASCADE, related_name="chats", null=True, blank=True)
     creador = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="chats_enviados")
     receptor = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="chats_recibidos")
     activa = models.BooleanField(default=True)
     inicida_en = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"Chat entre {self.creador} i {self.receptor} sobre {self.alerta.titol}"
+        if self.alerta:
+            return f"Chat entre {self.creador} i {self.receptor} sobre {self.alerta.titol}"
+        return f"Chat entre {self.creador} i {self.receptor}"
