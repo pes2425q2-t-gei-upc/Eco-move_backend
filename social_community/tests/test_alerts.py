@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from datetime import datetime
 from api_punts_carrega.models import EstacioCarrega
-from alerts_chat.models import Missatge, PuntEmergencia, Chat
+from social_community.models import Missatge, PuntEmergencia, Chat
 
 User = get_user_model()
 

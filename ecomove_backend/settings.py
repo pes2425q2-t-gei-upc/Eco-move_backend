@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api_punts_carrega',
-    'alerts_chat',
+    'social_community',
     'rest_framework',
     'django_extensions',
 ]
