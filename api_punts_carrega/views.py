@@ -5,11 +5,14 @@ import requests
 
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
+from django.db import models
+from django.db.models import Avg, Count, Q
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
-from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario
+from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario, ValoracionEstacion
 
 from .serializers import ( 
     PuntSerializer,
@@ -22,6 +25,8 @@ from .serializers import (
     RefugioClimaticoSerializer,
     PuntEmergenciaSerializer,
     UsuarioSerializer,
+    ValoracionEstacionSerializer,
+    EstacioCarregaConValoracionesSerializer,
 
 )
 
@@ -87,8 +92,39 @@ class TipusCarregadorViewSet(viewsets.ModelViewSet):
 
 
 class EstacioCarregaViewSet(viewsets.ModelViewSet):
-    queryset = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
-    serializer_class = EstacioCarregaSerializer
+    queryset = EstacioCarrega.objects.prefetch_related('tipus_carregador', 'valoraciones').all()
+    
+    def get_serializer_class(self):
+        include_valoraciones = self.request.query_params.get('include_valoraciones', 'false').lower() == 'true'
+        if include_valoraciones:
+            return EstacioCarregaConValoracionesSerializer
+        return EstacioCarregaSerializer
+    
+    @action(detail=True, methods=['get'])
+    def valoraciones(self, request, pk=None):
+        estacion = self.get_object()
+        valoraciones = estacion.valoraciones.all()
+        serializer = ValoracionEstacionSerializer(valoraciones, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def estadisticas_valoraciones(self, request, pk=None):
+        estacion = self.get_object()
+        stats = estacion.valoraciones.aggregate(
+            media=Avg('puntuacion'),
+            total=Count('id'),
+            puntuacion_1=Count('id', filter=models.Q(puntuacion=1)),
+            puntuacion_2=Count('id', filter=models.Q(puntuacion=2)),
+            puntuacion_3=Count('id', filter=models.Q(puntuacion=3)),
+            puntuacion_4=Count('id', filter=models.Q(puntuacion=4)),
+            puntuacion_5=Count('id', filter=models.Q(puntuacion=5)),
+        )
+        
+        # Redondear la media a 1 decimal
+        if stats['media'] is not None:
+            stats['media'] = round(stats['media'], 1)
+            
+        return Response(stats)
 
 
 class ReservaSerializer(serializers.ModelSerializer):
@@ -703,3 +739,33 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             "nombre": f"{usuario.first_name} {usuario.last_name}",
             "puntos": usuario.punts
         }, status=status.HTTP_200_OK)
+
+class ValoracionEstacionViewSet(viewsets.ModelViewSet):
+    queryset = ValoracionEstacion.objects.all()
+    serializer_class = ValoracionEstacionSerializer
+    
+    def get_queryset(self):
+        queryset = ValoracionEstacion.objects.all()
+        estacion_id = self.request.query_params.get('estacion', None)
+        usuario_id = self.request.query_params.get('usuario', None)
+        
+        if estacion_id:
+            queryset = queryset.filter(estacion_id=estacion_id)
+        if usuario_id:
+            queryset = queryset.filter(usuario_id=usuario_id)
+            
+        return queryset
+    
+    # def perform_create(self, serializer):
+    #     serializer.save(usuario=self.request.user)
+    
+    # def perform_update(self, serializer):
+    #     valoracion = self.get_object()
+    #     if valoracion.usuario != self.request.user:
+    #         raise PermissionDenied("No tienes permiso para modificar esta valoración")
+    #     serializer.save()
+    
+    # def perform_destroy(self, instance):
+    #     if instance.usuario != self.request.user and not self.request.user.is_admin:
+    #         raise PermissionDenied("No tienes permiso para eliminar esta valoración")
+    #     instance.delete()

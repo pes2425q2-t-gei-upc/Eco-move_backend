@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario
+from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario, ValoracionEstacion
 
 
 class PuntEmergenciaSerializer(serializers.ModelSerializer):
@@ -55,3 +55,52 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'dni', 'idioma', 'telefon', 'descripcio', 'is_admin', 'punts'
         ]
         read_only_fields = ['id', 'punts']
+
+class ValoracionEstacionSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    fecha_creacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
+    fecha_actualizacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
+    
+    class Meta:
+        model = ValoracionEstacion
+        fields = ['id', 'estacion', 'usuario', 'username', 'puntuacion', 'comentario', 
+                  'fecha_creacion', 'fecha_actualizacion']
+        read_only_fields = ['id', 'fecha_creacion', 'fecha_actualizacion']
+    
+    def get_username(self, obj):
+        return obj.usuario.username
+    
+    def validate(self, data):
+        # Validar que la puntuación esté entre 1 y 5
+        if 'puntuacion' in data and (data['puntuacion'] < 1 or data['puntuacion'] > 5):
+            raise serializers.ValidationError("La puntuación debe estar entre 1 y 5")
+        return data
+
+class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
+    valoraciones = ValoracionEstacionSerializer(many=True, read_only=True)
+    puntuacion_media = serializers.SerializerMethodField()
+    num_valoraciones = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = EstacioCarrega
+        fields = '__all__'  
+    
+    def to_representation(self, instance):
+        # Obtenemos la representación base
+        representation = super().to_representation(instance)
+        
+        # Añadimos los campos adicionales
+        representation['valoraciones'] = ValoracionEstacionSerializer(instance.valoraciones.all(), many=True).data
+        representation['puntuacion_media'] = self.get_puntuacion_media(instance)
+        representation['num_valoraciones'] = self.get_num_valoraciones(instance)
+        
+        return representation
+    
+    def get_puntuacion_media(self, obj):
+        valoraciones = obj.valoraciones.all()
+        if not valoraciones:
+            return None
+        return round(sum(v.puntuacion for v in valoraciones) / len(valoraciones), 1)
+    
+    def get_num_valoraciones(self, obj):
+        return obj.valoraciones.count()
