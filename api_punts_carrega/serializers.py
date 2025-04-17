@@ -52,9 +52,9 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'first_name', 'last_name', 'email', 'username',
-            'dni', 'idioma', 'telefon', 'descripcio', 'is_admin'
+            'dni', 'idioma', 'telefon', 'descripcio', 'is_admin', 'punts'
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'punts']
 
 class ValoracionEstacionSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()

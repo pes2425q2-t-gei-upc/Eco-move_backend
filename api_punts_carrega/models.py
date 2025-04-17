@@ -35,7 +35,7 @@ class Usuario(AbstractUser):
     telefon = models.CharField(max_length=15, blank=True, null=True)
     #foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
     descripcio = models.TextField(blank=True, null=True)
-
+    punts = models.IntegerField(default=0)
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
     
