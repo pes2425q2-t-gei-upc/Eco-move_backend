@@ -17,6 +17,7 @@ from .views import (
     filtrar_per_velocitat,
     filtrar_per_carregador,
     UsuarioViewSet,
+    ValoracionEstacionViewSet,
 )
 
 router = DefaultRouter()
@@ -29,6 +30,7 @@ router.register(r'models', ModelCotxeViewSet)
 router.register(r'refugios', RefugioClimaticoViewSet)
 router.register(r'punts_emergencia', PuntEmergenciaViewSet)
 router.register(r'usuari', UsuarioViewSet)
+router.register(r'valoraciones_estaciones', ValoracionEstacionViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -39,4 +41,5 @@ urlpatterns = [
     path('filtrar_per_potencia/', filtrar_per_potencia, name='filtrar_per_potencia'),
     path('filtrar_per_velocitat/', filtrar_per_velocitat, name='filtrar_per_velocitat'),
     path('filtrar_per_carregador/', filtrar_per_carregador, name='filtrar_per_carregador'),
+    path('estacions/<str:estacion_id>/valoraciones/', ValoracionEstacionViewSet.as_view({'get': 'list', 'post': 'create'}), name='estacion-valoraciones'),
 ]
