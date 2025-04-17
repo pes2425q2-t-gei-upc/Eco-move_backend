@@ -123,16 +123,24 @@ class ModelCotxe(models.Model):
     def __str__(self):
         return f"Model {self.marca} {self.model} ({self.any_model})"
 
-class Valoracio(models.Model):
-    reserva = models.OneToOneField(ReservaFinalitzada, on_delete=models.CASCADE, related_name="valoracio")
-    puntuat = models.IntegerField(
+class ValoracionEstacion(models.Model):
+    estacion = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name="valoraciones")
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="valoraciones_estaciones")
+    puntuacion = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Valoració entre 1 i 5"
+        help_text="Valoración entre 1 y 5"
     )
-    ressenya = models.TextField()
+    comentario = models.TextField(blank=True, null=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # Un usuario solo puede valorar una vez cada estación
+        unique_together = ('estacion', 'usuario')
+        ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f"Valoració {self.puntuat}/5"
+        return f"Valoración de {self.usuario.username} para {self.estacion.id_punt}: {self.puntuacion}/5"
 
 #quiza deberia heredar de Punt (debatible)
 class PuntEmergencia(Punt):
