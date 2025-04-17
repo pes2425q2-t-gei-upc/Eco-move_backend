@@ -1,9 +1,10 @@
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Max
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.pagination import PageNumberPagination
 
 from .models import  (
     PuntEmergencia,
@@ -16,6 +17,9 @@ from .serializers import (
     AlertSerializer,
     MessagesSerializer,
 )
+
+class TenPerPagePagination(PageNumberPagination):
+    page_size = 10
 
 class AlertsViewSet(viewsets.ModelViewSet):
     queryset = PuntEmergencia.objects.all()
@@ -92,7 +96,27 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path="my_chats")
     def my_chats(self, request):
         user = request.user
-        chats = Chat.objects.filter(creador=user) | Chat.objects.filter(receptor=user)
+        chats = Chat.objects.filter(
+            Q(creador=request.user) | Q(receptor=request.user)
+        ).annotate(
+            last_msg_time=Max("missatges__timestamp")
+        ).order_by('-last_msg_time')
+        
+        serializer = self.get_serializer(chats.distinct(), many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path="search")
+    def search_chats(self, request):
+        query = request.query_params.get("q", "").strip()
+        user = request.user
+        chats = Chat.objects.filter(Q(creador=user) | Q(receptor=user))
+        
+        if query:
+            chats = chats.filter(
+                Q(creador__username__icontains=query, receptor=user) |
+                Q(receptor__username__icontains=query, creador=user)
+            )
+            
         serializer = self.get_serializer(chats.distinct(), many=True)
         return Response(serializer.data)
     
@@ -104,9 +128,18 @@ class ChatViewSet(viewsets.ModelViewSet):
         if self.request.user not in [chat.creador, chat.receptor]:
             raise PermissionDenied("You are not part of this chat.")
         
-        messages = chat.missatges.all().order_by('timestamp')
-        serializer = MessagesSerializer(messages, many=True)
-        return Response(serializer.data)
+        paginator = TenPerPagePagination()
+        messages = chat.missatges.all().order_by('-timestamp')
+        page = paginator.paginate_queryset(messages, request)
+        
+        # Auto mark messages in this page as read if the current user is the recipient of the messages
+        unread_messages = [msg for msg in page if not msg.is_read and msg.sender != self.request.user]
+        for msg in unread_messages:
+            msg.is_read = True
+            msg.save()
+        
+        serializer = MessagesSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Missatge.objects.all()

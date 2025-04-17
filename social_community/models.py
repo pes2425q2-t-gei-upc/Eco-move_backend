@@ -7,7 +7,7 @@ class Missatge(models.Model):
     chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name="missatges")
     sender = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="missatges_enviats")
     content = models.TextField()
-    timestamp = models.DateField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
     def __str__(self):

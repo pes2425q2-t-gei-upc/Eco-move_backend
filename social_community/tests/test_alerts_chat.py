@@ -151,10 +151,12 @@ class AlertsAPITests(TestCase):
         # Now retrieve messages
         response_3 = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}))
         self.assertEqual(response_3.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response_3.json()), 2)
+        self.assertEqual(len(response_3.json()['results']), 2)
         
-        self.assertEqual(response_3.json()[0]['content'], "Hello, I see your alert.")
-        self.assertEqual(response_3.json()[1]['content'], "Thank you for your response.")
+        messages = response_3.json()['results']
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[1]['content'], "Hello, I see your alert.")
+        self.assertEqual(messages[0]['content'], "Thank you for your response.")
         
         # Sending direct messages in chat
         chat_2 = self.create_chat(self.receiver.email).json()
@@ -224,7 +226,8 @@ class AlertsAPITests(TestCase):
         response = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat.json()['id']}))
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json(), [])
+        self.assertEqual(response.json()['count'], 0)
+        self.assertEqual(response.json()['results'], [])
 
 
     # Test sending empty message
@@ -275,3 +278,66 @@ class AlertsAPITests(TestCase):
         self.create_chat(data['receptor_email'])
         duplicate = self.create_chat(data['receptor_email'])
         self.assertEqual(duplicate.status_code, status.HTTP_400_BAD_REQUEST)
+        
+    def test_pagination_returns_10_messages(self):
+        self.client.login(email=self.sender.email, password=self.sender_password)
+        chat = self.create_chat(self.receiver.email).json()
+
+        for i in range(15):
+            self.send_message(chat['id'], f"Test message {i}.")
+
+        response = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}), {'page': 1, 'size': 10})
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['results']), 10)
+
+    def test_pagination_second_page(self):
+        self.client.login(email=self.sender.email, password=self.sender_password)
+        alert = self.create_alert().json()
+        chat = self.create_chat_w_alert(alert['id_emergencia']).json()
+
+        for i in range(15):
+            self.send_message(chat['id'], f"Msg {i}")
+
+        response = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}), {'page': 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['results']), 5)
+        self.assertEqual(response.json()['results'][0]['content'], "Msg 4")
+    
+    def test_only_visible_messages_marked_as_read(self):
+        self.client.login(email=self.sender.email, password=self.sender_password)
+        chat = self.create_chat(self.receiver.email).json()
+        for i in range(12):
+            self.send_message(chat['id'], f"Unread {i}")
+            
+        response = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}), {'page': 1})
+        self.assertEqual(response.status_code, 200)
+        read_status = [msg['is_read'] for msg in response.json()['results']]
+        self.assertFalse(all(read_status))
+        
+        response_2 = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}), {'page': 2})
+        self.assertEqual(response_2.status_code, 200)
+        read_status_2 = [msg['is_read'] for msg in response_2.json()['results']]
+        self.assertFalse(all(read_status_2))
+        
+        self.client.logout()
+
+        self.client.login(email=self.receiver.email, password=self.receiver_password)
+        
+        response_3 = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}))
+        self.assertEqual(response_3.status_code, 200)
+        results = response_3.json()['results']
+        self.assertEqual(len(results), 10)
+
+        # Check these messages are now marked as read
+        read_status_3 = [msg['is_read'] for msg in results]
+        self.assertTrue(all(read_status_3))
+        
+        self.client.logout()
+        self.client.login(email=self.sender.email, password=self.sender_password)
+
+        # The next 2 messages should still be unread
+        next_page = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}), {'page': 2})
+        self.assertEqual(len(next_page.json()['results']), 2)
+        self.assertFalse(any([msg['is_read'] for msg in next_page.json()['results']]))
+
