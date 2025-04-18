@@ -29,6 +29,13 @@ class Idiomas(models.TextChoices):
 
 # ---------------- MODELOS ---------------- #
 
+class TipusVelocitat(models.Model):
+    id_velocitat = models.CharField(max_length=100, primary_key=True)
+    nom_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices)
+    
+    def __str__(self):
+        return f"{self.nom_velocitat}"
+
 class Usuario(AbstractUser):
     dni = models.CharField(max_length=20, unique=True)
     idioma = models.CharField(max_length=20, choices=Idiomas.choices, default=Idiomas.CATALA)
@@ -67,7 +74,8 @@ class EstacioCarrega(Punt):
     tipus_acces = models.CharField(max_length=100)
     nplaces = models.CharField(max_length=20, null=True)
     potencia = models.IntegerField(null=True)
-    tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
+    # tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
+    tipus_velocitat = models.ManyToManyField('TipusVelocitat', related_name='estacions_de_carrega')
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
 
     def __str__(self):

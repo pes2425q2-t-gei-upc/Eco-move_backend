@@ -567,6 +567,93 @@ def filtrar_per_carregador(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
+def obtenir_opcions_filtres(request):
+    
+    
+    potencia_min = EstacioCarrega.objects.filter(potencia__isnull=False).order_by('potencia').values_list('potencia', flat=True).first() or 0
+    potencia_max = EstacioCarrega.objects.filter(potencia__isnull=False).order_by('-potencia').values_list('potencia', flat=True).first() or 0
+    
+    
+    velocitats = EstacioCarrega.objects.filter(tipus_velocitat__isnull=False).values_list('tipus_velocitat', flat=True).distinct()
+    
+    
+    tipus_carregadors = TipusCarregador.objects.all()
+    carregadors = []
+    
+    for carregador in tipus_carregadors:
+        carregadors.append({
+            'id': carregador.id_carregador,
+            'nom': carregador.nom_tipus,
+            'connector': carregador.tipus_connector,
+            'corrent': carregador.tipus_corrent
+        })
+    
+    
+    resposta = {
+        'potencia': {
+            'min': potencia_min,
+            'max': potencia_max
+        },
+        'velocitats': list(velocitats),
+        'carregadors': carregadors
+    }
+    
+    return Response(resposta)
+
+@api_view(['GET'])
+def filtrar_estacions(request):
+    
+    estacions = EstacioCarrega.objects.prefetch_related('tipus_carregador').all()
+    
+    
+    potencia_min = request.query_params.get('potencia_min')
+    if potencia_min is not None:
+        try:
+            potencia_min = int(potencia_min)
+            estacions = estacions.filter(potencia__gte=potencia_min)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'potencia_min' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    
+    potencia_max = request.query_params.get('potencia_max')
+    if potencia_max is not None:
+        try:
+            potencia_max = int(potencia_max)
+            estacions = estacions.filter(potencia__lte=potencia_max)
+        except ValueError:
+            return Response(
+                {"error": "El valor de 'potencia_max' debe ser un número entero"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    
+    velocitat = request.query_params.get('velocitat')
+    if velocitat is not None:
+        velocitats = velocitat.split(',')
+        estacions = estacions.filter(tipus_velocitat__in=velocitats)
+
+
+    tipus_carregador = request.query_params.get('tipus_carregador')
+    if tipus_carregador is not None:
+        tipus_carregador = tipus_carregador.split(',')
+        estacions = estacions.filter(tipus_carregador__id_carregador__in=tipus_carregador)
+
+
+    
+    ciutat = request.query_params.get('ciutat')
+    if ciutat is not None:
+        ciutats = ciutat.split(',')
+        estacions = estacions.filter(ciutat__in=ciutats)
+
+
+    serializer = EstacioCarregaSerializer(estacions, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
     """Obtiene el precio del kWh en Cataluña desde la API de Red Eléctrica de España (REE)."""
 
