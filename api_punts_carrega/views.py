@@ -567,6 +567,40 @@ def filtrar_per_carregador(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
+def obtenir_opcions_filtres(request):
+    
+    
+    potencia_min = EstacioCarrega.objects.filter(potencia__isnull=False).order_by('potencia').values_list('potencia', flat=True).first() or 0
+    potencia_max = EstacioCarrega.objects.filter(potencia__isnull=False).order_by('-potencia').values_list('potencia', flat=True).first() or 0
+    
+    
+    velocitats = EstacioCarrega.objects.filter(tipus_velocitat__isnull=False).values_list('tipus_velocitat', flat=True).distinct()
+    
+    
+    tipus_carregadors = TipusCarregador.objects.all()
+    carregadors = []
+    
+    for carregador in tipus_carregadors:
+        carregadors.append({
+            'id': carregador.id_carregador,
+            'nom': carregador.nom_tipus,
+            'connector': carregador.tipus_connector,
+            'corrent': carregador.tipus_corrent
+        })
+    
+    
+    resposta = {
+        'potencia': {
+            'min': potencia_min,
+            'max': potencia_max
+        },
+        'velocitats': list(velocitats),
+        'carregadors': carregadors
+    }
+    
+    return Response(resposta)
+
+@api_view(['GET'])
 def obtenir_preu_actual_kwh(request):
     """Obtiene el precio del kWh en Cataluña desde la API de Red Eléctrica de España (REE)."""
 
