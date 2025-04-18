@@ -17,6 +17,7 @@ from .views import (
     filtrar_per_velocitat,
     filtrar_per_carregador,
     obtenir_opcions_filtres,
+    filtrar_estacions,
     UsuarioViewSet,
     ValoracionEstacionViewSet,
 )
@@ -43,5 +44,6 @@ urlpatterns = [
     path('filtrar_per_velocitat/', filtrar_per_velocitat, name='filtrar_per_velocitat'),
     path('filtrar_per_carregador/', filtrar_per_carregador, name='filtrar_per_carregador'),
     path('opcions_filtres/', obtenir_opcions_filtres, name='obtenir_opcions_filtres'),
+    path('filtrar_estacions/', filtrar_estacions, name='filtrar_estacions'),
     path('estacions/<str:estacion_id>/valoraciones/', ValoracionEstacionViewSet.as_view({'get': 'list', 'post': 'create'}), name='estacion-valoraciones'),
 ]
