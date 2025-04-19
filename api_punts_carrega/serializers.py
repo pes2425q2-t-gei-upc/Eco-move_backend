@@ -1,11 +1,6 @@
 from rest_framework import serializers
-from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario, ValoracionEstacion
+from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion
 
-
-class PuntEmergenciaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PuntEmergencia
-        fields = '__all__'
 
 class PuntSerializer(serializers.ModelSerializer):
     

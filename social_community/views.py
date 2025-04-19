@@ -1,3 +1,5 @@
+import math
+
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Max
 from rest_framework import viewsets, status, permissions
@@ -39,6 +41,29 @@ class AlertsViewSet(viewsets.ModelViewSet):
         alerts = PuntEmergencia.objects.all()
         serializer = self.get_serializer(alerts, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='get_updates')
+    def near_points(self, request):
+        lat_usuario = request.query_params.get('lat')
+        lng_usuario = request.query_params.get('lng')
+        
+        if not lat_usuario or not lng_usuario:
+            return Response({'error': 'Faltan parámetros de ubicación (lat, lon)'}, status=400)
+
+        lat_usuario = float(lat_usuario)
+        lng_usuario = float(lng_usuario)
+
+        puntos_cercanos = []
+        for punt in PuntEmergencia.objects.filter(is_active=True):
+            distancia = haversine_distance(lat_usuario, lng_usuario, punt.lat, punt.lng)
+            if distancia <= 5:
+                puntos_cercanos.append(punt)
+
+        serializer = AlertSerializer(puntos_cercanos, many=True)
+        return Response(serializer.data)
+    
+    def perform_destroy(self, instance):
+        instance.delete()
 
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
@@ -163,3 +188,24 @@ class MessageViewSet(viewsets.ModelViewSet):
             raise ValidationError("Cannot mark a message as unread.")
 
         return super().partial_update(request, *args, **kwargs)
+
+
+
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6378.0
+    
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+    
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    distance = R * c
+    
+    return distance
