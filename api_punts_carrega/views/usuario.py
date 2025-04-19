@@ -2,6 +2,8 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+
 
 from api_punts_carrega.models import Usuario
 from api_punts_carrega.serializers import UsuarioSerializer
@@ -94,3 +96,17 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             "nombre": f"{usuario.first_name} {usuario.last_name}",
             "puntos": usuario.punts
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get', 'put'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        usuario = request.user
+
+        if request.method == 'GET':
+            serializer = self.get_serializer(usuario)
+            return Response(serializer.data)
+
+        elif request.method == 'PUT':
+            serializer = self.get_serializer(usuario, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
