@@ -8,7 +8,6 @@ from .models import  (
     ReservaFinalitzada,
     Vehicle,
     ModelCotxe,
-    Valoracio,
     Report,
     RespostaReport,
     Descomptes,
@@ -24,7 +23,6 @@ admin.site.register(Punt)
 admin.site.register(ReservaFinalitzada)
 admin.site.register(Vehicle)
 admin.site.register(ModelCotxe)
-admin.site.register(Valoracio)
 admin.site.register(Report)
 admin.site.register(RespostaReport)
 admin.site.register(Descomptes)
