@@ -29,7 +29,7 @@ from .serializers import (
     EstacioCarregaConValoracionesSerializer,
 
 )
-from .views.usuario import UsuarioViewSet
+from .dir_views.usuario import UsuarioViewSet
 
 DISTANCIA_MAXIMA_KM = 5
 

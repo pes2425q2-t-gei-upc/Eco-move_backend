@@ -45,7 +45,7 @@ except ImportError:
 
 # --- Importa tu función desde la ubicación correcta ---
 try:
-    from api_punts_carrega.views import obtenir_preu_actual_kwh
+    from api_punts_carrega.dir_views import obtenir_preu_actual_kwh
 except ImportError:
     print("ADVERTENCIA: No se pudo importar 'obtenir_preu_actual_kwh' desde 'api_punts_carrega.views'.")
     def obtenir_preu_actual_kwh(request):
