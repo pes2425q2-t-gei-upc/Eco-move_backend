@@ -18,6 +18,7 @@ from .views import (
     filtrar_per_carregador,
     UsuarioViewSet,
     ValoracionEstacionViewSet,
+    TextItemViewSet,
 )
 
 router = DefaultRouter()
@@ -31,6 +32,7 @@ router.register(r'refugios', RefugioClimaticoViewSet)
 router.register(r'punts_emergencia', PuntEmergenciaViewSet)
 router.register(r'usuari', UsuarioViewSet)
 router.register(r'valoraciones_estaciones', ValoracionEstacionViewSet)
+router.register(r'text_items', TextItemViewSet, basename='textitem')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -1,5 +1,17 @@
 from rest_framework import serializers
-from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario, ValoracionEstacion
+from .models import (
+    EstacioCarrega,
+    Punt,
+    TipusCarregador,
+    Reserva,
+    Vehicle,
+    ModelCotxe,
+    RefugioClimatico,
+    PuntEmergencia,
+    Usuario,
+    ValoracionEstacion,
+    TextItem
+)
 
 
 class PuntEmergenciaSerializer(serializers.ModelSerializer):
@@ -104,3 +116,8 @@ class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
     
     def get_num_valoraciones(self, obj):
         return obj.valoraciones.count()
+
+class TextItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TextItem
+        fields = ['__all__']

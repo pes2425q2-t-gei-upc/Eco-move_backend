@@ -12,11 +12,23 @@ from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
-from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario, ValoracionEstacion
+from .models import  (
+    Punt,
+    EstacioCarrega,
+    TipusCarregador,
+    Reserva,
+    Vehicle,
+    ModelCotxe,
+    RefugioClimatico,
+    PuntEmergencia,
+    Usuario,
+    ValoracionEstacion,
+    TextItem
+)
 
 from .serializers import ( 
     PuntSerializer,
-    EstacioCarregaSerializer, 
+    EstacioCarregaSerializer,
     NearestPuntCarregaSerializer,
     TipusCarregadorSerializer,
     ReservaSerializer,
@@ -27,7 +39,7 @@ from .serializers import (
     UsuarioSerializer,
     ValoracionEstacionSerializer,
     EstacioCarregaConValoracionesSerializer,
-
+    TextItemSerializer,
 )
 
 
@@ -769,3 +781,8 @@ class ValoracionEstacionViewSet(viewsets.ModelViewSet):
     #     if instance.usuario != self.request.user and not self.request.user.is_admin:
     #         raise PermissionDenied("No tienes permiso para eliminar esta valoración")
     #     instance.delete()
+    
+
+class TextItemViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = TextItem.objects.all()
+    serializer_class = TextItemSerializer
