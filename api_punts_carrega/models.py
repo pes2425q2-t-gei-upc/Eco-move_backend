@@ -152,7 +152,7 @@ class ValoracionEstacion(models.Model):
 #quiza deberia heredar de Punt (debatible)
 class PuntEmergencia(Punt):
     titol = models.CharField(max_length=100)
-    descripcio = models.TextField()
+    descripcio = models.TextField(null =True, blank=True)
     actiu = models.BooleanField(default=True)
     creat_per = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="punts_emergencia_creats")
     data_creacio = models.DateField(auto_now_add=True)
