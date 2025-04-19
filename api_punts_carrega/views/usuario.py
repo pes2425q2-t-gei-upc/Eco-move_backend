@@ -6,7 +6,7 @@ from rest_framework import status
 
 
 from api_punts_carrega.models import Usuario
-from api_punts_carrega.serializers import UsuarioSerializer
+from api_punts_carrega.serializers import UsuarioSerializer, UsuarioUpdateSerializer
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
@@ -106,7 +106,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         elif request.method == 'PUT':
-            serializer = self.get_serializer(usuario, data=request.data, partial=True)
+            serializer = UsuarioUpdateSerializer(usuario, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            return Response(serializer.data)
+            return Response(UsuarioSerializer(usuario).data)

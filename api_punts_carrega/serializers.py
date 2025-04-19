@@ -56,6 +56,16 @@ class UsuarioSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'punts']
 
+class UsuarioUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = ['first_name', 'last_name', 'telefon', 'descripcio', 'idioma']
+
+    def validate_telefon(self, value):
+        if value and not value.isdigit():
+            raise serializers.ValidationError("El teléfono debe contener solo números.")
+        return value
+
 class ValoracionEstacionSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     fecha_creacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
