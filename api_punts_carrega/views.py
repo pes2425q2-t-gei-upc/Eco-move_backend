@@ -37,6 +37,21 @@ class PuntEmergenciaViewSet(viewsets.ModelViewSet):
     queryset = PuntEmergencia.objects.all()
     serializer_class = PuntEmergenciaSerializer
 
+    @action(detail=True, methods=['post'], url_path='desactivar_punt')
+    def desactivar_punt(self, request, pk=None):
+        punt = get_object_or_404(PuntEmergencia, pk=pk)
+        punt.actiu = False
+        punt.save()
+        return Response({'message': 'Punt desactivat correctament'}, status=200)
+
+
+    @action(detail=True, methods=['put'], url_path='desactivar_punt')
+    def desactivar_punt(self, request, pk=None):
+        punt = get_object_or_404(PuntEmergencia, pk=pk)
+        punt.actiu = False
+        punt.save()
+        return Response({'message': 'Punt d\'emergència desactivat correctament'}, status=200)
+
     @action(detail=False, methods=['get'], url_path='get_updates')
     def ultims_punts(self, request):
         lat_usuario = request.query_params.get('lat')
@@ -51,7 +66,7 @@ class PuntEmergenciaViewSet(viewsets.ModelViewSet):
         puntos_cercanos = []
         for punt in PuntEmergencia.objects.all():
             distancia = haversine_distance(lat_usuario, lng_usuario, punt.lat, punt.lng)
-            if distancia <= DISTANCIA_MAXIMA_KM:
+            if distancia <= DISTANCIA_MAXIMA_KM and punt.actiu == True:
                 puntos_cercanos.append(punt)
 
         serializer = PuntEmergenciaSerializer(puntos_cercanos, many=True)
