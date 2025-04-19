@@ -156,6 +156,8 @@ class PuntEmergencia(Punt):
     actiu = models.BooleanField(default=True)
     creat_per = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="punts_emergencia_creats")
     data_creacio = models.DateField(auto_now_add=True)
+    acceptat_per = models.ManyToManyField(Usuario, blank=True, related_name="punts_emergencia_aceptats")
+
 
     def __str__(self):
         return f"Emergència: {self.titol}"

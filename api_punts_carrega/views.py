@@ -37,12 +37,24 @@ class PuntEmergenciaViewSet(viewsets.ModelViewSet):
     queryset = PuntEmergencia.objects.all()
     serializer_class = PuntEmergenciaSerializer
 
-    @action(detail=True, methods=['post'], url_path='desactivar_punt')
-    def desactivar_punt(self, request, pk=None):
+    @action(detail=True, methods=['put'], url_path='acceptar_punt')
+    def acceptar_punt(self, request, pk=None):
         punt = get_object_or_404(PuntEmergencia, pk=pk)
-        punt.actiu = False
+        if request.user == punt.creat_per:      
+            return Response({'error': 'No pots acceptar el teu propi punt d\'emergència'}, status=403)
+
+        # Aquí implementar la lógica para crear un chat entre los dos usuarios
+
+
+
+        return Response({'message': 'Punt acceptat correctament'}, status=200)
+
+    @action(detail=True, methods=['put'], url_path='activar_punt')
+    def activar_punt(self, request, pk=None):
+        punt = get_object_or_404(PuntEmergencia, pk=pk)
+        punt.actiu = True
         punt.save()
-        return Response({'message': 'Punt desactivat correctament'}, status=200)
+        return Response({'message': 'Punt activat correctament'}, status=200)
 
 
     @action(detail=True, methods=['put'], url_path='desactivar_punt')
