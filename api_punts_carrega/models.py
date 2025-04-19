@@ -3,7 +3,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
 
-
 # ---------------- ENUMS ---------------- #
 
 class Velocitat_de_carrega(models.TextChoices):
