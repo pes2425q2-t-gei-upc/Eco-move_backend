@@ -46,7 +46,6 @@ class PuntEmergenciaViewSet(viewsets.ModelViewSet):
         # Aquí implementar la lógica para crear un chat entre los dos usuarios
 
 
-
         return Response({'message': 'Punt acceptat correctament'}, status=200)
 
     @action(detail=True, methods=['put'], url_path='activar_punt')
