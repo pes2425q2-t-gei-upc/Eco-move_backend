@@ -79,7 +79,8 @@ class ValoracionEstacionSerializer(serializers.ModelSerializer):
         
         read_only_fields = ['id', 'fecha_creacion', 'fecha_actualizacion']
     
-    
+    # def get_username(self, obj):
+    #     return obj.usuario.username
     
     def validate(self, data):
         # Validar que la puntuación esté entre 1 y 5
