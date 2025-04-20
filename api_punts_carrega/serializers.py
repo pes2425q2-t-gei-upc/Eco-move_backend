@@ -66,6 +66,21 @@ class UsuarioUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("El teléfono debe contener solo números.")
         return value
 
+class UsuarioCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=6)
+
+    class Meta:
+        model = Usuario
+        fields = ['first_name', 'last_name', 'email', 'telefon', 'descripcio', 'idioma', 'password']
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = Usuario(**validated_data)
+        user.set_password(password)  # Encripta correctamente la contraseña
+        user.username = user.email  # Si quieres forzar esto
+        user.save()
+        return user
+
 class ValoracionEstacionSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     fecha_creacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)

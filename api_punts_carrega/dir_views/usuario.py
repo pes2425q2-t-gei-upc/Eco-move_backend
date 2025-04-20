@@ -6,12 +6,17 @@ from rest_framework import status
 
 
 from api_punts_carrega.models import Usuario
-from api_punts_carrega.serializers import UsuarioSerializer, UsuarioUpdateSerializer
+from api_punts_carrega.serializers import UsuarioSerializer, UsuarioUpdateSerializer, UsuarioCreateSerializer
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
 
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UsuarioCreateSerializer
+        return UsuarioSerializer
+    
     @action(detail=True, methods=['post', 'get'])
     def sumaPunts(self, request, pk=None):
        
