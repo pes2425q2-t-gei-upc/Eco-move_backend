@@ -12,7 +12,6 @@ from .views import (
     RefugioClimaticoViewSet,
     sincronizar_refugios,
     refugios_mas_cercanos,
-    PuntEmergenciaViewSet,
     filtrar_per_potencia,
     filtrar_per_velocitat,
     filtrar_per_carregador,
@@ -30,7 +29,6 @@ router.register(r'reservas', ReservaViewSet)
 router.register(r'vehicles', VehicleViewSet)
 router.register(r'models', ModelCotxeViewSet)
 router.register(r'refugios', RefugioClimaticoViewSet)
-router.register(r'punts_emergencia', PuntEmergenciaViewSet)
 router.register(r'usuari', UsuarioViewSet)
 router.register(r'valoraciones_estaciones', ValoracionEstacionViewSet)
 

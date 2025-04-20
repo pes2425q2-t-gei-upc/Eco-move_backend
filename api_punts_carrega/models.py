@@ -186,28 +186,6 @@ class ValoracionEstacion(models.Model):
     def __str__(self):
         return f"Valoración de {self.usuario.username} para {self.estacion.id_punt}: {self.puntuacion}/5"
 
-#quiza deberia heredar de Punt (debatible)
-class PuntEmergencia(Punt):
-    titol = models.CharField(max_length=100)
-    descripcio = models.TextField()
-    actiu = models.BooleanField(default=True)
-    creat_per = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="punts_emergencia_creats")
-    data_creacio = models.DateField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Emergència: {self.titol}"
-
-#no tengo claro que lo vayamos a implementar con esto el chat
-class Missatge(models.Model):
-    id_missatge = models.CharField(max_length=20, primary_key=True)
-    missatge = models.TextField()
-    data = models.DateField()
-    llegit = models.BooleanField(default=False)
-    usuari = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="missatges")
-    punt_emergencia = models.ForeignKey(PuntEmergencia, on_delete=models.CASCADE, related_name="missatges")
-
-    def __str__(self):
-        return f"Missatge de {self.usuari.first_name} - {self.data}"
 
 class Report(models.Model):
     id_report = models.CharField(max_length=20, primary_key=True)
