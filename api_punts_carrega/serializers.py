@@ -66,24 +66,27 @@ class UsuarioSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'punts']
 
 class ValoracionEstacionSerializer(serializers.ModelSerializer):
-    username = serializers.SerializerMethodField()
+    # username = serializers.SerializerMethodField()
     fecha_creacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
     fecha_actualizacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
     
     class Meta:
         model = ValoracionEstacion
-        fields = ['id', 'estacion', 'usuario', 'username', 'puntuacion', 'comentario', 
+        # fields = ['id', 'estacion', 'usuario', 'username', 'puntuacion', 'comentario', 
+        #           'fecha_creacion', 'fecha_actualizacion']
+        fields = ['id', 'estacion', 'username', 'puntuacion', 'comentario', 
                   'fecha_creacion', 'fecha_actualizacion']
+        
         read_only_fields = ['id', 'fecha_creacion', 'fecha_actualizacion']
     
-    def get_username(self, obj):
-        return obj.usuario.username
+    
     
     def validate(self, data):
         # Validar que la puntuación esté entre 1 y 5
         if 'puntuacion' in data and (data['puntuacion'] < 1 or data['puntuacion'] > 5):
             raise serializers.ValidationError("La puntuación debe estar entre 1 y 5")
         return data
+    
 
 class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
     valoraciones = ValoracionEstacionSerializer(many=True, read_only=True)
