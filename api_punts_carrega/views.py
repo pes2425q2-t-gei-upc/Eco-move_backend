@@ -84,19 +84,7 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
         return Response(stats)
 
 
-class ReservaSerializer(serializers.ModelSerializer):
-    fecha = serializers.DateField(format='%d/%m/%Y')
-    hora = serializers.TimeField(format='%H:%M')
 
-    class Meta:
-        model = Reserva
-        fields = '__all__'
-
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
-        representation['hora'] = instance.hora.strftime('%H:%M')
-        return representation
 
 class RefugioClimaticoViewSet(viewsets.ModelViewSet):
     queryset = RefugioClimatico.objects.all()
@@ -701,9 +689,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post', 'get'])
     def sumaPunts(self, request, pk=None):
-       
         usuario = self.get_object()
-        
         
         if request.method == 'GET':
             punts = request.query_params.get('punts', 0)
@@ -712,32 +698,22 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         
         try:
             punts = int(punts)
-            if punts <= 0:
-                return Response(
-                    {"error": "La cantidad de puntos debe ser un número positivo"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        except (ValueError, TypeError):
+            nuevos_punts = usuario.sumar_punts(punts)
+            
+            return Response({
+                "message": f"Se han añadido {punts} puntos al usuario",
+                "puntos_añadidos": punts,
+                "puntos_actuales": nuevos_punts
+            }, status=status.HTTP_200_OK)
+        except ValueError as e:
             return Response(
-                {"error": "La cantidad de puntos debe ser un número entero"},
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        
-        usuario.punts += punts
-        usuario.save()
-        
-        return Response({
-            "message": f"Se han añadido {punts} puntos al usuario",
-            "puntos_añadidos": punts,
-            "puntos_actuales": usuario.punts
-        }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['post', 'get'])
     def restarPunts(self, request, pk=None):
-       
         usuario = self.get_object()
-        
         
         if request.method == 'GET':
             punts = request.query_params.get('punts', 0)
@@ -746,37 +722,21 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         
         try:
             punts = int(punts)
-            if punts <= 0:
-                return Response(
-                    {"error": "La cantidad de puntos debe ser un número positivo"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        except (ValueError, TypeError):
+            nuevos_punts = usuario.restar_punts(punts)
+            
+            return Response({
+                "message": f"Se han restado {punts} puntos al usuario",
+                "puntos_restados": punts,
+                "puntos_actuales": nuevos_punts
+            }, status=status.HTTP_200_OK)
+        except ValueError as e:
             return Response(
-                {"error": "La cantidad de puntos debe ser un número entero"},
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Verificar si el usuario tiene suficientes puntos
-        if usuario.punts < punts:
-            return Response(
-                {"error": f"El usuario solo tiene {usuario.punts} puntos, no se pueden restar {punts}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        
-        usuario.punts -= punts
-        usuario.save()
-        
-        return Response({
-            "message": f"Se han restado {punts} puntos al usuario",
-            "puntos_restados": punts,
-            "puntos_actuales": usuario.punts
-        }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['get'])
     def getPunts(self, request, pk=None):
-        
         usuario = self.get_object()
         return Response({
             "usuario_id": usuario.id,

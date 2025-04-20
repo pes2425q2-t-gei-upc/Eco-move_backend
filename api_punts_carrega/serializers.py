@@ -33,9 +33,18 @@ class NearestPuntCarregaSerializer(serializers.ModelSerializer):
     longitud = serializers.FloatField(required=True)
 
 class ReservaSerializer(serializers.ModelSerializer):
+    fecha = serializers.DateField(format='%d/%m/%Y')
+    hora = serializers.TimeField(format='%H:%M')
+
     class Meta:
         model = Reserva
         fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
+        representation['hora'] = instance.hora.strftime('%H:%M')
+        return representation
 
 class RefugioClimaticoSerializer(serializers.ModelSerializer):
     class Meta:
