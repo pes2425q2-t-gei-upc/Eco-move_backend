@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'api_punts_carrega',
     'social_community',
     'rest_framework',
+    'rest_framework.authtoken',
     'django_extensions',
     'corsheaders',
     'django.contrib.sites',  # NECESARIA para que allauth gestione múltiples dominios si quieres
@@ -71,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 REST_USE_JWT = True

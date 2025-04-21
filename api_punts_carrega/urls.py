@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .dir_views import (
+from .views import (
     PuntViewSet,
     EstacioCarregaViewSet,
     punt_mes_proper,

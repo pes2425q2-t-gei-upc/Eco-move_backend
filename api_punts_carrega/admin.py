@@ -12,7 +12,6 @@ from .models import  (
     RespostaReport,
     Descomptes,
     DataDescompte,
-    SocialApp,
 )
 
 # Register your models here.
@@ -28,4 +27,3 @@ admin.site.register(Report)
 admin.site.register(RespostaReport)
 admin.site.register(Descomptes)
 admin.site.register(DataDescompte)
-admin.site.register(SocialApp)
