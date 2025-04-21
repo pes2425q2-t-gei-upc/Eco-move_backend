@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, PuntEmergencia, Usuario, ValoracionEstacion
-
+from dj_rest_auth.registration.serializers import SocialLoginSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class PuntEmergenciaSerializer(serializers.ModelSerializer):
     class Meta:

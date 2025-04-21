@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import include, path
+from api_punts_carrega.views_social import GoogleLogin
 from rest_framework_simplejwt.views import TokenRefreshView
 from api_punts_carrega.token import CustomTokenObtainPairView 
 
@@ -13,7 +14,6 @@ urlpatterns = [
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
-    path('api/auth/', include('dj_rest_auth.urls')),  # login/logout/reset password
-    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),  # registro tradicional
-    path('api/auth/social/', include('allauth.socialaccount.urls')),  # redirecciones/callbacks sociales (opcional)
+    path('api/auth/social/google/', GoogleLogin.as_view(), name='google_login'),
+    path('api/auth/social/', include('allauth.socialaccount.urls')),
 ]
