@@ -36,7 +36,17 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_extensions',
     'corsheaders',
+    'django.contrib.sites',  # NECESARIA para que allauth gestione múltiples dominios si quieres
+    'allauth',
+    'allauth.account',        # gestión de usuarios base (email, registro, etc.)
+    'allauth.socialaccount',  # gestión de login social
+    'allauth.socialaccount.providers.google',  # soporte Google
+    'allauth.socialaccount.providers.github',  # soporte GitHub
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
 ]
+
+SITE_ID = 1 
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
 
@@ -62,6 +72,25 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+REST_USE_JWT = True
+
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    },
+    'github': {
+        'SCOPE': ['user', 'email'],
+    },
+}
+
 
 CORS_ALLOW_ALL_ORIGINS = True
 
