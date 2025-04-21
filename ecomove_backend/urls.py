@@ -10,6 +10,8 @@ urlpatterns = [
     path('api_punts_carrega/', include('api_punts_carrega.urls')),
     path('api/social/', include('social_community.urls')),
     path('api-auth/', include('rest_framework.urls')),
+    path("api/auth/registration/", include("dj_rest_auth.registration.urls")),
+
 
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

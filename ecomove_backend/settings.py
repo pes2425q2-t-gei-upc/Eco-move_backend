@@ -5,14 +5,9 @@ from datetime import timedelta
 
 # to load variables from a .env file
 load_dotenv()
-REST_USE_JWT = True
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-$^-r@rvo%xjsvn##p(6g9j^s(o&b3lcc-(c@ax%saqcxlov)s9'
@@ -21,7 +16,6 @@ SECRET_KEY = 'django-insecure-$^-r@rvo%xjsvn##p(6g9j^s(o&b3lcc-(c@ax%saqcxlov)s9
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
-
 
 # Application definition
 
@@ -48,15 +42,24 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
 ]
 
-SITE_ID = 1 
+REST_USE_JWT = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
-AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_LOGIN_METHODS = {'email'}
+
+SITE_ID = 1
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
 }
+
+# Para permitir login desde app móvil o localhost
+CORS_ALLOW_ALL_ORIGINS = True
+
+AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -76,9 +79,7 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_QUERY_EMAIL = True
 
@@ -91,9 +92,6 @@ SOCIALACCOUNT_PROVIDERS = {
         'SCOPE': ['user', 'email'],
     },
 }
-
-
-CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'ecomove_backend.urls'
 
