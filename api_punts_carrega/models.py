@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
@@ -41,7 +41,7 @@ class Usuario(AbstractUser):
     telefon = models.CharField(max_length=15, blank=True, null=True)
     #foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
     descripcio = models.TextField(blank=True, null=True)
-    punts = models.IntegerField(default=0)
+    _punts = models.IntegerField(default=0, db_column='punts')  # _ és per fer privat a python
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
     
@@ -53,6 +53,43 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
+    
+    @property
+    def punts(self):
+        return self._punts
+    
+    @transaction.atomic
+    def sumar_punts(self, cantidad):
+        
+        if not isinstance(cantidad, int) or cantidad <= 0:
+            raise ValueError("La cantidad de puntos debe ser un entero positivo")
+        
+        # Refrescar el usuario desde la base de datos para evitar condiciones de carrera
+        usuario_actual = Usuario.objects.select_for_update().get(pk=self.pk)
+        usuario_actual._punts += cantidad
+        usuario_actual.save(update_fields=['_punts'])
+        
+        # Actualizar el objeto actual
+        self.refresh_from_db(fields=['_punts'])
+        return self._punts
+    
+    @transaction.atomic
+    def restar_punts(self, cantidad):
+        if not isinstance(cantidad, int) or cantidad <= 0:
+            raise ValueError("La cantidad de puntos debe ser un entero positivo")
+        
+        # Refrescar el usuario desde la base de datos para evitar condiciones de carrera
+        usuario_actual = Usuario.objects.select_for_update().get(pk=self.pk)
+        
+        if usuario_actual._punts < cantidad:
+            raise ValueError(f"El usuario solo tiene {usuario_actual._punts} puntos, no se pueden restar {cantidad}")
+        
+        usuario_actual._punts -= cantidad
+        usuario_actual.save(update_fields=['_punts'])
+        
+        # Actualizar el objeto actual
+        self.refresh_from_db(fields=['_punts'])
+        return self._punts
 
 class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
