@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from rest_framework.permissions import IsAuthenticated
 import json
 import math
 import requests
@@ -752,6 +753,13 @@ class RegisterView(APIView):
             serializer.save()
             return Response({"message": "Usuario creado correctamente"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UsuarioSerializer(request.user)
+        return Response(serializer.data)
 
 class ValoracionEstacionViewSet(viewsets.ModelViewSet):
     queryset = ValoracionEstacion.objects.all()
