@@ -211,9 +211,9 @@ class AlertsAPITests(TestCase):
 
 
     # Test unauthorized access to chat messages
-#    def test_unauthorized_alert_and_chat_creation(self):
-#        response = self.create_alert()
-#        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_unauthorized_alert_and_chat_creation(self):
+       response = self.create_alert()
+       self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
     
     # Test get empty chat messages
