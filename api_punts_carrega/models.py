@@ -36,7 +36,6 @@ class TipusVelocitat(models.Model):
         return f"{self.nom_velocitat}"
 
 class Usuario(AbstractUser):
-    dni = models.CharField(max_length=20, unique=True)
     idioma = models.CharField(max_length=20, choices=Idiomas.choices, default=Idiomas.CATALA)
     telefon = models.CharField(max_length=15, blank=True, null=True)
     #foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
