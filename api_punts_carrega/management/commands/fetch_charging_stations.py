@@ -48,8 +48,20 @@ class Command(BaseCommand):
             TipusVelocitat.objects.all().delete()
             Punt.objects.all().delete()
             
+            stations_added = 0
+            stations_skipped = 0
+            
             with transaction.atomic():
                 for index, station in enumerate(data):
+                    # Check if connection type is empty or unknown
+                    tipus_connexi_raw = station.get("tipus_connexi", "Unknown")
+                    potencia_raw = station.get("kw", "Unknown")
+                    if not tipus_connexi_raw or tipus_connexi_raw == "Unknown" or tipus_connexi_raw == "" or potencia_raw == "0":
+                        stations_skipped += 1
+                        progress = (index + 1) / total_stations * 100
+                        self.stdout.write(f"\rProcessing station {index + 1}/{total_stations} ({progress:.2f}%) - Skipped: {stations_skipped}", ending="")
+                        continue  # Skip this station entirely
+                    
                     lat = float(station.get("latitud", 0))
                     lng = float(station.get("longitud", 0))
                     num_get = station.get("nplaces_estaci","Unknown")
@@ -79,7 +91,10 @@ class Command(BaseCommand):
                     # Normalizar cada valor de velocidad
                     velocitats = [self.normalize_case(v) for v in velocitats_raw]
                     
-                    for velocitat in velocitats:
+                    # Filter out empty or "Unknown" velocitats
+                    valid_velocitats = [velocitat for velocitat in velocitats if velocitat and velocitat != "Unknown" and velocitat != ""]
+                    
+                    for velocitat in valid_velocitats:
                         tipus_velocitat, created = TipusVelocitat.objects.get_or_create(
                             id_velocitat = velocitat,
                             defaults={
@@ -89,7 +104,6 @@ class Command(BaseCommand):
                         estacio_carrega.tipus_velocitat.add(tipus_velocitat)
                     
                     # Procesar tipos de cargadores con múltiples separadores
-                    tipus_connexi_raw = station.get("tipus_connexi", "Unknown")
                     ac_dc = station.get("ac_dc", "Unknown")
                     
                     connectors_raw = self.split_multiple_values(tipus_connexi_raw)
@@ -97,7 +111,10 @@ class Command(BaseCommand):
                     # Normalizar cada tipo de conector
                     connectors = [self.normalize_case(c) for c in connectors_raw]
                     
-                    for connector in connectors:
+                    # Filter out empty or "Unknown" connectors
+                    valid_connectors = [connector for connector in connectors if connector and connector != "Unknown" and connector != ""]
+                    
+                    for connector in valid_connectors:
                         tipus_carregador, created = TipusCarregador.objects.get_or_create(
                             id_carregador = f"{connector} {ac_dc}",
                             defaults={
@@ -108,9 +125,10 @@ class Command(BaseCommand):
                         )
                         estacio_carrega.tipus_carregador.add(tipus_carregador)
 
+                    stations_added += 1
                     progress = (index + 1) / total_stations * 100
-                    self.stdout.write(f"\rProcessing station {index + 1}/{total_stations} ({progress:.2f}%)", ending="")
+                    self.stdout.write(f"\rProcessing station {index + 1}/{total_stations} ({progress:.2f}%) - Added: {stations_added}, Skipped: {stations_skipped}", ending="")
                 
-                self.stdout.write(self.style.SUCCESS("\nCharging stations updated successfully"))
+                self.stdout.write(self.style.SUCCESS(f"\nCharging stations updated successfully. Added: {stations_added}, Skipped: {stations_skipped}"))
         else:
             self.stderr.write("Failed to fetch data from API")
