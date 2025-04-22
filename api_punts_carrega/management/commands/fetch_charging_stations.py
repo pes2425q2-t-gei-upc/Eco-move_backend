@@ -55,7 +55,8 @@ class Command(BaseCommand):
                 for index, station in enumerate(data):
                     # Check if connection type is empty or unknown
                     tipus_connexi_raw = station.get("tipus_connexi", "Unknown")
-                    if not tipus_connexi_raw or tipus_connexi_raw == "Unknown" or tipus_connexi_raw == "":
+                    potencia_raw = station.get("kw", "Unknown")
+                    if not tipus_connexi_raw or tipus_connexi_raw == "Unknown" or tipus_connexi_raw == "" or potencia_raw == "0":
                         stations_skipped += 1
                         progress = (index + 1) / total_stations * 100
                         self.stdout.write(f"\rProcessing station {index + 1}/{total_stations} ({progress:.2f}%) - Skipped: {stations_skipped}", ending="")
