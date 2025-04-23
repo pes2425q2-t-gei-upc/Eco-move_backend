@@ -291,18 +291,19 @@ class ReservaViewSet(viewsets.ModelViewSet):
         except EstacioCarrega.DoesNotExist:
             return Response({'error': 'Estació no trobada'}, status=404)
 
-    @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
+    # @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
         reserva = get_object_or_404(Reserva, id=pk)
 
-        if reserva.vehicle is None or reserva.vehicle.propietari != request.user:
-            return Response({'error': 'No tens permís per modificar aquesta reserva'}, status=status.HTTP_403_FORBIDDEN)
+        # if reserva.vehicle is None or reserva.vehicle.propietari != request.user:
+        #     return Response({'error': 'No tens permís per modificar aquesta reserva'}, status=status.HTTP_403_FORBIDDEN)
 
         data = request.data
         try:
             fecha_str = data.get('fecha', reserva.fecha.strftime('%d/%m/%Y')); fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
             hora_str = data.get('hora', reserva.hora.strftime('%H:%M')); hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
-            duracion_str = data.get('duracion', str(reserva.duracion));
+            duracion_str = data.get('duracion', str(reserva.duracion))
             if isinstance(duracion_str, timedelta): duracion_td = duracion_str
             elif ':' in duracion_str: partes = duracion_str.split(':'); horas, minutos = int(partes[0]), int(partes[1]); segundos = int(partes[2]) if len(partes) > 2 else 0; duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
             else: duracion_td = timedelta(seconds=int(duracion_str))
