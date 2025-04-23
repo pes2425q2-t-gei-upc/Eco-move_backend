@@ -642,6 +642,7 @@ def obtenir_preu_actual_kwh(request):
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=['post', 'get'])
     def sumaPunts(self, request, pk=None):
