@@ -10,7 +10,7 @@ class ReservaAPITests(TestCase):
         self.client = Client()
         self.test_user = Usuario.objects.create_user(
             username='test_reserva_user', email='test_reserva@example.com',
-            password='password123', dni='11223344X'
+            password='password123'
         )
         self.test_model_coche = ModelCotxe.objects.create(marca="TMarca", model="TModel", any_model=2024)
         self.test_vehicle = Vehicle.objects.create(
