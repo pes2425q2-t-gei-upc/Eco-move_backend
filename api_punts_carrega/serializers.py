@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from django.template.defaultfilters import date
 from rest_framework import serializers
 from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion, Idiomas
 from django.contrib.auth.password_validation import validate_password
@@ -33,19 +36,6 @@ class NearestPuntCarregaSerializer(serializers.ModelSerializer):
     latitud = serializers.FloatField(required=True)
     longitud = serializers.FloatField(required=True)
 
-class ReservaSerializer(serializers.ModelSerializer):
-    fecha = serializers.DateField(format='%d/%m/%Y')
-    hora = serializers.TimeField(format='%H:%M')
-
-    class Meta:
-        model = Reserva
-        fields = '__all__'
-
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
-        representation['hora'] = instance.hora.strftime('%H:%M')
-        return representation
 
 class RefugioClimaticoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,6 +50,43 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'idioma', 'telefon', 'descripcio', 'is_admin', 'punts'
         ]
         read_only_fields = ['id', 'punts']
+
+
+class ReservaSerializer(serializers.ModelSerializer):
+    fecha = serializers.DateField(format='%d/%m/%Y')
+    hora = serializers.TimeField(format='%H:%M')
+    estacion = serializers.PrimaryKeyRelatedField(
+        queryset=EstacioCarrega.objects.all(),
+        #pk_field='id_punt'
+    )
+    vehicle = serializers.PrimaryKeyRelatedField(
+        queryset=Vehicle.objects.all(),
+        #pk_field='id_punt',
+        required=False,
+        allow_null=True
+    )
+    usuario = UsuarioSerializer(read_only=True)
+
+    class Meta:
+        model = Reserva
+        fields = [
+            'id',
+            'usuario',
+            'estacion',
+            'fecha',
+            'hora',
+            'duracion',
+            'vehicle',
+        ]
+        read_only_fields = ['id', 'usuario']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
+        representation['hora'] = instance.hora.strftime('%H:%M')
+        return representation
+
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -97,44 +124,47 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+
 class ValoracionEstacionSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     fecha_creacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
     fecha_actualizacion = serializers.DateTimeField(format="%d/%m/%Y %H:%M", read_only=True)
-    
+
     class Meta:
         model = ValoracionEstacion
-        fields = ['id', 'estacion', 'usuario', 'username', 'puntuacion', 'comentario', 
+        fields = ['id', 'estacion', 'usuario', 'username', 'puntuacion', 'comentario',
                   'fecha_creacion', 'fecha_actualizacion']
         read_only_fields = ['id', 'fecha_creacion', 'fecha_actualizacion']
-    
+
     def get_username(self, obj):
         return obj.usuario.username
-    
+
     def validate(self, data):
         # Validar que la puntuación esté entre 1 y 5
         if 'puntuacion' in data and (data['puntuacion'] < 1 or data['puntuacion'] > 5):
             raise serializers.ValidationError("La puntuación debe estar entre 1 y 5")
         return data
 
+
+
 class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
     valoraciones = ValoracionEstacionSerializer(many=True, read_only=True)
     puntuacion_media = serializers.SerializerMethodField()
     num_valoraciones = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = EstacioCarrega
-        fields = '__all__'  
-    
+        fields = '__all__'
+
     def to_representation(self, instance):
         # Obtenemos la representación base
         representation = super().to_representation(instance)
-        
+
         # Añadimos los campos adicionales
         representation['valoraciones'] = ValoracionEstacionSerializer(instance.valoraciones.all(), many=True).data
         representation['puntuacion_media'] = self.get_puntuacion_media(instance)
         representation['num_valoraciones'] = self.get_num_valoraciones(instance)
-        
+
         return representation
     
     def get_puntuacion_media(self, obj):
