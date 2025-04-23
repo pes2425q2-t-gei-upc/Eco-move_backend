@@ -51,6 +51,11 @@ class UsuarioSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'punts']
 
+class PerfilPublicoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = ['username', 'first_name', 'last_name', 'idioma', 'descripcio']
+
 
 class ReservaSerializer(serializers.ModelSerializer):
     fecha = serializers.DateField(format='%d/%m/%Y')

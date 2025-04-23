@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 import json
 import math
 import requests
@@ -29,6 +29,7 @@ from .serializers import (
     ValoracionEstacionSerializer,
     EstacioCarregaConValoracionesSerializer,
     RegisterSerializer,
+    PerfilPublicoSerializer,
 )
 
 
@@ -715,6 +716,12 @@ class MeView(APIView):
     def get(self, request):
         serializer = UsuarioSerializer(request.user)
         return Response(serializer.data)
+    
+class PerfilPublicoViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Usuario.objects.all()
+    serializer_class = PerfilPublicoSerializer
+    permission_classes = [AllowAny]  # o IsAuthenticated si quieres solo para usuarios registrados
+    lookup_field = 'username'
 
 class ValoracionEstacionViewSet(viewsets.ModelViewSet):
     queryset = ValoracionEstacion.objects.all()
