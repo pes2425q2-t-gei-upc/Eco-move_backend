@@ -14,7 +14,7 @@ class ReservaAPITests(TestCase):
 
         self.test_user = Usuario.objects.create_user(
             username='test_reserva_user', email='test_reserva@example.com',
-            password='password123', dni='11223344X' # Asegurar unicidad
+            password='password123' # Asegurar unicidad
         )
 
         self.common_charger_type = TipusCarregador.objects.create(

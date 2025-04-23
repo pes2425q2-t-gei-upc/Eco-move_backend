@@ -146,19 +146,19 @@ class ValoracionEstacionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La puntuación debe estar entre 1 y 5")
         return data
 
-class ReservaSerializer(serializers.ModelSerializer):
-    fecha = serializers.DateField(format='%d/%m/%Y')
-    hora = serializers.TimeField(format='%H:%M')
+# class ReservaSerializer(serializers.ModelSerializer):
+#     fecha = serializers.DateField(format='%d/%m/%Y')
+#     hora = serializers.TimeField(format='%H:%M')
 
-    class Meta:
-        model = Reserva
-        fields = '__all__'
+#     class Meta:
+#         model = Reserva
+#         fields = '__all__'
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
-        representation['hora'] = instance.hora.strftime('%H:%M')
-        return representation
+#     def to_representation(self, instance):
+#         representation = super().to_representation(instance)
+#         representation['fecha'] = instance.fecha.strftime('%d/%m/%Y')
+#         representation['hora'] = instance.hora.strftime('%H:%M')
+#         return representation
 
 class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
     valoraciones = ValoracionEstacionSerializer(many=True, read_only=True)
