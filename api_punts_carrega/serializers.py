@@ -2,8 +2,9 @@ from datetime import datetime
 
 from django.template.defaultfilters import date
 from rest_framework import serializers
-from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion
-
+from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion, Idiomas
+from django.contrib.auth.password_validation import validate_password
+from rest_framework.validators import UniqueValidator
 
 class PuntSerializer(serializers.ModelSerializer):
     
@@ -46,9 +47,10 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'first_name', 'last_name', 'email', 'username',
-            'dni', 'idioma', 'telefon', 'descripcio', 'is_admin', 'punts'
+            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts'
         ]
         read_only_fields = ['id', 'punts']
+
 
 class ReservaSerializer(serializers.ModelSerializer):
     estacion = serializers.PrimaryKeyRelatedField(
@@ -85,6 +87,43 @@ class ReservaSerializer(serializers.ModelSerializer):
         return representation
 
 
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=Usuario.objects.all())]
+    )
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
+    idioma = serializers.ChoiceField(choices=Idiomas.choices, required=False)
+    telefon = serializers.RegexField(
+        regex=r'^\d{9}$',
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Número de teléfono con 9 dígitos"
+    )
+
+    class Meta:
+        model = Usuario
+        fields = (
+            'username', 'email', 'password', 'password2', 'first_name', 'last_name',
+            'idioma', 'telefon', 'descripcio'
+        )
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Las contraseñas no coinciden."})
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        password = validated_data.pop('password')
+        user = Usuario.objects.create_user(**validated_data)
+        user.set_password(password)  # create_user ya lo hace, pero por si acaso lo reaseguras
+        user.save()
+        return user
 
 
 class ValoracionEstacionSerializer(serializers.ModelSerializer):

@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from api_punts_carrega.models import EstacioCarrega
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -15,19 +16,16 @@ class AlertsAPITests(TestCase):
             email='sender@example.com',
             username='senderuser',
             password='senderpassword',
-            dni='12345678A',
         )
         self.receiver = User.objects.create_user(
             email='receiver@example.com',
             username='receiveruser',
             password='receiverpassword',
-            dni='87654321B',
         )
         self.helper = User.objects.create_user(
             email='helper@example.com',
             username='helperuser',
             password='helperpassword',
-            dni='11223344C',
         )
         self.sender_password = 'senderpassword'
         self.receiver_password = 'receiverpassword'
@@ -53,7 +51,12 @@ class AlertsAPITests(TestCase):
             'lng': 2.123456,
             'is_active': True,
         }
-        
+
+    def authenticate(self, user):
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        self.client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {access_token}'      
+
     def create_alert(self, user=None):
         return self.client.post(
             reverse('alerts-list'),
@@ -85,8 +88,7 @@ class AlertsAPITests(TestCase):
     
     # Test creating a new alert
     def test_creating_alert(self):
-        response = self.client.login(email=self.sender.email, password=self.sender_password)
-        self.assertTrue(response, "Login failed")
+        self.authenticate(self.sender)
         alert = self.create_alert()
         
         # Check if the alert was created successfully
@@ -102,7 +104,7 @@ class AlertsAPITests(TestCase):
     
     
     def test_create_direct_chat_between_users(self):
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         response = self.create_chat(self.receiver.email)
         self.assertEqual(response.status_code, 201)
         self.assertIsNone(response.json().get('alerta'))
@@ -111,7 +113,7 @@ class AlertsAPITests(TestCase):
     # Test creating chat from an alert
     def test_creating_chat_from_alert(self):
         # Create a new alert
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         alert = self.create_alert().json()
         
         chat = self.create_chat_w_alert(alert['id_emergencia'])
@@ -128,12 +130,12 @@ class AlertsAPITests(TestCase):
     # Test sending messages in a chat
     def test_sending_message_in_chat(self):
         # The sender logs in, creates an alert, and logs out
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         alert = self.create_alert().json()
         self.client.logout()
         
         # The receiver logs in and creates a chat (is the helper for the sender)
-        self.client.login(email=self.receiver.email, password=self.receiver_password)
+        self.authenticate(self.receiver)
         chat = self.create_chat_w_alert(alert['id_emergencia']).json()
         
         # The receiver sends the first message
@@ -143,7 +145,7 @@ class AlertsAPITests(TestCase):
         self.client.logout()
         
         # The sender replies
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         response_2 = self.send_message(chat['id'], "Thank you for your response.")
         self.assertEqual(response_2.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response_2.json()['content'], "Thank you for your response.")
@@ -165,7 +167,7 @@ class AlertsAPITests(TestCase):
         self.assertEqual(response_4.json()['content'], "Hey! This is a direct message from the sender.")
         
         self.client.logout()
-        self.client.login(email=self.receiver.email, password=self.receiver_password)
+        self.authenticate(self.receiver)
         response_5 = self.send_message(chat_2['id'], "Hey! This is direct message from the receiver.")
         self.assertEqual(response_5.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response_5.json()['content'], "Hey! This is direct message from the receiver.")        
@@ -174,17 +176,17 @@ class AlertsAPITests(TestCase):
     # Test getting all chats for a user
     def test_getting_multiple_chats(self):
         # Sender 1 logs in and creates an alert
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         alert1 = self.create_alert().json()
         self.client.logout()
 
         # Sender 2 logs in and creates another alert
-        self.client.login(email=self.receiver.email, password=self.receiver_password)
+        self.authenticate(self.receiver)
         alert2 = self.create_alert().json()
         self.client.logout()
 
         # Helper logs in and creates a chat for both alerts
-        self.client.login(email=self.helper.email, password=self.helper_password)
+        self.authenticate(self.helper)
         chat1 = self.create_chat_w_alert(alert1['id_emergencia'])
         self.assertEqual(chat1.status_code, status.HTTP_201_CREATED)
         
@@ -210,13 +212,13 @@ class AlertsAPITests(TestCase):
 
     # Test unauthorized access to chat messages
     def test_unauthorized_alert_and_chat_creation(self):
-        response = self.create_alert()
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+       response = self.create_alert()
+       self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         
     
     # Test get empty chat messages
     def test_get_empty_chat_messages(self):
-        self.client.login(username=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         
         alert = self.create_alert().json()
         
@@ -232,7 +234,7 @@ class AlertsAPITests(TestCase):
 
     # Test sending empty message
     def test_sending_empty_message(self):
-        self.client.login(username=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         alert = self.create_alert().json()
         chat = self.create_chat_w_alert(alert['id_emergencia']).json()
 
@@ -243,7 +245,7 @@ class AlertsAPITests(TestCase):
     
     
     def test_chat_deactivation(self):
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         alert = self.create_alert().json()
         chat = self.create_chat_w_alert(alert['id_emergencia']).json()
         
@@ -257,7 +259,7 @@ class AlertsAPITests(TestCase):
     
     # Test marking messages as read
     def test_marking_messages_as_read(self):
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         alert = self.create_alert().json()
         chat = self.create_chat_w_alert(alert['id_emergencia']).json()
 
@@ -273,14 +275,14 @@ class AlertsAPITests(TestCase):
         
         
     def test_prevent_duplicate_direct_chats(self):
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         data = {'receptor_email': self.receiver.email}
         self.create_chat(data['receptor_email'])
         duplicate = self.create_chat(data['receptor_email'])
         self.assertEqual(duplicate.status_code, status.HTTP_400_BAD_REQUEST)
         
     def test_pagination_returns_10_messages(self):
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         chat = self.create_chat(self.receiver.email).json()
 
         for i in range(15):
@@ -292,7 +294,7 @@ class AlertsAPITests(TestCase):
         self.assertEqual(len(response.json()['results']), 10)
 
     def test_pagination_second_page(self):
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         alert = self.create_alert().json()
         chat = self.create_chat_w_alert(alert['id_emergencia']).json()
 
@@ -305,7 +307,7 @@ class AlertsAPITests(TestCase):
         self.assertEqual(response.json()['results'][0]['content'], "Msg 4")
     
     def test_only_visible_messages_marked_as_read(self):
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
         chat = self.create_chat(self.receiver.email).json()
         for i in range(12):
             self.send_message(chat['id'], f"Unread {i}")
@@ -322,7 +324,7 @@ class AlertsAPITests(TestCase):
         
         self.client.logout()
 
-        self.client.login(email=self.receiver.email, password=self.receiver_password)
+        self.authenticate(self.receiver)
         
         response_3 = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}))
         self.assertEqual(response_3.status_code, 200)
@@ -334,7 +336,7 @@ class AlertsAPITests(TestCase):
         self.assertTrue(all(read_status_3))
         
         self.client.logout()
-        self.client.login(email=self.sender.email, password=self.sender_password)
+        self.authenticate(self.sender)
 
         # The next 2 messages should still be unread
         next_page = self.client.get(reverse('chat-get-messages', kwargs={'pk': chat['id']}), {'page': 2})
