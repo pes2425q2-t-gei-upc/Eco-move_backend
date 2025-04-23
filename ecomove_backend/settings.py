@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from datetime import timedelta
 
 # to load variables from a .env file
 load_dotenv()
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     'social_community',
     'rest_framework',
     'django_extensions',
+    'rest_framework_simplejwt',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
@@ -92,7 +94,16 @@ else:
         }
     }
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
