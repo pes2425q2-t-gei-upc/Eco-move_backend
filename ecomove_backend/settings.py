@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from datetime import timedelta
 from django.utils.translation import gettext_lazy as _
 
 # to load variables from a .env file
@@ -33,8 +34,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'modeltranslation',
     'api_punts_carrega',
+    'social_community',
     'rest_framework',
     'django_extensions',
+    'rest_framework_simplejwt',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
@@ -94,7 +97,16 @@ else:
         }
     }
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

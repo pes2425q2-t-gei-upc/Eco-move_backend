@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
@@ -28,13 +28,19 @@ class Idiomas(models.TextChoices):
 
 # ---------------- MODELOS ---------------- #
 
+class TipusVelocitat(models.Model):
+    id_velocitat = models.CharField(max_length=100, primary_key=True)
+    nom_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices)
+    
+    def __str__(self):
+        return f"{self.nom_velocitat}"
+
 class Usuario(AbstractUser):
-    dni = models.CharField(max_length=20, unique=True)
     idioma = models.CharField(max_length=20, choices=Idiomas.choices, default=Idiomas.CATALA)
     telefon = models.CharField(max_length=15, blank=True, null=True)
     #foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
     descripcio = models.TextField(blank=True, null=True)
-    punts = models.IntegerField(default=0)
+    _punts = models.IntegerField(default=0, db_column='punts')  # _ és per fer privat a python
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
     
@@ -46,6 +52,43 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
+    
+    @property
+    def punts(self):
+        return self._punts
+    
+    @transaction.atomic
+    def sumar_punts(self, cantidad):
+        
+        if not isinstance(cantidad, int) or cantidad <= 0:
+            raise ValueError("La cantidad de puntos debe ser un entero positivo")
+        
+        # Refrescar el usuario desde la base de datos para evitar condiciones de carrera
+        usuario_actual = Usuario.objects.select_for_update().get(pk=self.pk)
+        usuario_actual._punts += cantidad
+        usuario_actual.save(update_fields=['_punts'])
+        
+        # Actualizar el objeto actual
+        self.refresh_from_db(fields=['_punts'])
+        return self._punts
+    
+    @transaction.atomic
+    def restar_punts(self, cantidad):
+        if not isinstance(cantidad, int) or cantidad <= 0:
+            raise ValueError("La cantidad de puntos debe ser un entero positivo")
+        
+        # Refrescar el usuario desde la base de datos para evitar condiciones de carrera
+        usuario_actual = Usuario.objects.select_for_update().get(pk=self.pk)
+        
+        if usuario_actual._punts < cantidad:
+            raise ValueError(f"El usuario solo tiene {usuario_actual._punts} puntos, no se pueden restar {cantidad}")
+        
+        usuario_actual._punts -= cantidad
+        usuario_actual.save(update_fields=['_punts'])
+        
+        # Actualizar el objeto actual
+        self.refresh_from_db(fields=['_punts'])
+        return self._punts
 
 class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
@@ -66,7 +109,8 @@ class EstacioCarrega(Punt):
     tipus_acces = models.CharField(max_length=100)
     nplaces = models.CharField(max_length=20, null=True)
     potencia = models.IntegerField(null=True)
-    tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
+    # tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
+    tipus_velocitat = models.ManyToManyField('TipusVelocitat', related_name='estacions_de_carrega')
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
 
     def __str__(self):
@@ -141,28 +185,6 @@ class ValoracionEstacion(models.Model):
     def __str__(self):
         return f"Valoración de {self.usuario.username} para {self.estacion.id_punt}: {self.puntuacion}/5"
 
-#quiza deberia heredar de Punt (debatible)
-class PuntEmergencia(Punt):
-    titol = models.CharField(max_length=100)
-    descripcio = models.TextField()
-    actiu = models.BooleanField(default=True)
-    creat_per = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="punts_emergencia_creats")
-    data_creacio = models.DateField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Emergència: {self.titol}"
-
-#no tengo claro que lo vayamos a implementar con esto el chat
-class Missatge(models.Model):
-    id_missatge = models.CharField(max_length=20, primary_key=True)
-    missatge = models.TextField()
-    data = models.DateField()
-    llegit = models.BooleanField(default=False)
-    usuari = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="missatges")
-    punt_emergencia = models.ForeignKey(PuntEmergencia, on_delete=models.CASCADE, related_name="missatges")
-
-    def __str__(self):
-        return f"Missatge de {self.usuari.first_name} - {self.data}"
 
 class Report(models.Model):
     id_report = models.CharField(max_length=20, primary_key=True)

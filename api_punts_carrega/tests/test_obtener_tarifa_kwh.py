@@ -121,7 +121,7 @@ class ObtenirPreuActualKwhTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_504_GATEWAY_TIMEOUT)
         self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], "Tiempo de espera agotado al conectar con la API de REE")
+        self.assertEqual(response.data['error'], "Timeout conectando con API REE") # <-- Cambiado
 
 
     @patch('api_punts_carrega.views.requests.get')
@@ -140,8 +140,7 @@ class ObtenirPreuActualKwhTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], "No se encontraron datos de precios horarios para hoy en la respuesta de la API")
-
+        self.assertEqual(response.data['error'], "No se encontraron datos horarios en la respuesta de la API REE")
 # --- Ejecutar los tests ---
 if __name__ == '__main__':
     unittest.main(argv=['first-arg-is-ignored'], exit=False)

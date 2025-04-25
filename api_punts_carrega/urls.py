@@ -12,10 +12,11 @@ from .views import (
     RefugioClimaticoViewSet,
     sincronizar_refugios,
     refugios_mas_cercanos,
-    PuntEmergenciaViewSet,
     filtrar_per_potencia,
     filtrar_per_velocitat,
     filtrar_per_carregador,
+    obtenir_opcions_filtres,
+    filtrar_estacions,
     UsuarioViewSet,
     ValoracionEstacionViewSet,
     TextItemViewSet,
@@ -29,7 +30,6 @@ router.register(r'reservas', ReservaViewSet)
 router.register(r'vehicles', VehicleViewSet)
 router.register(r'models', ModelCotxeViewSet)
 router.register(r'refugios', RefugioClimaticoViewSet)
-router.register(r'punts_emergencia', PuntEmergenciaViewSet)
 router.register(r'usuari', UsuarioViewSet)
 router.register(r'valoraciones_estaciones', ValoracionEstacionViewSet)
 router.register(r'text_items', TextItemViewSet, basename='textitem')
@@ -43,5 +43,7 @@ urlpatterns = [
     path('filtrar_per_potencia/', filtrar_per_potencia, name='filtrar_per_potencia'),
     path('filtrar_per_velocitat/', filtrar_per_velocitat, name='filtrar_per_velocitat'),
     path('filtrar_per_carregador/', filtrar_per_carregador, name='filtrar_per_carregador'),
+    path('opcions_filtres/', obtenir_opcions_filtres, name='obtenir_opcions_filtres'),
+    path('filtrar_estacions/', filtrar_estacions, name='filtrar_estacions'),
     path('estacions/<str:estacion_id>/valoraciones/', ValoracionEstacionViewSet.as_view({'get': 'list', 'post': 'create'}), name='estacion-valoraciones'),
 ]
