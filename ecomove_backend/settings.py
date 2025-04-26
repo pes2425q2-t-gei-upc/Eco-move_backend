@@ -1,6 +1,8 @@
+import paramiko
+from sshtunnel import SSHTunnelForwarder
 import os
-from dotenv import load_dotenv
 from pathlib import Path
+from dotenv import load_dotenv
 from datetime import timedelta
 
 # to load variables from a .env file
@@ -75,15 +77,35 @@ WSGI_APPLICATION = 'ecomove_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
+def open_ssh_tunnel():
+    SSH_HOST = os.getenv('SSH_HOST')  
+    SSH_PORT = int(os.getenv('SSH_PORT'))  
+    SSH_USER = os.getenv('SSH_USER')  
+    SSH_PASSWORD = os.getenv('SSH_PASSWORD')  
+    REMOTE_HOST = 'localhost'  
+    REMOTE_PORT = 5433  
+
+    tunnel = SSHTunnelForwarder(
+        (SSH_HOST, SSH_PORT),
+        ssh_username=SSH_USER,
+        ssh_password=SSH_PASSWORD,
+        remote_bind_address=(REMOTE_HOST, REMOTE_PORT)
+    )
+    tunnel.start()
+    return tunnel
+
 if os.getenv('ENV_WHEREIAM') == 'production':
+    tunnel = open_ssh_tunnel()
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('DB_NAME'),
             'USER': os.getenv('DB_USER'),
             'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+            'HOST': '127.0.0.1', 
+            'PORT': tunnel.local_bind_port,
         }
     }
 else:
@@ -93,6 +115,7 @@ else:
             'NAME': BASE_DIR / 'db_local.sqlite3',
         }
     }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
