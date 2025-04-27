@@ -173,7 +173,7 @@ def estadisticas_estaciones(request):
     estaciones_valoradas = ValoracionEstacion.objects.values('estacion__id_punt').annotate(
         valoracion_media=Avg('puntuacion'),
         total_valoraciones=Count('id')
-    ).filter(total_valoraciones__gte=3).order_by('-valoracion_media')[:10]
+    ).order_by('-valoracion_media')[:10]
     
     estaciones_valoradas_ids = [item['estacion__id_punt'] for item in estaciones_valoradas]
     estaciones_valoradas_data = []
