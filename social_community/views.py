@@ -7,6 +7,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import json
 
 from .models import  (
     PuntEmergencia,
@@ -30,7 +33,23 @@ class AlertsViewSet(viewsets.ModelViewSet):
 
     # Create a new alert
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+        # Guardar la alerta
+        instance = serializer.save(sender=self.request.user)
+        
+        # Notificar a través de WebSocket
+        channel_layer = get_channel_layer()
+        
+        # Serializar la alerta
+        alert_data = AlertSerializer(instance).data
+        
+        # Enviar mensaje al grupo de WebSocket
+        async_to_sync(channel_layer.group_send)(
+            "emergencias",
+            {
+                "type": "emergencia_update",
+                "emergencia": alert_data
+            }
+        )
         
     # List all active alerts
     def get_queryset(self):
