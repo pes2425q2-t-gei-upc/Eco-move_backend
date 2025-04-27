@@ -1,0 +1,101 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: #000000;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .table-container {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+  .rating {
+    color: #f8d64e;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Estadísticas de Estaciones</h1>
+
+<div class="card">
+  <h2>Estaciones con Más Reservas</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Estación</th>
+          <th>Dirección</th>
+          <th>Ciudad</th>
+          <th>Reservas</th>
+          <th>Valoración</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in estaciones_data %}
+        <tr>
+          <td>{{ item.estacion.id_punt }}</td>
+          <td>{{ item.estacion.direccio|default:"No especificada" }}</td>
+          <td>{{ item.estacion.ciutat|default:"No especificada" }}</td>
+          <td>{{ item.reservas }}</td>
+          <td class="rating">{{ item.valoracion_media }}/5</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">No hay datos disponibles</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Estaciones Mejor Valoradas</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Estación</th>
+          <th>Dirección</th>
+          <th>Ciudad</th>
+          <th>Valoración</th>
+          <th>Total Valoraciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in estaciones_valoradas_data %}
+        <tr>
+          <td>{{ item.estacion.id_punt }}</td>
+          <td>{{ item.estacion.direccio|default:"No especificada" }}</td>
+          <td>{{ item.estacion.ciutat|default:"No especificada" }}</td>
+          <td class="rating">{{ item.valoracion_media }}/5</td>
+          <td>{{ item.total_valoraciones }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">No hay datos disponibles</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

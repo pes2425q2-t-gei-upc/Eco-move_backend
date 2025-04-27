@@ -1,0 +1,21 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('EcoMove Admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        EcoMove Admin
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+<div style="margin-top: 20px; margin-bottom: 10px;">
+    <a href="{% url 'admin_custom:admin_dashboard' %}" style="margin-right: 15px; color: white;">Dashboard</a>
+    <a href="{% url 'admin_custom:gestionar_usuarios' %}" style="margin-right: 15px; color: white;">Usuarios</a>
+    <a href="{% url 'admin_custom:admin_refugios' %}" style="margin-right: 15px; color: white;">Refugios</a>
+    <a href="{% url 'admin_custom:estadisticas_estaciones' %}" style="color: white;">Estadísticas</a>
+</div>
+{% endblock %}

@@ -18,9 +18,18 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from api_punts_carrega.views import RegisterView, MeView, PerfilPublicoViewSet
+from api_punts_carrega import admin_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    path('adminn/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
+    path('adminn/refugios/', admin_views.sincronizar_refugios_admin, name='admin_refugios'),
+    path('adminn/usuarios/', admin_views.gestionar_usuarios, name='gestionar_usuarios'),
+    path('adminn/usuarios/<int:usuario_id>/puntos/', admin_views.modificar_puntos_usuario, name='modificar_puntos_usuario'),
+    path('adminn/estadisticas/estaciones/', admin_views.estadisticas_estaciones, name='estadisticas_estaciones'),
+
+
     path('api_punts_carrega/', include('api_punts_carrega.urls')),
     path('api/social/', include('social_community.urls')),
     path('api-auth/', include('rest_framework.urls')),
