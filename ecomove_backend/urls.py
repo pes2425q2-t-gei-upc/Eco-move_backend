@@ -26,6 +26,7 @@ urlpatterns = [
     path('adminn/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('adminn/refugios/', admin_views.sincronizar_refugios_admin, name='admin_refugios'),
     path('adminn/usuarios/', admin_views.gestionar_usuarios, name='gestionar_usuarios'),
+    path('adminn/usuarios/<int:usuario_id>/editar/', admin_views.editar_usuario, name='editar_usuario'),
     path('adminn/usuarios/<int:usuario_id>/puntos/', admin_views.modificar_puntos_usuario, name='modificar_puntos_usuario'),
     path('adminn/estadisticas/estaciones/', admin_views.estadisticas_estaciones, name='estadisticas_estaciones'),
 

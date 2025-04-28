@@ -33,6 +33,7 @@
     text-decoration: none;
     border-radius: 4px;
     font-size: 12px;
+    margin-right: 5px;
   }
   .button:hover {
     background-color: #366b81;
@@ -54,10 +55,28 @@
     border-radius: 4px;
     cursor: pointer;
   }
+  .back-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .action-buttons {
+    white-space: nowrap;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_dashboard' %}" class="back-button">
+    &larr; Volver al Dashboard
+  </a>
+</div>
+
 <h1>Gestionar Usuarios</h1>
 
 <div class="card">
@@ -88,9 +107,9 @@
           <td>{{ usuario.email }}</td>
           <td>{{ usuario.punts }}</td>
           <td>{% if usuario.is_admin %}Sí{% else %}No{% endif %}</td>
-          <td>
+          <td class="action-buttons">
+            <a href="{% url 'editar_usuario' usuario_id=usuario.id %}" class="button">Editar</a>
             <a href="{% url 'modificar_puntos_usuario' usuario_id=usuario.id %}" class="button">Modificar puntos</a>
-            
           </td>
         </tr>
         {% empty %}
