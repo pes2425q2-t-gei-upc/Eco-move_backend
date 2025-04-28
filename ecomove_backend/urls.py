@@ -18,27 +18,22 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from api_punts_carrega.views import RegisterView, MeView, PerfilPublicoViewSet
-from api_punts_carrega import admin_views
+from admin_connect import admin_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
-    path('adminn/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
-    path('adminn/refugios/', admin_views.sincronizar_refugios_admin, name='admin_refugios'),
-    path('adminn/usuarios/', admin_views.gestionar_usuarios, name='gestionar_usuarios'),
-    path('adminn/usuarios/<int:usuario_id>/editar/', admin_views.editar_usuario, name='editar_usuario'),
-    path('adminn/usuarios/<int:usuario_id>/puntos/', admin_views.modificar_puntos_usuario, name='modificar_puntos_usuario'),
-    path('adminn/estadisticas/estaciones/', admin_views.estadisticas_estaciones, name='estadisticas_estaciones'),
 
+    path('admin_connect/', include('admin_connect.urls')),
 
     path('api_punts_carrega/', include('api_punts_carrega.urls')),
     path('api/social/', include('social_community.urls')),
     path('api-auth/', include('rest_framework.urls')),
     path('social/', include('social_community.urls')),
 
-    #gestion usuario
     path('me/', MeView.as_view(), name='me'),
-    path('profile/<str:username>/', PerfilPublicoViewSet.as_view({'get': 'retrieve'}), name='perfil-publico'),
+    path('profile/<str:username>/',
+         PerfilPublicoViewSet.as_view({'get': 'retrieve'}),
+         name='perfil-publico'),
     path('register/', RegisterView.as_view(), name='register'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

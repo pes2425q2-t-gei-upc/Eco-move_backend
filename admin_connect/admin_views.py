@@ -7,7 +7,7 @@ from datetime import timedelta
 import requests
 import json
 
-from .models import (
+from api_punts_carrega.models import (
     EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion
 )
 
@@ -54,7 +54,7 @@ def admin_dashboard(request):
         'valoraciones_recientes': valoraciones_recientes,
     }
     
-    return render(request, 'admin/dashboard.html', context)
+    return render(request, 'admin_connect/dashboard.html', context)
 
 @staff_member_required
 def sincronizar_refugios_admin(request):
@@ -94,7 +94,7 @@ def sincronizar_refugios_admin(request):
         except Exception as e:
             messages.error(request, f'Error al sincronizar refugios: {str(e)}')
         
-        return redirect('admin_refugios')
+        return redirect('admin_connect:sincronizar_refugios')
     
     refugios = RefugioClimatico.objects.all().order_by('nombre')
     
@@ -102,7 +102,7 @@ def sincronizar_refugios_admin(request):
         'refugios': refugios,
     }
     
-    return render(request, 'admin/sincronizar_refugios.html', context)
+    return render(request, 'admin_connect/sincronizar_refugios.html', context)
 
 @staff_member_required
 def gestionar_usuarios(request):
@@ -112,7 +112,7 @@ def gestionar_usuarios(request):
         'usuarios': usuarios,
     }
     
-    return render(request, 'admin/gestionar_usuarios.html', context)
+    return render(request, 'admin_connect/gestionar_usuarios.html', context)
 
 @staff_member_required
 def editar_usuario(request, usuario_id):
@@ -134,12 +134,12 @@ def editar_usuario(request, usuario_id):
         # Verificar si el username ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(username=username).exclude(id=usuario_id).exists():
             messages.error(request, f'El nombre de usuario {username} ya está en uso.')
-            return redirect('editar_usuario', usuario_id=usuario_id)
+            return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
         
         # Verificar si el email ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(email=email).exclude(id=usuario_id).exists():
             messages.error(request, f'El email {email} ya está en uso.')
-            return redirect('editar_usuario', usuario_id=usuario_id)
+            return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
         
         # Actualizar datos del usuario
         usuario.username = username
@@ -159,13 +159,13 @@ def editar_usuario(request, usuario_id):
         
         usuario.save()
         messages.success(request, f'Usuario {username} actualizado correctamente.')
-        return redirect('gestionar_usuarios')
+        return redirect('admin_connect:gestionar_usuarios')
     
     context = {
         'usuario': usuario,
     }
     
-    return render(request, 'admin/editar_usuario.html', context)
+    return render(request, 'admin_connect/editar_usuario.html', context)
 
 
 @staff_member_required
@@ -191,13 +191,13 @@ def modificar_puntos_usuario(request, usuario_id):
         except ValueError as e:
             messages.error(request, str(e))
         
-        return redirect('gestionar_usuarios')
+        return redirect('admin_connect:gestionar_usuarios')
     
     context = {
         'usuario': usuario,
     }
     
-    return render(request, 'admin/modificar_puntos.html', context)
+    return render(request, 'admin_connect/modificar_puntos.html', context)
 
 @staff_member_required
 def estadisticas_estaciones(request):
@@ -252,4 +252,4 @@ def estadisticas_estaciones(request):
         'estaciones_valoradas_data': estaciones_valoradas_data,
     }
     
-    return render(request, 'admin/estadisticas_estaciones.html', context)
+    return render(request, 'admin_connect/estadisticas_estaciones.html', context)

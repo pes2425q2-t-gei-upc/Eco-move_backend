@@ -1,74 +1,101 @@
-{% extends "admin/base_site.html" %}
+{% extends "admin_connect/base_custom.html" %}
 {% load static %}
 
 {% block extrastyle %}
 <style>
-  .dashboard-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-  .dashboard-card {
-    background-color: #000000;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    padding: 20px;
-  }
-  .dashboard-card h2 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    font-size: 18px;
-  }
-  .stat-number {
-    font-size: 24px;
-    font-weight: bold;
-    color: #447e9b;
-  }
-  .stat-container {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .stat-label {
-    font-weight: bold;
-  }
-  .table-container {
-    overflow-x: auto;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  th, td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-  }
-  th {
-    background-color: #f2f2f2;
-  }
-  .action-buttons {
-    margin-top: 20px;
-    display: flex;
-    gap: 10px;
-  }
-  .action-button {
-    display: inline-block;
-    padding: 10px 15px;
-    background-color: #447e9b;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-  }
-  .action-button:hover {
-    background-color: #366b81;
-  }
+  body {
+  background-color: black; /* Fondo general claro */
+  font-family: "Roboto", "Segoe UI", sans-serif;
+}
+
+.dashboard-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dashboard-card {
+  background-color: black; /* Fondo blanco para las cards */
+  border: 1px solid #d9d9d9; /* Borde gris suave */
+  border-radius: 6px;
+  box-shadow: none; /* Sin sombra exagerada */
+  padding: 20px;
+}
+
+.dashboard-card h2 {
+  margin-top: 0;
+  border-bottom: 1px solid #d9d9d9;
+  padding-bottom: 10px;
+  font-size: 18px;
+  color: white; /* Gris muy oscuro */
+}
+
+.stat-number {
+  font-size: 26px;
+  font-weight: bold;
+  color: white; /* Azul Django Admin */
+}
+
+.stat-container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.stat-label {
+  font-weight: 600;
+  color: white; /* Gris oscuro */
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+th {
+  background-color: #f9f9f9;
+  color: #333;
+  font-weight: bold;
+}
+
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: #0C4B7F; /* Botón azul Django */
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.action-button:hover {
+  background-color: #093b64; /* Azul más oscuro al pasar ratón */
+}
+
 </style>
 {% endblock %}
 
 {% block content %}
+
+
 <h1>Panel de Administración</h1>
 
 <div class="dashboard-container">
@@ -188,8 +215,8 @@
 </div>
 
 <div class="action-buttons">
-  <a href="{% url 'admin_refugios' %}" class="action-button">Sincronizar Refugios</a>
-  <a href="{% url 'gestionar_usuarios' %}" class="action-button">Gestionar Usuarios</a>
-  <a href="{% url 'estadisticas_estaciones' %}" class="action-button">Estadísticas de Estaciones</a>
+  <a href="{% url 'admin_connect:sincronizar_refugios' %}" class="action-button">Sincronizar Refugios</a>
+  <a href="{% url 'admin_connect:gestionar_usuarios' %}" class="action-button">Gestionar Usuarios</a>
+  <a href="{% url 'admin_connect:estadisticas_estaciones' %}" class="action-button">Estadísticas de Estaciones</a>
 </div>
 {% endblock %}

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_extensions',
     'rest_framework_simplejwt',
+    'admin_connect',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'

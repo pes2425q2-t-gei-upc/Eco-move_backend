@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import (
+from api_punts_carrega.models import (
     Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, 
     ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion
 )

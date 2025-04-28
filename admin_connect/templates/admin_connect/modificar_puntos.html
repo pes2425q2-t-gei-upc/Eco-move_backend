@@ -1,10 +1,10 @@
-{% extends "admin/base_site.html" %}
+{% extends "admin_connect/base_custom.html" %}
 {% load static %}
 
 {% block extrastyle %}
 <style>
   .card {
-    background-color: #000000;
+    background-color: #fff;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     padding: 20px;
@@ -61,11 +61,6 @@
 {% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 20px;">
-  <a href="{% url 'gestionar_usuarios' %}" style="display: inline-block; padding: 10px 15px; background-color: #447e9b; color: white; text-decoration: none; border-radius: 4px;">
-    &larr; Volver a gestionar usuarios
-  </a>
-</div>
 <h1>Modificar Puntos de Usuario</h1>
 
 <div class="card">
@@ -86,16 +81,17 @@
         <option value="restar">Restar puntos</option>
       </select>
     </div>
-    
+
     <div class="form-group">
-      <label for="puntos">Cantidad de puntos:</label>
-      <input type="number" name="puntos" id="puntos" class="form-control" min="1" required>
+      <label for="cantidad">Cantidad de puntos:</label>
+      <input type="number" name="cantidad" id="cantidad" class="form-control" required>
     </div>
-    
+
     <div class="button-group">
-      <button type="submit" class="button button-primary">Aplicar</button>
-      <a href="{% url 'gestionar_usuarios' %}" class="button button-secondary">Cancelar</a>
+      <button type="submit" class="button button-primary">Modificar puntos</button>
+      <a href="{% url 'admin_connect:admin_dashboard' %}" class="button button-secondary">Cancelar</a>
     </div>
   </form>
 </div>
+
 {% endblock %}
