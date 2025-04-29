@@ -2,15 +2,35 @@ from rest_framework import serializers
 from .models import Missatge, Chat, PuntEmergencia
 
 class ChatSerializer(serializers.ModelSerializer):
+    creador_username = serializers.CharField(source='creador.username', read_only=True)
+    creador_first_name = serializers.CharField(source='creador.first_name', read_only=True)
+    creador_last_name = serializers.CharField(source='creador.last_name', read_only=True)
+    receptor_username = serializers.CharField(source='receptor.username', read_only=True)
+    receptor_first_name = serializers.CharField(source='receptor.first_name', read_only=True)
+    receptor_last_name = serializers.CharField(source='receptor.last_name', read_only=True)
+    
     class Meta:
         model = Chat
-        fields = '__all__'
+        fields = [
+            'id',
+            'alerta',
+            'creador',
+            'creador_username',
+            'creador_first_name',
+            'creador_last_name',
+            'receptor',
+            'receptor_username',
+            'receptor_first_name',
+            'receptor_last_name',
+            'activa',
+            'inicida_en']
         
 class AlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = PuntEmergencia
         fields = '__all__'
-        read_only_fields = ['id_emergencia', 'timestamp', 'sender']
+        read_only_fields = [
+            'id_emergencia', 'timestamp', 'sender']
         
 class MessagesSerializer(serializers.ModelSerializer):
     class Meta:

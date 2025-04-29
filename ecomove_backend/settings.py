@@ -1,6 +1,8 @@
+import paramiko
+from sshtunnel import SSHTunnelForwarder
 import os
-from dotenv import load_dotenv
 from pathlib import Path
+from dotenv import load_dotenv
 from datetime import timedelta
 from django.utils.translation import gettext_lazy as _
 
@@ -38,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_extensions',
     'rest_framework_simplejwt',
+    'admin_connect',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
@@ -59,7 +62,10 @@ ROOT_URLCONF = 'ecomove_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            # Añadir esta línea para incluir las plantillas personalizadas
+            os.path.join(BASE_DIR, 'api_punts_carrega', 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -78,15 +84,35 @@ WSGI_APPLICATION = 'ecomove_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
+def open_ssh_tunnel():
+    SSH_HOST = os.getenv('SSH_HOST')  
+    SSH_PORT = int(os.getenv('SSH_PORT'))  
+    SSH_USER = os.getenv('SSH_USER')  
+    SSH_PASSWORD = os.getenv('SSH_PASSWORD')  
+    REMOTE_HOST = 'localhost'  
+    REMOTE_PORT = 5433  
+
+    tunnel = SSHTunnelForwarder(
+        (SSH_HOST, SSH_PORT),
+        ssh_username=SSH_USER,
+        ssh_password=SSH_PASSWORD,
+        remote_bind_address=(REMOTE_HOST, REMOTE_PORT)
+    )
+    tunnel.start()
+    return tunnel
+
 if os.getenv('ENV_WHEREIAM') == 'production':
+    tunnel = open_ssh_tunnel()
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('DB_NAME'),
             'USER': os.getenv('DB_USER'),
             'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+            'HOST': '127.0.0.1', 
+            'PORT': tunnel.local_bind_port,
         }
     }
 else:
@@ -96,6 +122,7 @@ else:
             'NAME': BASE_DIR / 'db_local.sqlite3',
         }
     }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -156,7 +183,36 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Configuración adicional para archivos estáticos
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración opcional de caché con Redis
+# Descomenta estas líneas si deseas usar Redis para caché
+"""
+UPSTASH_REDIS_REST_URL = os.environ.get('UPSTASH_REDIS_REST_URL', '')
+UPSTASH_REDIS_REST_TOKEN = os.environ.get('UPSTASH_REDIS_REST_TOKEN', '')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': UPSTASH_REDIS_REST_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': UPSTASH_REDIS_REST_TOKEN,
+        }
+    }
+}
+"""
+
+# Si prefieres usar la caché en memoria (más simple)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}

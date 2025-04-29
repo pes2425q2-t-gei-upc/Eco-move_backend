@@ -16,16 +16,22 @@ class AlertsAPITests(TestCase):
             email='sender@example.com',
             username='senderuser',
             password='senderpassword',
+            first_name='Sender',
+            last_name='User',
         )
         self.receiver = User.objects.create_user(
             email='receiver@example.com',
             username='receiveruser',
             password='receiverpassword',
+            first_name='Receiver',
+            last_name='User',
         )
         self.helper = User.objects.create_user(
             email='helper@example.com',
             username='helperuser',
             password='helperpassword',
+            first_name='Helper',
+            last_name='User',
         )
         self.sender_password = 'senderpassword'
         self.receiver_password = 'receiverpassword'

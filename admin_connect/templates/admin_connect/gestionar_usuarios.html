@@ -1,0 +1,125 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: rgba(169, 169, 169, 0.181);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .table-container {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid black;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+  .button {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 5px;
+  }
+  .button:hover {
+    background-color: #366b81;
+  }
+  .search-container {
+    margin-bottom: 20px;
+  }
+  .search-input {
+    padding: 8px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .search-button {
+    padding: 8px 15px;
+    background-color: #447e9b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .back-button {
+     display: inline-block;
+     padding: 10px 15px;
+     background-color: #447e9b;
+     color: white;
+     text-decoration: none;
+     border-radius: 4px;
+     margin-bottom: 20px;
+   }
+   .action-buttons {
+     white-space: nowrap;
+   }
+  
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:admin_dashboard' %}" class="back-button">
+    &larr; Volver al Dashboard
+  </a>
+</div>
+<h1>Gestionar Usuarios</h1>
+
+<div class="card">
+  <div class="search-container">
+    <form method="get">
+      <input type="text" name="q" placeholder="Buscar por nombre o email" class="search-input" value="{{ request.GET.q|default:'' }}">
+      <button type="submit" class="search-button">Buscar</button>
+    </form>
+  </div>
+  
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Puntos</th>
+          <th>Admin</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+          <td>{{ usuario.username }}</td>
+          <td>{{ usuario.first_name }} {{ usuario.last_name }}</td>
+          <td>{{ usuario.email }}</td>
+          <td>{{ usuario.punts }}</td>
+          <td>{% if usuario.is_admin %}Sí{% else %}No{% endif %}</td>
+          <td class="action-buttons">
+            <a href="{% url 'admin_connect:editar_usuario' usuario_id=usuario.id %}" class="button">Editar</a>
+            <a href="{% url 'admin_connect:modificar_puntos_usuario' usuario_id=usuario.id %}" class="button">Modificar puntos</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">No hay usuarios disponibles</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
