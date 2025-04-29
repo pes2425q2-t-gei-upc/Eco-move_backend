@@ -713,6 +713,19 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             "nombre": f"{usuario.first_name} {usuario.last_name}",
             "puntos": usuario.punts
         }, status=status.HTTP_200_OK)
+        
+    @action(detail=True, methods=['put'], url_path='update-language')
+    def update_language(self, request, pk=None):
+        usuario = self.get_object()
+        
+        idioma = request.data.get('idioma')
+        if idioma not in ['Català', 'Castellano', 'English']:
+            return Response({"error": "Not valid language"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        usuario.idioma = idioma
+        usuario.save()
+        
+        return Response({"message": "Language updated successfully", "Language": usuario.idioma})
 
 class RegisterView(APIView):
     def post(self, request):
