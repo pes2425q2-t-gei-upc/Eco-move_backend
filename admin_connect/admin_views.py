@@ -117,7 +117,7 @@ def gestionar_usuarios(request):
 @staff_member_required
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
-    
+     
     if request.method == 'POST':
         # Obtener datos del formulario
         username = request.POST.get('username')
@@ -130,18 +130,18 @@ def editar_usuario(request, usuario_id):
         is_admin = request.POST.get('is_admin') == 'on'
         is_active = request.POST.get('is_active') == 'on'
         new_password = request.POST.get('new_password')
-        
+         
         # Verificar si el username ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(username=username).exclude(id=usuario_id).exists():
-            messages.error(request, f'El nombre de usuario {username} ya está en uso.')
-            return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
-        
+             messages.error(request, f'El nombre de usuario {username} ya está en uso.')
+             return redirect('admin_connect/editar_usuario', usuario_id=usuario_id)
+         
         # Verificar si el email ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(email=email).exclude(id=usuario_id).exists():
-            messages.error(request, f'El email {email} ya está en uso.')
-            return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
-        
-        # Actualizar datos del usuario
+             messages.error(request, f'El email {email} ya está en uso.')
+             return redirect('admin_connect/editar_usuario', usuario_id=usuario_id)
+         
+         # Actualizar datos del usuario
         usuario.username = username
         usuario.email = email
         usuario.first_name = first_name
@@ -152,19 +152,19 @@ def editar_usuario(request, usuario_id):
         usuario.is_admin = is_admin
         usuario.is_staff = is_admin  # Actualizar is_staff junto con is_admin
         usuario.is_active = is_active
-        
-        # Actualizar contraseña si se proporciona una nueva
+         
+         # Actualizar contraseña si se proporciona una nueva
         if new_password:
             usuario.set_password(new_password)
-        
+         
         usuario.save()
         messages.success(request, f'Usuario {username} actualizado correctamente.')
         return redirect('admin_connect:gestionar_usuarios')
-    
+     
     context = {
-        'usuario': usuario,
+         'usuario': usuario,
     }
-    
+     
     return render(request, 'admin_connect/editar_usuario.html', context)
 
 
@@ -175,12 +175,9 @@ def modificar_puntos_usuario(request, usuario_id):
     if request.method == 'POST':
         accion = request.POST.get('accion')
         puntos = request.POST.get('puntos')
-        
+        #print(f"Acción: {accion}, Puntos: {puntos}")
         try:
             puntos = int(puntos)
-            if puntos <= 0:
-                raise ValueError("Los puntos deben ser un número positivo")
-                
             if accion == 'sumar':
                 usuario.sumar_punts(puntos)
                 messages.success(request, f'Se han sumado {puntos} puntos a {usuario.username}')

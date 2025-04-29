@@ -22,5 +22,4 @@ urlpatterns = [
     # Vista para las estadísticas de las estaciones
     path('estadisticas/estaciones/', admin_views.estadisticas_estaciones, name='estadisticas_estaciones'),
     
-    # Aquí puedes añadir más URLs si necesitas
 ]
