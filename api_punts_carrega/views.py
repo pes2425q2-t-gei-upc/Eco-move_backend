@@ -24,7 +24,8 @@ from .models import  (
     RefugioClimatico,
     Usuario,
     ValoracionEstacion,
-    TextItem
+    TextItem,
+    Idiomas
 )
 
 from .serializers import ( 
@@ -719,7 +720,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         usuario = self.get_object()
         
         idioma = request.data.get('idioma')
-        if idioma not in ['Català', 'Castellano', 'English']:
+        if idioma not in Idiomas.values:
             return Response({"error": "Not valid language"}, status=status.HTTP_400_BAD_REQUEST)
         
         usuario.idioma = idioma
