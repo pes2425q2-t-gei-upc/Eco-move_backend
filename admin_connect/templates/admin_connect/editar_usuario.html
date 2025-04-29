@@ -1,0 +1,142 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: #000000;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+    max-width: 600px;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  .checkbox-group input {
+    margin-right: 10px;
+  }
+  .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .button-primary {
+    background-color: #447e9b;
+    color: white;
+  }
+  .button-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+  .back-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:gestionar_usuarios' %}" class="back-button">
+    &larr; Volver a Gestionar Usuarios
+  </a>
+</div>
+
+<h1>Editar Usuario</h1>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="form-group">
+      <label for="username">Nombre de usuario:</label>
+      <input type="text" name="username" id="username" class="form-control" value="{{ usuario.username }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" name="email" id="email" class="form-control" value="{{ usuario.email }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="first_name">Nombre:</label>
+      <input type="text" name="first_name" id="first_name" class="form-control" value="{{ usuario.first_name }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="last_name">Apellidos:</label>
+      <input type="text" name="last_name" id="last_name" class="form-control" value="{{ usuario.last_name }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="telefon">Teléfono:</label>
+      <input type="text" name="telefon" id="telefon" class="form-control" value="{{ usuario.telefon|default:'' }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="idioma">Idioma:</label>
+      <select name="idioma" id="idioma" class="form-control">
+        <option value="es" {% if usuario.idioma == 'es' %}selected{% endif %}>Español</option>
+        <option value="ca" {% if usuario.idioma == 'ca' %}selected{% endif %}>Catalán</option>
+        <option value="en" {% if usuario.idioma == 'en' %}selected{% endif %}>Inglés</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="descripcio">Descripción:</label>
+      <textarea name="descripcio" id="descripcio" class="form-control" rows="3">{{ usuario.descripcio|default:'' }}</textarea>
+    </div>
+    
+    <div class="checkbox-group">
+      <input type="checkbox" name="is_admin" id="is_admin" {% if usuario.is_admin %}checked{% endif %}>
+      <label for="is_admin">Administrador</label>
+    </div>
+    
+    <div class="checkbox-group">
+      <input type="checkbox" name="is_active" id="is_active" {% if usuario.is_active %}checked{% endif %}>
+      <label for="is_active">Usuario activo</label>
+    </div>
+    
+    <div class="form-group">
+      <label for="new_password">Nueva contraseña (dejar en blanco para mantener la actual):</label>
+      <input type="password" name="new_password" id="new_password" class="form-control">
+    </div>
+    
+    <div class="button-group">
+      <button type="submit" class="button button-primary">Guardar cambios</button>
+      <a href="{% url 'admin_connect:gestionar_usuarios' %}" class="button button-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

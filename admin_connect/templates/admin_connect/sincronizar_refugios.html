@@ -1,0 +1,93 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: #000000;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .button-primary {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .button-primary:hover {
+    background-color: #366b81;
+  }
+  .table-container {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:admin_dashboard' %}" style="display: inline-block; padding: 10px 15px; background-color: #447e9b; color: white; text-decoration: none; border-radius: 4px;">
+    &larr; Volver al Dashboard
+  </a>
+</div>
+<h1>Sincronizar Refugios Climáticos</h1>
+
+<div class="card">
+  <h2>Sincronización</h2>
+  <p>Pulse el botón para sincronizar los refugios climáticos con la API externa.</p>
+  
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="button-primary">Sincronizar Refugios</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Refugios Actuales ({{ refugios|length }})</h2>
+  
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Dirección</th>
+          <th>Coordenadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for refugio in refugios %}
+        <tr>
+          <td>{{ refugio.id_punt }}</td>
+          <td>{{ refugio.nombre }}</td>
+          <td>{{ refugio.direccio }} {{ refugio.numero_calle|default:"" }}</td>
+          <td>{{ refugio.lat }}, {{ refugio.lng }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4">No hay refugios disponibles</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
