@@ -1,0 +1,104 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: rgba(169, 169, 169, 0.181);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+    max-width: 500px;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    height: 40px;
+  }
+  .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .button-primary {
+    background-color: #447e9b;
+    color: white;
+  }
+  .button-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+  .user-info {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  .user-info p {
+    margin: 5px 0;
+  }
+  .user-info .label {
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:gestionar_usuarios' %}" style="display: inline-block; padding: 10px 15px; background-color: #447e9b; color: white; text-decoration: none; border-radius: 4px;">
+    &larr; Volver a gestionar usuarios
+  </a>
+</div>
+
+<h1>Modificar Puntos de Usuario</h1>
+
+<div class="card">
+  <div class="user-info">
+    <p><span class="label">Usuario:</span> {{ usuario.username }}</p>
+    <p><span class="label">Nombre:</span> {{ usuario.first_name }} {{ usuario.last_name }}</p>
+    <p><span class="label">Email:</span> {{ usuario.email }}</p>
+    <p><span class="label">Puntos actuales:</span> {{ usuario.punts }}</p>
+  </div>
+  
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="form-group">
+      <label for="accion">Acción:</label>
+      <select name="accion" id="accion" class="form-control" required>
+        <option value="sumar">Sumar puntos</option>
+        <option value="restar">Restar puntos</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="puntos">Cantidad de puntos:</label>
+      <input type="number" name="puntos" id="puntos" class="form-control" required>
+    </div>
+
+    <div class="button-group">
+      <button type="submit" class="button button-primary">Modificar puntos</button>
+      <a href="{% url 'admin_connect:admin_dashboard' %}" class="button button-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
