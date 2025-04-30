@@ -23,3 +23,5 @@ typing_extensions==4.12.2
 urllib3==2.3.0
 paramiko==2.11.0
 sshtunnel==0.4.0
+django-modeltranslation>=0.17
+
