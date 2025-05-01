@@ -270,7 +270,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
             vehicle = None
             if vehicle_matricula:
                 try:
-                    vehicle = Vehicle.objects.get(Vehicle, matricula=vehicle_matricula, propietari=request.user)
+                    vehicle = Vehicle.objects.get(matricula=vehicle_matricula, propietari=request.user)
                 except Vehicle.DoesNotExist:
                     return Response({'error': 'Vehicle no trobat'}, status=404)
 
