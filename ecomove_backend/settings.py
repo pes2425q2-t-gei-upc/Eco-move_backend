@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'rest_framework_simplejwt',
     'admin_connect',
+    'rest_framework.authtoken',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
@@ -85,6 +86,7 @@ else:
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     )
 }
 

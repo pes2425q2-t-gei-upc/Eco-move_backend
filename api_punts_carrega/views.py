@@ -190,16 +190,21 @@ def refugios_mas_cercanos(request):
 class ReservaViewSet(viewsets.ModelViewSet):
     queryset = Reserva.objects.all()
     serializer_class = ReservaSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
-        Filtra las reservas por estación si se proporciona 'estacio_carrega'.
-        Filtra las reservas por día exacto si se proporciona 'dia' (formato DD/MM/YYYY).
-        Devuelve TODAS las reservas si no hay filtros (o el de día es inválido).
+        Devuelve reservas del usuario autenticado, filtrando opcionalmente por estación y día (DD/MM/YYYY).
         """
-        queryset = Reserva.objects.all()
+        try:
+            user = self.request.user
+            if not user.is_authenticated:
+                return Reserva.objects.none()
+            queryset = Reserva.objects.filter(usuario=user)
+        except AttributeError:
+            return Reserva.objects.none()
 
-        estacio_id_param = self.request.query_params.get('estacio_carrega', None)
+        estacio_id_param = self.request.query_params.get('estacion_carrega')
         if estacio_id_param:
             queryset = queryset.filter(estacion__id_punt=estacio_id_param)
 
@@ -208,13 +213,12 @@ class ReservaViewSet(viewsets.ModelViewSet):
             try:
                 dia_obj = datetime.strptime(dia_str, '%d/%m/%Y').date()
                 queryset = queryset.filter(fecha=dia_obj)
-                return queryset.select_related('estacion', 'vehicle')
-
+                return queryset.select_related('usuario', 'estacion', 'vehicle')
             except ValueError:
-                print(f"WARN: Formato fecha inválido para ?dia= : {dia_str}. Se esperaba DD/MM/YYYY.")
-                pass
+                print(f"WARN: Formato fecha inválido para ?dia= : {dia_str}")
 
-        return queryset.select_related('estacion', 'vehicle')
+        return queryset.select_related('usuario', 'estacion', 'vehicle')
+
 
     @action(detail=False, methods=['post'])
     def crear(self, request):
@@ -266,7 +270,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
             vehicle = None
             if vehicle_matricula:
                 try:
-                    vehicle = Vehicle.objects.get(matricula=vehicle_matricula)
+                    vehicle = Vehicle.objects.get(matricula=vehicle_matricula, propietari=request.user)
                 except Vehicle.DoesNotExist:
                     return Response({'error': 'Vehicle no trobat'}, status=404)
 
@@ -279,6 +283,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
 
             reserva = Reserva.objects.create(
+                usuario=request.user,
                 estacion=estacio,
                 fecha=fecha,
                 hora=hora_inicio,
@@ -295,7 +300,11 @@ class ReservaViewSet(viewsets.ModelViewSet):
     # @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
-        reserva = get_object_or_404(Reserva, id=pk)
+
+        try:
+            reserva = get_object_or_404(Reserva, id=pk, usuario=request.user)
+        except Reserva.DoesNotExist:
+            return Response({'error': 'Reserva no encontrada o sin permiso'}, status=status.HTTP_404_NOT_FOUND)
 
         # if reserva.vehicle is None or reserva.vehicle.propietari != request.user:
         #     return Response({'error': 'No tens permís per modificar aquesta reserva'}, status=status.HTTP_403_FORBIDDEN)
@@ -325,7 +334,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
             if vehicle_matricula is not None:
                 if vehicle_matricula == "": vehicle = None
                 else:
-                    vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=request.user) # Verifica NUEVO vehículo
+                    vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=request.user)
                     vehicle_carregadors = set(vehicle.model_cotxe.tipus_carregador.all().values_list('id_carregador', flat=True))
                     estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
                     if not vehicle_carregadors.intersection(estacio_carregadors): return Response({'error': 'Nou vehicle no compatible'}, status=400)
@@ -342,7 +351,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['delete'])
     def eliminar(self, request, pk=None):
 
-        reserva = get_object_or_404(Reserva, id=pk)
+        reserva = get_object_or_404(Reserva, id=pk, usuario=request.user)
         reserva.delete()
         return Response({'message': 'Reserva eliminada con éxito'}, status=200)
 
