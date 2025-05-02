@@ -3,6 +3,9 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
 
+from ecomove_backend import settings
+
+
 # ---------------- ENUMS ---------------- #
 
 class Velocitat_de_carrega(models.TextChoices):
@@ -126,6 +129,11 @@ class TipusCarregador(models.Model):
         return f"{self.nom_tipus} - {self.tipus_connector} ({self.tipus_corrent})"
 
 class Reserva(models.Model):
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reservas'
+    )
     estacion = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name='reservas')
     fecha = models.DateField()
     hora = models.TimeField()
@@ -136,7 +144,8 @@ class Reserva(models.Model):
     vehicle = models.ForeignKey('Vehicle', on_delete=models.SET_NULL, null=True, blank=True, related_name='reservas')
 
     def __str__(self):
-        return f"Reserva en {self.estacion} el {self.fecha} a las {self.hora} por {self.duracion}"
+        user_info = f" de {self.usuario.username}" if hasattr(self, 'usuario') and self.usuario else ""
+        return f"Reserva en {self.estacion} el {self.fecha} a las {self.hora}{user_info} por {self.duracion}"
 
 class ReservaFinalitzada(models.Model):
     reserva = models.OneToOneField(Reserva, on_delete=models.CASCADE, related_name="finalitzada")
