@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.utils.html import format_html
 from api_punts_carrega.models import (
     Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, 
-    ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion
+    ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion,
+    TextItem
 )
 
 class TipusCarregadorInline(admin.TabularInline):
@@ -75,3 +76,7 @@ class TipusCarregadorAdmin(admin.ModelAdmin):
     list_filter = ('tipus_corrent',)
     search_fields = ('nom_tipus', 'tipus_connector')
 
+@admin.register(TextItem)
+class TextItemAdmin(admin.ModelAdmin):
+    list_display = ('key', 'text_ca', 'text_en', 'text_es')
+    search_fields = ('key',)

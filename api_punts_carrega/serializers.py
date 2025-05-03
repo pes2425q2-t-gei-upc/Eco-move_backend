@@ -18,6 +18,7 @@ from .models import (
 )
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
+from django.utils.translation import get_language
 
 class PuntSerializer(serializers.ModelSerializer):
     
@@ -200,6 +201,12 @@ class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
         return obj.valoraciones.count()
 
 class TextItemSerializer(serializers.ModelSerializer):
+    text = serializers.SerializerMethodField()
     class Meta:
         model = TextItem
-        fields = ['__all__']
+        fields = ['id', 'key', 'text']
+    
+    def get_text(self, obj):
+        lang = get_language()
+        fallback = obj.text
+        return getattr(obj, f'text_{lang}', fallback)  # Default to Catalan if language not found
