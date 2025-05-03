@@ -53,7 +53,7 @@ class UsuarioAdmin(admin.ModelAdmin):
     search_fields = ('username', 'email', 'first_name', 'last_name')
     fieldsets = (
         (None, {'fields': ('username', 'email', 'password')}),
-        ('Información personal', {'fields': ('first_name', 'last_name', 'idioma', 'telefon', 'descripcio')}),
+        ('Información personal', {'fields': ('first_name', 'last_name', 'idioma', 'telefon', 'descripcio', 'foto')}),
         ('Permisos', {'fields': ('is_active', 'is_staff', 'is_admin', 'is_superuser', 'groups', 'user_permissions')}),
         ('Puntos', {'fields': ('_punts',)}),
     )
