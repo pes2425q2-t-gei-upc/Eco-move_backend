@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'admin_connect',
     'corsheaders',
     'django.contrib.sites',
+    'cloudinary',
+    'cloudinary_storage',
 
     # auth
     'rest_framework',
@@ -59,6 +61,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ecomove_backend.urls'
 
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('ENV_CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('ENV_CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('ENV_CLOUDINARY_API_SECRET'),
+}
 CORS_ALLOW_ALL_ORIGINS = True
 REST_USE_JWT = True
 DJREST_AUTH_TOKEN_MODEL = None
@@ -99,6 +108,7 @@ REST_AUTH_REGISTER_SERIALIZERS = {
     'REGISTER_SERIALIZER': 'dj_rest_auth.registration.serializers.RegisterSerializer',
 }
 
+MEDIA_URL = '/media/'
 
 # Database connection without SSH tunneling
 if os.getenv('ENV_WHEREIAM') == 'production':

@@ -47,15 +47,20 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'first_name', 'last_name', 'email', 'username',
-            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts'
+            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts','foto'
         ]
         read_only_fields = ['id', 'punts']
 
 class PerfilPublicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ['username', 'first_name', 'last_name', 'idioma', 'descripcio']
+        fields = ['username', 'first_name', 'last_name', 'idioma', 'descripcio','foto']
 
+class FotoPerfilSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = ['id', 'foto']
+        read_only_fields = ['id']
 
 class ReservaSerializer(serializers.ModelSerializer):
     fecha = serializers.DateField(format='%d/%m/%Y')
