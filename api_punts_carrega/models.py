@@ -25,7 +25,7 @@ class Resolucio(models.TextChoices):
     ABSOLT = "Absolt"
 
 class Idiomas(models.TextChoices):
-    CATALA = "Català"
+    CATALA = "Catala"
     CASTELLANO = "Castellano"
     ENGLISH = "English"
 
