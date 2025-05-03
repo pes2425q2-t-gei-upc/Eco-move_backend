@@ -11,9 +11,11 @@ from django.db.models import Avg, Count, Q
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions, serializers
 from rest_framework.decorators import api_view, action
+from rest_framework.parsers import MultiPartParser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from .permissions import EsElMismoUsuarioOReadOnly
 from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion
 
 from .serializers import ( 
@@ -30,6 +32,7 @@ from .serializers import (
     EstacioCarregaConValoracionesSerializer,
     RegisterSerializer,
     PerfilPublicoSerializer,
+    FotoPerfilSerializer,
 )
 
 
@@ -731,6 +734,29 @@ class PerfilPublicoViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PerfilPublicoSerializer
     permission_classes = [AllowAny]  # o IsAuthenticated si quieres solo para usuarios registrados
     lookup_field = 'username'
+
+class PerfilFotoView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def get(self, request):
+        """Obtener la foto del usuario actual"""
+        serializer = FotoPerfilSerializer(request.user)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Crear o reemplazar la foto del usuario actual"""
+        serializer = FotoPerfilSerializer(request.user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request):
+        """Eliminar la foto del usuario actual"""
+        user = request.user
+        user.foto.delete(save=True)
+        return Response({'message': 'Foto eliminada correctamente'}, status=204)
 
 class ValoracionEstacionViewSet(viewsets.ModelViewSet):
     queryset = ValoracionEstacion.objects.all()

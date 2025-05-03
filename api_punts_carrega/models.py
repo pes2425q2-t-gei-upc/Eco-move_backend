@@ -2,6 +2,7 @@ from django.db import models, transaction
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
 from ecomove_backend import settings
 
@@ -24,7 +25,7 @@ class Resolucio(models.TextChoices):
     ABSOLT = "Absolt"
 
 class Idiomas(models.TextChoices):
-    CATALA = "Català"
+    CATALA = "Catala"
     CASTELLANO = "Castellano"
     ENGLISH = "English"
 
@@ -41,7 +42,7 @@ class TipusVelocitat(models.Model):
 class Usuario(AbstractUser):
     idioma = models.CharField(max_length=20, choices=Idiomas.choices, default=Idiomas.CATALA)
     telefon = models.CharField(max_length=15, blank=True, null=True)
-    #foto = models.ImageField(upload_to='fotos/', blank=True, null=True)
+    foto = models.ImageField(upload_to='fotos/',storage=MediaCloudinaryStorage(), blank=True, null=True)
     descripcio = models.TextField(blank=True, null=True)
     _punts = models.IntegerField(default=0, db_column='punts')  # _ és per fer privat a python
     # Forzamos que el email sea único y lo usamos para login
@@ -56,6 +57,17 @@ class Usuario(AbstractUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
     
+    def save(self, *args, **kwargs):
+        # Eliminar imagen anterior si se está cambiando
+        try:
+            old = Usuario.objects.get(pk=self.pk)
+            if old.foto and self.foto != old.foto:
+                old.foto.delete(save=False)
+        except Usuario.DoesNotExist:
+            pass  # es un nuevo usuario
+
+        super().save(*args, **kwargs)
+
     @property
     def punts(self):
         return self._punts

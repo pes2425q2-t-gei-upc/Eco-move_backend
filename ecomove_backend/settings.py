@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-$^-r@rvo%xjsvn##p(6g9j^s(o&b3lcc-(c@ax%saqcxlov)s9'
 DEBUG = True
+REST_USE_JWT = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
 
 INSTALLED_APPS = [
@@ -22,26 +23,54 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api_punts_carrega',
     'social_community',
-    'rest_framework',
     'django_extensions',
-    'rest_framework_simplejwt',
     'admin_connect',
+    'corsheaders',
+    'django.contrib.sites',
+    'cloudinary',
+    'cloudinary_storage',
+
+    # auth
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+
+    # allauth (social login)
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
     'rest_framework.authtoken',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'ecomove_backend.urls'
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('ENV_CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('ENV_CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('ENV_CLOUDINARY_API_SECRET'),
+}
+CORS_ALLOW_ALL_ORIGINS = True
+REST_USE_JWT = True
+DJREST_AUTH_TOKEN_MODEL = None
 
 TEMPLATES = [
     {
@@ -62,6 +91,24 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ecomove_backend.wsgi.application'
+
+SITE_ID = 1
+
+#  Configuración de allauth para login social
+
+SOCIALACCOUNT_ADAPTER = 'api_punts_carrega.adapters.CustomSocialAccountAdapter'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_UNIQUE_EMAIL = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'dj_rest_auth.registration.serializers.RegisterSerializer',
+}
+
+MEDIA_URL = '/media/'
 
 # Database connection without SSH tunneling
 if os.getenv('ENV_WHEREIAM') == 'production':
@@ -111,6 +158,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
 
 # Configuración de caché
 CACHES = {
