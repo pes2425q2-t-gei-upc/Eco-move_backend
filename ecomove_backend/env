@@ -1,5 +1,0 @@
-DB_NAME=bd_pes
-DB_USER=postgres
-DB_PASSWORD=pes12
-DB_PORT= 40501
-DB_HOST = nattech.fib.upc.edu
