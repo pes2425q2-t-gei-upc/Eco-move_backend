@@ -2,9 +2,23 @@ from datetime import datetime
 
 from django.template.defaultfilters import date
 from rest_framework import serializers
-from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion, Idiomas
+from .models import (
+    EstacioCarrega,
+    Punt,
+    TipusCarregador,
+    Reserva,
+    Vehicle,
+    ModelCotxe,
+    RefugioClimatico,
+   
+    Usuario,
+    ValoracionEstacion,
+    TextItem,
+    Idiomas
+)
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
+from django.utils.translation import get_language
 
 class PuntSerializer(serializers.ModelSerializer):
     
@@ -47,15 +61,20 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'first_name', 'last_name', 'email', 'username',
-            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts'
+            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts','foto'
         ]
         read_only_fields = ['id', 'punts']
 
 class PerfilPublicoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ['username', 'first_name', 'last_name', 'idioma', 'descripcio']
+        fields = ['username', 'first_name', 'last_name', 'idioma', 'descripcio','foto']
 
+class FotoPerfilSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = ['id', 'foto']
+        read_only_fields = ['id']
 
 class ReservaSerializer(serializers.ModelSerializer):
     fecha = serializers.DateField(format='%d/%m/%Y')
@@ -180,3 +199,14 @@ class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
     
     def get_num_valoraciones(self, obj):
         return obj.valoraciones.count()
+
+class TextItemSerializer(serializers.ModelSerializer):
+    text = serializers.SerializerMethodField()
+    class Meta:
+        model = TextItem
+        fields = ['id', 'key', 'text']
+    
+    def get_text(self, obj):
+        lang = get_language()
+        fallback = obj.text
+        return getattr(obj, f'text_{lang}', fallback)  # Default to Catalan if language not found
