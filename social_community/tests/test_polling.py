@@ -42,12 +42,11 @@ class EmergenciaPollingTests(TestCase):
             'is_active': True,
         }
         
-        # Coordenadas para probar el ordenamiento por distancia
         self.test_locations = [
-            {'lat': 41.123456, 'lng': 2.123456},  # ubicación del alerta
-            {'lat': 41.123458, 'lng': 2.123458},  # muy cerca
-            {'lat': 41.130000, 'lng': 2.130000},  # más lejos
-            {'lat': 42.000000, 'lng': 3.000000},  # muy lejos
+            {'lat': 41.123456, 'lng': 2.123456},  
+            {'lat': 41.123458, 'lng': 2.123458},  
+            {'lat': 41.130000, 'lng': 2.130000},  
+            {'lat': 42.000000, 'lng': 3.000000}, 
         ]
 
     def authenticate(self, user):
@@ -63,37 +62,29 @@ class EmergenciaPollingTests(TestCase):
         )
     
     def test_poll_requires_coordinates(self):
-        """Test que el endpoint de polling requiere coordenadas"""
         self.authenticate(self.receiver)
         
-        # Intentar polling sin coordenadas
-        response = self.client.get(reverse('alerts-poll'))
+        response = self.client.get(reverse('alerts-polling-alertes'))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         
-        # Intentar con lat pero sin lng
-        response = self.client.get(f"{reverse('alerts-poll')}?lat=41.123456")
+        response = self.client.get(f"{reverse('alerts-polling-alertes')}?lat=41.123456")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         
-        # Intentar con lng pero sin lat
-        response = self.client.get(f"{reverse('alerts-poll')}?lng=2.123456")
+        response = self.client.get(f"{reverse('alerts-polling-alertes')}?lng=2.123456")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
     def test_poll_invalid_coordinates(self):
-        """Test que el endpoint de polling valida las coordenadas"""
         self.authenticate(self.receiver)
         
-        # Intentar polling con coordenadas inválidas
-        response = self.client.get(f"{reverse('alerts-poll')}?lat=abc&lng=2.123456")
+        response = self.client.get(f"{reverse('alerts-polling-alertes')}?lat=abc&lng=2.123456")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         
-        response = self.client.get(f"{reverse('alerts-poll')}?lat=41.123456&lng=xyz")
+        response = self.client.get(f"{reverse('alerts-polling-alertes')}?lat=41.123456&lng=xyz")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
     def test_poll_returns_active_alerts(self):
-        """Test que el polling devuelve alertas activas"""
         self.authenticate(self.sender)
         
-        # Crear una alerta
         alert = PuntEmergencia.objects.create(
             sender=self.sender,
             titol=self.data_alert['titol'],
@@ -103,10 +94,9 @@ class EmergenciaPollingTests(TestCase):
             is_active=True
         )
         
-        # Polling cerca de la ubicación de la alerta
         self.authenticate(self.receiver)
         response = self.client.get(
-            f"{reverse('alerts-poll')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}"
+            f"{reverse('alerts-polling-alertes')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}"
         )
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -116,10 +106,8 @@ class EmergenciaPollingTests(TestCase):
         self.assertEqual(response.json()['alerts'][0]['id_emergencia'], alert.id_emergencia)
     
     def test_poll_filters_inactive_alerts(self):
-        """Test que el polling filtra alertas inactivas por defecto"""
         self.authenticate(self.sender)
         
-        # Crear una alerta activa
         active_alert = PuntEmergencia.objects.create(
             sender=self.sender,
             titol="Alerta Activa",
@@ -129,7 +117,6 @@ class EmergenciaPollingTests(TestCase):
             is_active=True
         )
         
-        # Crear una alerta inactiva
         inactive_alert = PuntEmergencia.objects.create(
             sender=self.sender,
             titol="Alerta Inactiva",
@@ -139,33 +126,27 @@ class EmergenciaPollingTests(TestCase):
             is_active=False
         )
         
-        # Hacer polling con active_only=true (por defecto)
         self.authenticate(self.receiver)
         response = self.client.get(
-            f"{reverse('alerts-poll')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}"
+            f"{reverse('alerts-polling-alertes')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}"
         )
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         alerts = response.json()['alerts']
-        # Debería retornar solo la alerta activa
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0]['id_emergencia'], active_alert.id_emergencia)
         
-        # Hacer polling con active_only=false
         response = self.client.get(
-            f"{reverse('alerts-poll')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}&active_only=false"
+            f"{reverse('alerts-polling-alertes')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}&active_only=false"
         )
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         alerts = response.json()['alerts']
-        # Debería retornar ambas alertas
         self.assertEqual(len(alerts), 2)
     
     def test_poll_sorts_by_distance(self):
-        """Test que el polling ordena alertas por distancia"""
         self.authenticate(self.sender)
         
-        # Crear alertas en distintas ubicaciones
         alert1 = PuntEmergencia.objects.create(
             sender=self.sender,
             titol="Alerta Cercana",
@@ -193,26 +174,22 @@ class EmergenciaPollingTests(TestCase):
             is_active=True
         )
         
-        # Hacer polling desde un punto específico
         self.authenticate(self.receiver)
         response = self.client.get(
-            f"{reverse('alerts-poll')}?lat=41.123456&lng=2.123456"
+            f"{reverse('alerts-polling-alertes')}?lat=41.123456&lng=2.123456"
         )
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         alerts = response.json()['alerts']
         
-        # Las alertas deberían estar ordenadas por cercanía
         self.assertEqual(len(alerts), 3)
         self.assertEqual(alerts[0]['id_emergencia'], alert1.id_emergencia)  # la más cercana
         self.assertEqual(alerts[1]['id_emergencia'], alert2.id_emergencia)  # la de media distancia
         self.assertEqual(alerts[2]['id_emergencia'], alert3.id_emergencia)  # la más lejana
     
     def test_poll_since_timestamp(self):
-        """Test que el polling filtra alertas por timestamp"""
         self.authenticate(self.sender)
         
-        # Crear una alerta antigua
         old_alert = PuntEmergencia.objects.create(
             sender=self.sender,
             titol="Alerta Antigua",
@@ -222,14 +199,11 @@ class EmergenciaPollingTests(TestCase):
             is_active=True
         )
         
-        # Capturar el timestamp actual
         current_time = timezone.now()
         timestamp_str = current_time.timestamp()
         
-        # Esperar un momento para asegurar que el timestamp sea diferente
         time.sleep(1)
         
-        # Crear una alerta nueva
         new_alert = PuntEmergencia.objects.create(
             sender=self.sender,
             titol="Alerta Nueva",
@@ -239,26 +213,22 @@ class EmergenciaPollingTests(TestCase):
             is_active=True
         )
         
-        # Hacer polling con el parámetro since
         self.authenticate(self.receiver)
         response = self.client.get(
-            f"{reverse('alerts-poll')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}&since={timestamp_str}"
+            f"{reverse('alerts-polling-alertes')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}&since={timestamp_str}"
         )
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         alerts = response.json()['alerts']
         
-        # Debería retornar solo la alerta nueva
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0]['id_emergencia'], new_alert.id_emergencia)
     
     def test_poll_invalid_timestamp(self):
-        """Test que el polling maneja timestamps inválidos"""
         self.authenticate(self.receiver)
         
-        # Intentar polling con timestamp inválido
         response = self.client.get(
-            f"{reverse('alerts-poll')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}&since=invalid_timestamp"
+            f"{reverse('alerts-polling-alertes')}?lat={self.test_locations[0]['lat']}&lng={self.test_locations[0]['lng']}&since=invalid_timestamp"
         )
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

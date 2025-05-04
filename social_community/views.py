@@ -51,12 +51,13 @@ class AlertsViewSet(viewsets.ModelViewSet):
         Lat,lon cordenades necessaries per calcular la distancia entre el punt d'alerta i l'usuari.
         Retorna totes les alertes actives ordenades per distancia al punt d'alerta de l'usuari.
         Si es proporciona el paràmetre 'since', només es retornaran les alertes que s'han creat després d'aquest timestamp. per poder aixi no haver de carregar totes les alertes cada cop.
+        tambe es pot filtrar per alertes actives o no actives, per defecte son actives.
         """
         lat_usuario = request.query_params.get('lat')
         lng_usuario = request.query_params.get('lng')
+        active_only = request.query_params.get('active_only', 'true').lower() == 'true'
         since_param = request.query_params.get('since')
         
-        # Validate coordinates
         if not lat_usuario or not lng_usuario:
             return Response(
                 {'error': 'Se requieren parámetros de ubicación (lat, lng)'},
@@ -72,7 +73,6 @@ class AlertsViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Filter by timestamp if provided
         if since_param:
             try:
                 since_time = timezone.datetime.fromtimestamp(float(since_param), tz=timezone.get_current_timezone())
@@ -85,8 +85,8 @@ class AlertsViewSet(viewsets.ModelViewSet):
         else:
             alerts_queryset = PuntEmergencia.objects.all()
         
-
-        alerts_queryset = alerts_queryset.filter(is_active=True)
+        if active_only:
+            alerts_queryset = alerts_queryset.filter(is_active=True)
             
         alerts_with_distance = []
         for alert in alerts_queryset:
@@ -104,26 +104,6 @@ class AlertsViewSet(viewsets.ModelViewSet):
             'alerts': serializer.data,
             'timestamp': current_timestamp
         })
-    
-    @action(detail=False, methods=['get'], url_path='get_updates')
-    def near_points(self, request):
-        lat_usuario = request.query_params.get('lat')
-        lng_usuario = request.query_params.get('lng')
-        
-        if not lat_usuario or not lng_usuario:
-            return Response({'error': 'Faltan parámetros de ubicación (lat, lon)'}, status=400)
-
-        lat_usuario = float(lat_usuario)
-        lng_usuario = float(lng_usuario)
-
-        puntos_cercanos = []
-        for punt in PuntEmergencia.objects.filter(is_active=True):
-            distancia = haversine_distance(lat_usuario, lng_usuario, punt.lat, punt.lng)
-            if distancia <= 5:
-                puntos_cercanos.append(punt)
-
-        serializer = AlertSerializer(puntos_cercanos, many=True)
-        return Response(serializer.data)
     
     def perform_destroy(self, instance):
         instance.delete()
