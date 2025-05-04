@@ -7,8 +7,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 from django.utils import timezone
 from datetime import timedelta
 import json
