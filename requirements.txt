@@ -11,6 +11,7 @@ django-allauth==65.7.0
 django-cloudinary-storage==0.3.0
 django-cors-headers==4.7.0
 django-extensions==3.2.3
+django-modeltranslation==0.19.14
 djangorestframework==3.15.2
 djangorestframework_simplejwt==5.5.0
 gunicorn==23.0.0
@@ -32,7 +33,3 @@ sqlparse==0.5.3
 sshtunnel==0.4.0
 typing_extensions==4.12.2
 urllib3==2.3.0
-paramiko==2.11.0
-sshtunnel==0.4.0
-django-modeltranslation>=0.17
-
