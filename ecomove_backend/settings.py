@@ -1,31 +1,20 @@
-import paramiko
-from sshtunnel import SSHTunnelForwarder
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 from datetime import timedelta
+from django.utils.translation import gettext_lazy as _
+from dotenv import load_dotenv
+
 
 # to load variables from a .env file
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-$^-r@rvo%xjsvn##p(6g9j^s(o&b3lcc-(c@ax%saqcxlov)s9'
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+REST_USE_JWT = True
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
-
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -34,34 +23,63 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'modeltranslation',
     'api_punts_carrega',
     'social_community',
-    'rest_framework',
     'django_extensions',
-    'rest_framework_simplejwt',
     'admin_connect',
+    'corsheaders',
+    'django.contrib.sites',
+    'cloudinary',
+    'cloudinary_storage',
+
+    # auth
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+
+    # allauth (social login)
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
+    'rest_framework.authtoken',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
 
-
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'ecomove_backend.urls'
 
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('ENV_CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('ENV_CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('ENV_CLOUDINARY_API_SECRET'),
+}
+CORS_ALLOW_ALL_ORIGINS = True
+REST_USE_JWT = True
+DJREST_AUTH_TOKEN_MODEL = None
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            # Añadir esta línea para incluir las plantillas personalizadas
             os.path.join(BASE_DIR, 'api_punts_carrega', 'templates'),
         ],
         'APP_DIRS': True,
@@ -78,39 +96,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ecomove_backend.wsgi.application'
 
+SITE_ID = 1
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+#  Configuración de allauth para login social
 
+SOCIALACCOUNT_ADAPTER = 'api_punts_carrega.adapters.CustomSocialAccountAdapter'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_UNIQUE_EMAIL = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
 
-def open_ssh_tunnel():
-    SSH_HOST = os.getenv('SSH_HOST')  
-    SSH_PORT = int(os.getenv('SSH_PORT'))  
-    SSH_USER = os.getenv('SSH_USER')  
-    SSH_PASSWORD = os.getenv('SSH_PASSWORD')  
-    REMOTE_HOST = 'localhost'  
-    REMOTE_PORT = 5433  
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'dj_rest_auth.registration.serializers.RegisterSerializer',
+}
 
-    tunnel = SSHTunnelForwarder(
-        (SSH_HOST, SSH_PORT),
-        ssh_username=SSH_USER,
-        ssh_password=SSH_PASSWORD,
-        remote_bind_address=(REMOTE_HOST, REMOTE_PORT)
-    )
-    tunnel.start()
-    return tunnel
+MEDIA_URL = '/media/'
 
+# Database connection without SSH tunneling
 if os.getenv('ENV_WHEREIAM') == 'production':
-    tunnel = open_ssh_tunnel()
-
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('DB_NAME'),
             'USER': os.getenv('DB_USER'),
             'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': '127.0.0.1', 
-            'PORT': tunnel.local_bind_port,
+            'HOST': os.getenv('DB_HOST'),  
+            'PORT': os.getenv('DB_PORT'),  
         }
     }
 else:
@@ -121,10 +134,10 @@ else:
         }
     }
 
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     )
 }
 
@@ -134,68 +147,46 @@ SIMPLE_JWT = {
 }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ca'
+
+LANGUAGES = [
+    ('en', _('English')),
+    ('es', _('Spanish')),
+    ('ca', _('Catalan')),
+]
+
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'ca'
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+
 
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
 
-# Configuración adicional para archivos estáticos
-
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Configuración opcional de caché con Redis
-# Descomenta estas líneas si deseas usar Redis para caché
-"""
-UPSTASH_REDIS_REST_URL = os.environ.get('UPSTASH_REDIS_REST_URL', '')
-UPSTASH_REDIS_REST_TOKEN = os.environ.get('UPSTASH_REDIS_REST_TOKEN', '')
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': UPSTASH_REDIS_REST_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'PASSWORD': UPSTASH_REDIS_REST_TOKEN,
-        }
-    }
-}
-"""
-
-# Si prefieres usar la caché en memoria (más simple)
+# Configuración de caché
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
