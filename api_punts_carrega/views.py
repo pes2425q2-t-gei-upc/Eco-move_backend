@@ -15,12 +15,25 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from .models import  (
+    Punt,
+    EstacioCarrega,
+    TipusCarregador,
+    Reserva,
+    Vehicle,
+    ModelCotxe,
+    RefugioClimatico,
+    Usuario,
+    ValoracionEstacion,
+    TextItem,
+    Idiomas
+)
 from .permissions import EsElMismoUsuarioOReadOnly
-from .models import  Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion
+
 
 from .serializers import ( 
     PuntSerializer,
-    EstacioCarregaSerializer, 
+    EstacioCarregaSerializer,
     NearestPuntCarregaSerializer,
     TipusCarregadorSerializer,
     ReservaSerializer,
@@ -30,6 +43,7 @@ from .serializers import (
     UsuarioSerializer,
     ValoracionEstacionSerializer,
     EstacioCarregaConValoracionesSerializer,
+    TextItemSerializer,
     RegisterSerializer,
     PerfilPublicoSerializer,
     FotoPerfilSerializer,
@@ -713,6 +727,19 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             "nombre": f"{usuario.first_name} {usuario.last_name}",
             "puntos": usuario.punts
         }, status=status.HTTP_200_OK)
+        
+    @action(detail=True, methods=['put'], url_path='update-language')
+    def update_language(self, request, pk=None):
+        usuario = self.get_object()
+        
+        idioma = request.data.get('idioma')
+        if idioma not in Idiomas.values:
+            return Response({"error": "Not valid language"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        usuario.idioma = idioma
+        usuario.save()
+        
+        return Response({"message": "Language updated successfully", "Language": usuario.idioma})
 
 class RegisterView(APIView):
     def post(self, request):
@@ -787,3 +814,8 @@ class ValoracionEstacionViewSet(viewsets.ModelViewSet):
     #     if instance.usuario != self.request.user and not self.request.user.is_admin:
     #         raise PermissionDenied("No tienes permiso para eliminar esta valoración")
     #     instance.delete()
+    
+
+class TextItemViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = TextItem.objects.all()
+    serializer_class = TextItemSerializer

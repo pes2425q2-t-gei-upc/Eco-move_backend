@@ -2,9 +2,23 @@ from datetime import datetime
 
 from django.template.defaultfilters import date
 from rest_framework import serializers
-from .models import EstacioCarrega, Punt, TipusCarregador, Reserva, Vehicle, ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion, Idiomas
+from .models import (
+    EstacioCarrega,
+    Punt,
+    TipusCarregador,
+    Reserva,
+    Vehicle,
+    ModelCotxe,
+    RefugioClimatico,
+   
+    Usuario,
+    ValoracionEstacion,
+    TextItem,
+    Idiomas
+)
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
+from django.utils.translation import get_language
 
 class PuntSerializer(serializers.ModelSerializer):
     
@@ -185,3 +199,14 @@ class EstacioCarregaConValoracionesSerializer(EstacioCarregaSerializer):
     
     def get_num_valoraciones(self, obj):
         return obj.valoraciones.count()
+
+class TextItemSerializer(serializers.ModelSerializer):
+    text = serializers.SerializerMethodField()
+    class Meta:
+        model = TextItem
+        fields = ['id', 'key', 'text']
+    
+    def get_text(self, obj):
+        lang = get_language()
+        fallback = obj.text
+        return getattr(obj, f'text_{lang}', fallback)  # Default to Catalan if language not found

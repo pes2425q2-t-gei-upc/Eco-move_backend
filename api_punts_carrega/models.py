@@ -263,3 +263,10 @@ class RefugioClimatico(Punt):
     
     def __str__(self):
         return f"Refugio {self.nombre} - {self.lat}, {self.lng}"
+
+class TextItem(models.Model):
+    key = models.CharField(max_length=255, unique=True)
+    text = models.TextField(blank=True)
+    
+    def __str__(self):
+        return self.key

@@ -47,3 +47,29 @@ class UsuarioCRUDTests(APITestCase):
     def test_unauthorized_access(self):
         response = self.client.get(self.base_url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
+    def test_update_language(self):
+        url = f"{self.base_url}{self.user.id}/update-language/"
+        new_data = {"idioma": "English"}
+        response = self.client.put(url, new_data, format='json', **self.auth_header)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('Language'), "English")
+        
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.idioma, "English")
+    
+    def test_update_language_unauthenticated(self):
+        url = f"{self.base_url}{self.user.id}/update-language/"
+        new_data = {"idioma": "English"}
+        response = self.client.put(url, new_data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    def test_update_language_invalid_value(self):
+        url = f"{self.base_url}{self.user.id}/update-language/"
+        new_data = {"idioma": "InvalidLanguage"}
+        response = self.client.put(url, new_data, format='json', **self.auth_header)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
