@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_extensions',
     'rest_framework_simplejwt',
+    'admin_connect',
 ]
 
 AUTH_USER_MODEL = 'api_punts_carrega.Usuario'
@@ -59,7 +60,10 @@ ROOT_URLCONF = 'ecomove_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            # Añadir esta línea para incluir las plantillas personalizadas
+            os.path.join(BASE_DIR, 'api_punts_carrega', 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -165,7 +169,36 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Configuración adicional para archivos estáticos
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración opcional de caché con Redis
+# Descomenta estas líneas si deseas usar Redis para caché
+"""
+UPSTASH_REDIS_REST_URL = os.environ.get('UPSTASH_REDIS_REST_URL', '')
+UPSTASH_REDIS_REST_TOKEN = os.environ.get('UPSTASH_REDIS_REST_TOKEN', '')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': UPSTASH_REDIS_REST_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': UPSTASH_REDIS_REST_TOKEN,
+        }
+    }
+}
+"""
+
+# Si prefieres usar la caché en memoria (más simple)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
