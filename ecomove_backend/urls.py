@@ -32,10 +32,10 @@ urlpatterns = [
     path('social/', include('social_community.urls')),
 
     path('me/', MeView.as_view(), name='me'),
+    path('profile/foto/', PerfilFotoView.as_view(), name='perfil-foto'),
     path('profile/<str:username>/',
          PerfilPublicoViewSet.as_view({'get': 'retrieve'}),
          name='perfil-publico'),
-    path('profile/foto/', PerfilFotoView.as_view(), name='perfil-foto'),
     path('register/', RegisterView.as_view(), name='register'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
