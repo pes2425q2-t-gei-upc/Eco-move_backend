@@ -17,8 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from api_punts_carrega.views import RegisterView, MeView, PerfilPublicoViewSet
+from api_punts_carrega.views import RegisterView, MeView, PerfilPublicoViewSet, PerfilFotoView
 from admin_connect import admin_views
+from api_punts_carrega.views_social_login import GoogleLogin
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,10 +32,18 @@ urlpatterns = [
     path('social/', include('social_community.urls')),
 
     path('me/', MeView.as_view(), name='me'),
+    path('profile/foto/', PerfilFotoView.as_view(), name='perfil-foto'),
     path('profile/<str:username>/',
          PerfilPublicoViewSet.as_view({'get': 'retrieve'}),
          name='perfil-publico'),
     path('register/', RegisterView.as_view(), name='register'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    #login social
+    path('auth/', include('dj_rest_auth.urls')),
+    path('auth/registration/', include('dj_rest_auth.registration.urls')),
+    path('auth/', include('allauth.socialaccount.urls')),
+    path('auth/social/google/', GoogleLogin.as_view(), name='google_login'),
+
 ]

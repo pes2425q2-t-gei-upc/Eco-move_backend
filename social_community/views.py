@@ -7,6 +7,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
+from django.utils import timezone
+from datetime import timedelta
+import json
 
 from .models import  (
     PuntEmergencia,
@@ -28,11 +31,9 @@ class AlertsViewSet(viewsets.ModelViewSet):
     serializer_class = AlertSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # Create a new alert
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
-        
-    # List all active alerts
+        instance = serializer.save(sender=self.request.user)
+           
     def get_queryset(self):
         return PuntEmergencia.objects.filter(is_active=True)
     
@@ -42,25 +43,65 @@ class AlertsViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(alerts, many=True)
         return Response(serializer.data)
     
-    @action(detail=False, methods=['get'], url_path='get_updates')
-    def near_points(self, request):
+    @action(detail=False, methods=['get'], url_path='polling_alertes')
+    def polling_alertes(self, request):
+        """
+        Lat,lon cordenades necessaries per calcular la distancia entre el punt d'alerta i l'usuari.
+        Retorna totes les alertes actives ordenades per distancia al punt d'alerta de l'usuari.
+        Si es proporciona el paràmetre 'since', només es retornaran les alertes que s'han creat després d'aquest timestamp. per poder aixi no haver de carregar totes les alertes cada cop.
+        tambe es pot filtrar per alertes actives o no actives, per defecte son actives.
+        """
         lat_usuario = request.query_params.get('lat')
         lng_usuario = request.query_params.get('lng')
+        active_only = request.query_params.get('active_only', 'true').lower() == 'true'
+        since_param = request.query_params.get('since')
         
         if not lat_usuario or not lng_usuario:
-            return Response({'error': 'Faltan parámetros de ubicación (lat, lon)'}, status=400)
-
-        lat_usuario = float(lat_usuario)
-        lng_usuario = float(lng_usuario)
-
-        puntos_cercanos = []
-        for punt in PuntEmergencia.objects.filter(is_active=True):
-            distancia = haversine_distance(lat_usuario, lng_usuario, punt.lat, punt.lng)
-            if distancia <= 5:
-                puntos_cercanos.append(punt)
-
-        serializer = AlertSerializer(puntos_cercanos, many=True)
-        return Response(serializer.data)
+            return Response(
+                {'error': 'Se requieren parámetros de ubicación (lat, lng)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            lat_usuario = float(lat_usuario)
+            lng_usuario = float(lng_usuario)
+        except ValueError:
+            return Response(
+                {'error': 'Las coordenadas deben ser valores numéricos'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if since_param:
+            try:
+                since_time = timezone.datetime.fromtimestamp(float(since_param), tz=timezone.get_current_timezone())
+                alerts_queryset = PuntEmergencia.objects.filter(timestamp__gt=since_time)
+            except (ValueError, OverflowError, TypeError):
+                return Response(
+                    {'error': 'Formato de timestamp inválido. Use timestamp Unix (segundos desde epoch).'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            alerts_queryset = PuntEmergencia.objects.all()
+        
+        if active_only:
+            alerts_queryset = alerts_queryset.filter(is_active=True)
+            
+        alerts_with_distance = []
+        for alert in alerts_queryset:
+            distance = haversine_distance(lat_usuario, lng_usuario, alert.lat, alert.lng)
+            alerts_with_distance.append((alert, distance))
+        
+        alerts_with_distance.sort(key=lambda x: x[1])
+        sorted_alerts = [alert for alert, _ in alerts_with_distance]
+        
+        serializer = self.get_serializer(sorted_alerts, many=True)
+        
+        current_timestamp = timezone.now().timestamp()
+        
+        return Response({
+            'alerts': serializer.data,
+            'timestamp': current_timestamp
+        })
     
     def perform_destroy(self, instance):
         instance.delete()
