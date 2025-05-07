@@ -5,6 +5,7 @@ cffi==1.17.1
 charset-normalizer==3.4.1
 cloudinary==1.44.0
 cryptography==44.0.2
+dj-database-url==2.1.0
 dj-rest-auth==7.0.1
 Django==5.1.7
 django-allauth==65.7.0
@@ -33,3 +34,5 @@ sqlparse==0.5.3
 sshtunnel==0.4.0
 typing_extensions==4.12.2
 urllib3==2.3.0
+urllib3==2.3.0
+
