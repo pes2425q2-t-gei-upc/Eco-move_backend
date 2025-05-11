@@ -21,7 +21,6 @@ from .models import  (
     TipusCarregador,
     Reserva,
     Vehicle,
-    ModelCotxe,
     RefugioClimatico,
     Usuario,
     ValoracionEstacion,
@@ -38,7 +37,6 @@ from .serializers import (
     TipusCarregadorSerializer,
     ReservaSerializer,
     VehicleSerializer,
-    ModelCotxeSerializer,
     RefugioClimaticoSerializer,
     UsuarioSerializer,
     ValoracionEstacionSerializer,
@@ -53,10 +51,15 @@ from .serializers import (
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-class ModelCotxeViewSet(viewsets.ModelViewSet):
-    queryset = ModelCotxe.objects.all()
-    serializer_class = ModelCotxeSerializer
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Vehicle.objects.filter(propietari=self.request.user)
+        return Vehicle.objects.none()
+    
+    def perform_create(self, serializer):
+        serializer.save(propietari=self.request.user)
 
 
 class PuntViewSet(viewsets.ModelViewSet):
@@ -291,8 +294,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
                 except Vehicle.DoesNotExist:
                     return Response({'error': 'Vehicle no trobat'}, status=404)
 
-
-                vehicle_carregadors = set(vehicle.model_cotxe.tipus_carregador.all().values_list('id_carregador', flat=True))
+                vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
                 estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
 
                 if not vehicle_carregadors.intersection(estacio_carregadors):
@@ -352,7 +354,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
                 if vehicle_matricula == "": vehicle = None
                 else:
                     vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=request.user)
-                    vehicle_carregadors = set(vehicle.model_cotxe.tipus_carregador.all().values_list('id_carregador', flat=True))
+                    vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
                     estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
                     if not vehicle_carregadors.intersection(estacio_carregadors): return Response({'error': 'Nou vehicle no compatible'}, status=400)
             reserva.fecha = fecha; reserva.hora = hora_inicio; reserva.duracion = duracion_td; reserva.vehicle = vehicle
