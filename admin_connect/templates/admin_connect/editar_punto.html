@@ -1,0 +1,131 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: rgba(169, 169, 169, 0.181);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+    max-width: 600px;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: white;
+  }
+  .form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .button-primary {
+    background-color: #447e9b;
+    color: white;
+  }
+  .button-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+  .back-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:gestionar_puntos' %}" class="back-button">
+    &larr; Volver a Gestionar Puntos
+  </a>
+</div>
+
+<h1>Editar Punto de Carga</h1>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="form-group">
+      <label for="id_punt">ID del Punto:</label>
+      <input type="text" name="id_punt" id="id_punt" class="form-control" value="{{ estacion.id_punt }}" readonly>
+    </div>
+    
+    <div class="form-group">
+      <label for="lat">Latitud:</label>
+      <input type="number" name="lat" id="lat" step="0.000001" class="form-control" value="{{ estacion.lat }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="lng">Longitud:</label>
+      <input type="number" name="lng" id="lng" step="0.000001" class="form-control" value="{{ estacion.lng }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="direccio">Dirección:</label>
+      <input type="text" name="direccio" id="direccio" class="form-control" value="{{ estacion.direccio|default:'' }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="ciutat">Ciudad:</label>
+      <input type="text" name="ciutat" id="ciutat" class="form-control" value="{{ estacion.ciutat|default:'' }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="provincia">Provincia:</label>
+      <input type="text" name="provincia" id="provincia" class="form-control" value="{{ estacion.provincia|default:'' }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="gestio">Gestión:</label>
+      <input type="text" name="gestio" id="gestio" class="form-control" value="{{ estacion.gestio }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="tipus_acces">Tipo de Acceso:</label>
+      <input type="text" name="tipus_acces" id="tipus_acces" class="form-control" value="{{ estacion.tipus_acces }}" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="nplaces">Número de Plazas:</label>
+      <input type="text" name="nplaces" id="nplaces" class="form-control" value="{{ estacion.nplaces|default:'' }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="potencia">Potencia:</label>
+      <input type="number" name="potencia" id="potencia" class="form-control" value="{{ estacion.potencia|default:'' }}">
+    </div>
+    
+    <div class="button-group">
+      <button type="submit" class="button button-primary">Guardar cambios</button>
+      <a href="{% url 'admin_connect:gestionar_puntos' %}" class="button button-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

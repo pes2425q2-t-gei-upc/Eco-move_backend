@@ -1,0 +1,279 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: rgba(169, 169, 169, 0.181);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .table-container {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid black;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+  .button {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 5px;
+  }
+  .button:hover {
+    background-color: #366b81;
+  }
+  .search-container {
+    margin-bottom: 20px;
+  }
+  .search-input {
+    padding: 8px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .search-button {
+    padding: 8px 15px;
+    background-color: #447e9b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .back-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .action-buttons {
+    white-space: nowrap;
+  }
+  .form-container {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: rgba(169, 169, 169, 0.181);
+    border-radius: 5px;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: white;
+  }
+  .form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  .button-primary {
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .button-danger {
+    background-color: #dc3545;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    border-radius: 5px;
+  }
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:admin_dashboard' %}" class="back-button">
+    &larr; Volver al Dashboard
+  </a>
+</div>
+
+<div class="form-container">
+    <h2>Añadir Nuevo Punto de Carga</h2>
+    <form method="post" action="{% url 'admin_connect:añadir_punto' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_punt">ID del Punto:</label>
+        <input type="text" id="id_punt" name="id_punt" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="lat">Latitud:</label>
+        <input type="number" id="lat" name="lat" step="0.000001" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="lng">Longitud:</label>
+        <input type="number" id="lng" name="lng" step="0.000001" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="direccio">Dirección:</label>
+        <input type="text" id="direccio" name="direccio" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="ciutat">Ciudad:</label>
+        <input type="text" id="ciutat" name="ciutat" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="provincia">Provincia:</label>
+        <input type="text" id="provincia" name="provincia" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="gestio">Gestión:</label>
+        <input type="text" id="gestio" name="gestio" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="tipus_acces">Tipo de Acceso:</label>
+        <input type="text" id="tipus_acces" name="tipus_acces" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="nplaces">Número de Plazas:</label>
+        <input type="text" id="nplaces" name="nplaces" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="potencia">Potencia:</label>
+        <input type="number" id="potencia" name="potencia" class="form-control">
+      </div>
+      <button type="submit" class="button-primary">Añadir Punto de Carga</button>
+    </form>
+  </div>
+  
+<h1>Gestionar Puntos de Carga</h1>
+
+<div class="card">
+  <div class="search-container">
+    <form method="get">
+      <input type="text" name="q" placeholder="Buscar por ID o dirección" class="search-input" value="{{ request.GET.q|default:'' }}">
+      <button type="submit" class="search-button">Buscar</button>
+    </form>
+  </div>
+  
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Dirección</th>
+          <th>Ciudad</th>
+          <th>Provincia</th>
+          <th>Coordenadas</th>
+          <th>Potencia</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for estacion in estaciones %}
+        <tr>
+          <td>{{ estacion.id_punt }}</td>
+          <td>{{ estacion.direccio|default:"No especificada" }}</td>
+          <td>{{ estacion.ciutat|default:"No especificada" }}</td>
+          <td>{{ estacion.provincia|default:"No especificada" }}</td>
+          <td>{{ estacion.lat }}, {{ estacion.lng }}</td>
+          <td>{{ estacion.potencia|default:"No especificada" }}</td>
+          <td class="action-buttons">
+            <a href="{% url 'admin_connect:editar_punto' punto_id=estacion.id_punt %}" class="button">Editar</a>
+            <button class="button button-danger" onclick="confirmarEliminar('{{ estacion.id_punt }}')">Eliminar</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">No hay puntos de carga disponibles</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+
+<!-- Modal de confirmación para eliminar -->
+<div id="modalEliminar" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3>Confirmar eliminación</h3>
+    <p>¿Estás seguro de que deseas eliminar este punto de carga? Esta acción no se puede deshacer.</p>
+    <form id="formEliminar" method="post" action="">
+      {% csrf_token %}
+      <button type="submit" class="button-primary button-danger">Eliminar</button>
+      <button type="button" class="button-primary" onclick="cerrarModal()">Cancelar</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Funciones para el modal de confirmación
+  var modal = document.getElementById("modalEliminar");
+  var span = document.getElementsByClassName("close")[0];
+  
+  function confirmarEliminar(puntoId) {
+    modal.style.display = "block";
+    document.getElementById("formEliminar").action = "{% url 'admin_connect:eliminar_punto' punto_id=0 %}".replace('0', puntoId);
+  }
+  
+  function cerrarModal() {
+    modal.style.display = "none";
+  }
+  
+  span.onclick = function() {
+    cerrarModal();
+  }
+  
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      cerrarModal();
+    }
+  }
+</script>
+{% endblock %}
