@@ -21,7 +21,6 @@ from .models import  (
     TipusCarregador,
     Reserva,
     Vehicle,
-    ModelCotxe,
     RefugioClimatico,
     Usuario,
     ValoracionEstacion,
@@ -38,7 +37,6 @@ from .serializers import (
     TipusCarregadorSerializer,
     ReservaSerializer,
     VehicleSerializer,
-    ModelCotxeSerializer,
     RefugioClimaticoSerializer,
     UsuarioSerializer,
     ValoracionEstacionSerializer,
@@ -53,10 +51,6 @@ from .serializers import (
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
-
-class ModelCotxeViewSet(viewsets.ModelViewSet):
-    queryset = ModelCotxe.objects.all()
-    serializer_class = ModelCotxeSerializer
 
 
 class PuntViewSet(viewsets.ModelViewSet):

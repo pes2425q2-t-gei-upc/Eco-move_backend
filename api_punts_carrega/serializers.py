@@ -8,9 +8,7 @@ from .models import (
     TipusCarregador,
     Reserva,
     Vehicle,
-    ModelCotxe,
     RefugioClimatico,
-   
     Usuario,
     ValoracionEstacion,
     TextItem,
@@ -36,10 +34,6 @@ class TipusCarregadorSerializer(serializers.ModelSerializer):
         model = TipusCarregador
         fields = '__all__'
     
-class ModelCotxeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ModelCotxe
-        fields = '__all__'
 
 class VehicleSerializer(serializers.ModelSerializer):   
     class Meta:
