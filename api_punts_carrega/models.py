@@ -47,6 +47,7 @@ class Usuario(AbstractUser):
     _punts = models.IntegerField(default=0, db_column='punts')  # _ és per fer privat a python
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
+    Vehicles = models.ManyToManyField('Vehicle', related_name='usuarios', blank=True)
     
     #valorar si permitir iniciar sesion con email y/o username, mas trabajo
     USERNAME_FIELD = 'email'
@@ -179,7 +180,7 @@ class Vehicle(models.Model):
     tipus_carregador = models.ManyToManyField(TipusCarregador, related_name='tipus_carregador')
 
     def __str__(self):
-        return f"Vehicle {self.model_cotxe.marca} {self.model_cotxe.model} ({self.matricula}) de {self.propietari}"
+        return f"Vehicle {self.marca} {self.model} ({self.matricula}) de {self.propietari}"
 
 class ValoracionEstacion(models.Model):
     estacion = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name="valoraciones")
