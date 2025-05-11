@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from api_punts_carrega.models import TipusCarregador, EstacioCarrega, ModelCotxe
+from api_punts_carrega.models import TipusCarregador, EstacioCarrega, Vehicle
 
 class TestTipusCarregador(TestCase):
     def setUp(self):
@@ -94,16 +94,19 @@ class TestTipusCarregador(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id_punt'], 'estacio_test_2')
 
-    def test_compatibilitat_model_cotxe_carregador(self):
-        model_cotxe = ModelCotxe.objects.create(
-            model="Model Test",
+def test_compatibilitat_model_cotxe_carregador(self):
+        vehicle = Vehicle.objects.create(
+            matricula="TEST123",
             marca="Marca Test",
-            any_model=2023
+            model="Model Test",
+            any_model=2023,
+            carrega_actual=50.0,
+            capacitat_bateria=70.0
         )
-        model_cotxe.tipus_carregador.add(self.tipus_carregador)
+        vehicle.tipus_carregador.add(self.tipus_carregador)
 
-        self.assertEqual(model_cotxe.tipus_carregador.count(), 1)
-        self.assertEqual(model_cotxe.tipus_carregador.first().id_carregador, self.tipus_carregador.id_carregador)
+        self.assertEqual(vehicle.tipus_carregador.count(), 1)
+        self.assertEqual(vehicle.tipus_carregador.first().id_carregador, self.tipus_carregador.id_carregador)
 
         self.assertEqual(self.tipus_carregador.tipus_carregador.count(), 1)
-        self.assertEqual(self.tipus_carregador.tipus_carregador.first().model, "Model Test")
+        self.assertEqual(self.tipus_carregador.tipus_carregador.first().matricula, "TEST123")

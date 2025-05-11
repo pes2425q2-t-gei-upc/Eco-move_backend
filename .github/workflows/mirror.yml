@@ -1,27 +1,33 @@
 name: Mirror to FIB GitLab
-
 on:
   push:
     branches:
-      - develop  # Ahora se activará cuando haya un push a la rama develop
+      - deploy  # La rama que se está monitoreando para cambios
 
 jobs:
   push-to-fib:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout GitHub repo
-      uses: actions/checkout@v3
+      - name: Checkout GitHub repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: deploy  # Asegúrate de descargar la rama correcta
 
-    - name: Set up SSH
-      if: secrets.FIB_SSH_KEY != ''
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.FIB_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan repo.fib.upc.edu >> ~/.ssh/known_hosts
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
 
-    - name: Push to FIB repo
-      run: |
-        git remote add fib "${{ secrets.FIB_REPO_URL }}"
-        git push fib HEAD:develop --force
+      - name: Push to FIB GitLab
+        run: |
+          # Conectar y hacer push al repositorio de GitLab FIB
+          # Corrige el formato de la URL - no debe contener https:// dos veces
+          REPO_URL="https://oauth2:${{ secrets.FIB_TOKEN }}@repo.fib.upc.es/lluis.vila.minguell/ecomove-backend.git"
+          git remote add fib "$REPO_URL"
+          
+          # Lista las ramas para verificar
+          git branch -a
+          
+          # Push de la rama deploy de GitHub a la rama develop de GitLab
+          git push fib deploy:develop --force

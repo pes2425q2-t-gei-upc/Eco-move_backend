@@ -8,7 +8,6 @@ from .views import (
     ReservaViewSet, 
     obtenir_preu_actual_kwh,
     VehicleViewSet,
-    ModelCotxeViewSet,
     RefugioClimaticoViewSet,
     sincronizar_refugios,
     refugios_mas_cercanos,
@@ -28,7 +27,6 @@ router.register(r'estacions', EstacioCarregaViewSet)
 router.register(r'tipus_carregador', TipusCarregadorViewSet)
 router.register(r'reservas', ReservaViewSet)
 router.register(r'vehicles', VehicleViewSet)
-router.register(r'models', ModelCotxeViewSet)
 router.register(r'refugios', RefugioClimaticoViewSet)
 router.register(r'usuari', UsuarioViewSet)
 router.register(r'valoraciones_estaciones', ValoracionEstacionViewSet)
