@@ -293,7 +293,10 @@ def añadir_punto(request):
         # Validar que el ID no exista ya
         if EstacioCarrega.objects.filter(id_punt=id_punt).exists():
             messages.error(request, f"Ya existe un punto de carga con el ID {id_punt}")
-            return redirect('admin_connect:gestionar_puntos')
+            return render(request, 'admin_connect/añadir_punto.html', {
+                'title': 'Añadir Punto de Carga',
+                'error': f"Ya existe un punto de carga con el ID {id_punt}"
+            })
         
         try:
             # Crear el nuevo punto de carga
@@ -312,13 +315,18 @@ def añadir_punto(request):
             estacion.save()
             
             messages.success(request, f"Punto de carga {id_punt} añadido correctamente")
+            return redirect('admin_connect:gestionar_puntos')
         except Exception as e:
             messages.error(request, f"Error al añadir el punto de carga: {str(e)}")
-        
-        return redirect('admin_connect:gestionar_puntos')
+            return render(request, 'admin_connect/añadir_punto.html', {
+                'title': 'Añadir Punto de Carga',
+                'error': f"Error al añadir el punto de carga: {str(e)}"
+            })
     
-    # Si es GET, redirigir a la página de gestión
-    return redirect('admin_connect:gestionar_puntos')
+    # Si es GET, mostrar el formulario
+    return render(request, 'admin_connect/añadir_punto.html', {
+        'title': 'Añadir Punto de Carga'
+    })
 
 @staff_member_required
 def editar_punto(request, punto_id):

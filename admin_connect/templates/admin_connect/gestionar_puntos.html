@@ -67,36 +67,6 @@
   .action-buttons {
     white-space: nowrap;
   }
-  .form-container {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: rgba(169, 169, 169, 0.181);
-    border-radius: 5px;
-  }
-  .form-group {
-    margin-bottom: 15px;
-  }
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: white;
-  }
-  .form-control {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-  .button-primary {
-    padding: 10px 15px;
-    background-color: #447e9b;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
   .button-danger {
     background-color: #dc3545;
   }
@@ -131,6 +101,24 @@
     text-decoration: none;
     cursor: pointer;
   }
+  .header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .add-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  .add-button:hover {
+    background-color: #218838;
+  }
 </style>
 {% endblock %}
 
@@ -141,55 +129,10 @@
   </a>
 </div>
 
-<div class="form-container">
-    <h2>Añadir Nuevo Punto de Carga</h2>
-    <form method="post" action="{% url 'admin_connect:añadir_punto' %}">
-      {% csrf_token %}
-      <div class="form-group">
-        <label for="id_punt">ID del Punto:</label>
-        <input type="text" id="id_punt" name="id_punt" class="form-control" required>
-      </div>
-      <div class="form-group">
-        <label for="lat">Latitud:</label>
-        <input type="number" id="lat" name="lat" step="0.000001" class="form-control" required>
-      </div>
-      <div class="form-group">
-        <label for="lng">Longitud:</label>
-        <input type="number" id="lng" name="lng" step="0.000001" class="form-control" required>
-      </div>
-      <div class="form-group">
-        <label for="direccio">Dirección:</label>
-        <input type="text" id="direccio" name="direccio" class="form-control">
-      </div>
-      <div class="form-group">
-        <label for="ciutat">Ciudad:</label>
-        <input type="text" id="ciutat" name="ciutat" class="form-control">
-      </div>
-      <div class="form-group">
-        <label for="provincia">Provincia:</label>
-        <input type="text" id="provincia" name="provincia" class="form-control">
-      </div>
-      <div class="form-group">
-        <label for="gestio">Gestión:</label>
-        <input type="text" id="gestio" name="gestio" class="form-control" required>
-      </div>
-      <div class="form-group">
-        <label for="tipus_acces">Tipo de Acceso:</label>
-        <input type="text" id="tipus_acces" name="tipus_acces" class="form-control" required>
-      </div>
-      <div class="form-group">
-        <label for="nplaces">Número de Plazas:</label>
-        <input type="text" id="nplaces" name="nplaces" class="form-control">
-      </div>
-      <div class="form-group">
-        <label for="potencia">Potencia:</label>
-        <input type="number" id="potencia" name="potencia" class="form-control">
-      </div>
-      <button type="submit" class="button-primary">Añadir Punto de Carga</button>
-    </form>
-  </div>
-  
-<h1>Gestionar Puntos de Carga</h1>
+<div class="header-actions">
+  <h1>Gestionar Puntos de Carga</h1>
+  <a href="{% url 'admin_connect:añadir_punto' %}" class="add-button">+ Añadir Nuevo Punto de Carga</a>
+</div>
 
 <div class="card">
   <div class="search-container">
@@ -236,8 +179,6 @@
   </div>
 </div>
 
-
-
 <!-- Modal de confirmación para eliminar -->
 <div id="modalEliminar" class="modal">
   <div class="modal-content">
@@ -246,8 +187,8 @@
     <p>¿Estás seguro de que deseas eliminar este punto de carga? Esta acción no se puede deshacer.</p>
     <form id="formEliminar" method="post" action="">
       {% csrf_token %}
-      <button type="submit" class="button-primary button-danger">Eliminar</button>
-      <button type="button" class="button-primary" onclick="cerrarModal()">Cancelar</button>
+      <button type="submit" class="button button-primary button-danger">Eliminar</button>
+      <button type="button" class="button button-primary" onclick="cerrarModal()">Cancelar</button>
     </form>
   </div>
 </div>
