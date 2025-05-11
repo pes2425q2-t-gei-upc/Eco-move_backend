@@ -27,6 +27,18 @@
     border-radius: 4px;
     box-sizing: border-box;
   }
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  .checkbox-group input {
+    margin-right: 10px;
+  }
+  .checkbox-group label {
+    color: white;
+    font-weight: bold;
+  }
   .button-group {
     display: flex;
     gap: 10px;
@@ -56,6 +68,23 @@
     border-radius: 4px;
     margin-bottom: 20px;
   }
+  .service-status {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 5px;
+  }
+  .service-status-active {
+    background-color: rgba(40, 167, 69, 0.2);
+    border: 1px solid #28a745;
+  }
+  .service-status-inactive {
+    background-color: rgba(220, 53, 69, 0.2);
+    border: 1px solid #dc3545;
+  }
+  .service-status h3 {
+    margin-top: 0;
+    color: white;
+  }
 </style>
 {% endblock %}
 
@@ -79,12 +108,12 @@
     
     <div class="form-group">
       <label for="lat">Latitud:</label>
-      <input type="number" name="lat" id="lat" step="0.000001" class="form-control" value="{{ estacion.lat }}" required>
+      <input type="text" name="lat" id="lat" class="form-control" value="{{ estacion.lat }}" required>
     </div>
     
     <div class="form-group">
       <label for="lng">Longitud:</label>
-      <input type="number" name="lng" id="lng" step="0.000001" class="form-control" value="{{ estacion.lng }}" required>
+      <input type="text" name="lng" id="lng" class="form-control" value="{{ estacion.lng }}" required>
     </div>
     
     <div class="form-group">
@@ -119,7 +148,20 @@
     
     <div class="form-group">
       <label for="potencia">Potencia:</label>
-      <input type="number" name="potencia" id="potencia" class="form-control" value="{{ estacion.potencia|default:'' }}">
+      <input type="text" name="potencia" id="potencia" class="form-control" value="{{ estacion.potencia|default:'' }}">
+    </div>
+    
+    <div class="service-status {% if estacion.fuera_de_servicio %}service-status-inactive{% else %}service-status-active{% endif %}">
+      <h3>Estado de Servicio</h3>
+      <div class="checkbox-group">
+        <input type="checkbox" name="fuera_de_servicio" id="fuera_de_servicio" {% if estacion.fuera_de_servicio %}checked{% endif %}>
+        <label for="fuera_de_servicio">Marcar como fuera de servicio</label>
+      </div>
+      
+      <div class="form-group" id="motivo_container" {% if not estacion.fuera_de_servicio %}style="display: none;"{% endif %}>
+        <label for="motivo_fuera_servicio">Motivo:</label>
+        <input type="text" name="motivo_fuera_servicio" id="motivo_fuera_servicio" class="form-control" value="{{ estacion.motivo_fuera_servicio|default:'' }}" placeholder="Indique el motivo por el que la estación está fuera de servicio">
+      </div>
     </div>
     
     <div class="button-group">
@@ -128,4 +170,16 @@
     </div>
   </form>
 </div>
+
+<script>
+  // Mostrar/ocultar el campo de motivo según el estado del checkbox
+  document.getElementById('fuera_de_servicio').addEventListener('change', function() {
+    var motivoContainer = document.getElementById('motivo_container');
+    if (this.checked) {
+      motivoContainer.style.display = 'block';
+    } else {
+      motivoContainer.style.display = 'none';
+    }
+  });
+</script>
 {% endblock %}

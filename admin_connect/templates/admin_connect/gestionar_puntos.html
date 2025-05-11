@@ -70,6 +70,13 @@
   .button-danger {
     background-color: #dc3545;
   }
+  .button-warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+  .button-success {
+    background-color: #28a745;
+  }
   .modal {
     display: none;
     position: fixed;
@@ -119,6 +126,45 @@
   .add-button:hover {
     background-color: #218838;
   }
+  .status-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .status-active {
+    background-color: #28a745;
+    color: white;
+  }
+  .status-inactive {
+    background-color: #dc3545;
+    color: white;
+  }
+  .tooltip {
+    position: relative;
+    display: inline-block;
+  }
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
 </style>
 {% endblock %}
 
@@ -152,6 +198,7 @@
           <th>Provincia</th>
           <th>Coordenadas</th>
           <th>Potencia</th>
+          <th>Estado</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -164,14 +211,31 @@
           <td>{{ estacion.provincia|default:"No especificada" }}</td>
           <td>{{ estacion.lat }}, {{ estacion.lng }}</td>
           <td>{{ estacion.potencia|default:"No especificada" }}</td>
+          <td>
+            {% if estacion.fuera_de_servicio %}
+              <div class="tooltip">
+                <span class="status-indicator status-inactive">Fuera de servicio</span>
+                {% if estacion.motivo_fuera_servicio %}
+                  <span class="tooltiptext">{{ estacion.motivo_fuera_servicio }}</span>
+                {% endif %}
+              </div>
+            {% else %}
+              <span class="status-indicator status-active">En servicio</span>
+            {% endif %}
+          </td>
           <td class="action-buttons">
             <a href="{% url 'admin_connect:editar_punto' punto_id=estacion.id_punt %}" class="button">Editar</a>
+            {% if estacion.fuera_de_servicio %}
+              <a href="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}" class="button button-success">Activar</a>
+            {% else %}
+              <a href="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}" class="button button-warning">Desactivar</a>
+            {% endif %}
             <button class="button button-danger" onclick="confirmarEliminar('{{ estacion.id_punt }}')">Eliminar</button>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7">No hay puntos de carga disponibles</td>
+          <td colspan="8">No hay puntos de carga disponibles</td>
         </tr>
         {% endfor %}
       </tbody>

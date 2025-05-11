@@ -23,5 +23,6 @@ urlpatterns = [
     path('añadir-punto/', admin_views.añadir_punto, name='añadir_punto'),
     path('editar-punto/<str:punto_id>/', admin_views.editar_punto, name='editar_punto'),
     path('eliminar-punto/<str:punto_id>/', admin_views.eliminar_punto, name='eliminar_punto'),
+    path('cambiar-estado-punto/<str:punto_id>/', admin_views.cambiar_estado_punto, name='cambiar_estado_punto'),
     
 ]

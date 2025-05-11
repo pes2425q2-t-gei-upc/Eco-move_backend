@@ -280,8 +280,8 @@ def añadir_punto(request):
     if request.method == 'POST':
         # Obtener datos del formulario
         id_punt = request.POST.get('id_punt')
-        lat = request.POST.get('lat')
-        lng = request.POST.get('lng')
+        lat = request.POST.get('lat', '')
+        lng = request.POST.get('lng', '')
         direccio = request.POST.get('direccio')
         ciutat = request.POST.get('ciutat')
         provincia = request.POST.get('provincia')
@@ -289,6 +289,8 @@ def añadir_punto(request):
         tipus_acces = request.POST.get('tipus_acces')
         nplaces = request.POST.get('nplaces')
         potencia = request.POST.get('potencia')
+        fuera_de_servicio = 'fuera_de_servicio' in request.POST
+        motivo_fuera_servicio = request.POST.get('motivo_fuera_servicio', '')
         
         # Validar que el ID no exista ya
         if EstacioCarrega.objects.filter(id_punt=id_punt).exists():
@@ -299,18 +301,24 @@ def añadir_punto(request):
             })
         
         try:
+            # Convertir coordenadas reemplazando comas por puntos
+            lat = float(lat.replace(',', '.'))
+            lng = float(lng.replace(',', '.'))
+            
             # Crear el nuevo punto de carga
             estacion = EstacioCarrega(
                 id_punt=id_punt,
-                lat=float(lat),
-                lng=float(lng),
+                lat=lat,
+                lng=lng,
                 direccio=direccio,
                 ciutat=ciutat,
                 provincia=provincia,
                 gestio=gestio,
                 tipus_acces=tipus_acces,
                 nplaces=nplaces,
-                potencia=int(potencia) if potencia else None
+                potencia=int(potencia) if potencia and potencia.strip() else None,
+                fuera_de_servicio=fuera_de_servicio,
+                motivo_fuera_servicio=motivo_fuera_servicio if fuera_de_servicio else None
             )
             estacion.save()
             
@@ -335,8 +343,8 @@ def editar_punto(request, punto_id):
     
     if request.method == 'POST':
         # Obtener datos del formulario
-        lat = request.POST.get('lat')
-        lng = request.POST.get('lng')
+        lat = request.POST.get('lat', '')
+        lng = request.POST.get('lng', '')
         direccio = request.POST.get('direccio')
         ciutat = request.POST.get('ciutat')
         provincia = request.POST.get('provincia')
@@ -344,18 +352,26 @@ def editar_punto(request, punto_id):
         tipus_acces = request.POST.get('tipus_acces')
         nplaces = request.POST.get('nplaces')
         potencia = request.POST.get('potencia')
+        fuera_de_servicio = 'fuera_de_servicio' in request.POST
+        motivo_fuera_servicio = request.POST.get('motivo_fuera_servicio', '')
         
         try:
+            # Convertir coordenadas reemplazando comas por puntos
+            lat = float(lat.replace(',', '.'))
+            lng = float(lng.replace(',', '.'))
+            
             # Actualizar el punto de carga
-            estacion.lat = float(lat)
-            estacion.lng = float(lng)
+            estacion.lat = lat
+            estacion.lng = lng
             estacion.direccio = direccio
             estacion.ciutat = ciutat
             estacion.provincia = provincia
             estacion.gestio = gestio
             estacion.tipus_acces = tipus_acces
             estacion.nplaces = nplaces
-            estacion.potencia = int(potencia) if potencia else None
+            estacion.potencia = int(potencia) if potencia and potencia.strip() else None
+            estacion.fuera_de_servicio = fuera_de_servicio
+            estacion.motivo_fuera_servicio = motivo_fuera_servicio if fuera_de_servicio else None
             estacion.save()
             
             messages.success(request, f"Punto de carga {punto_id} actualizado correctamente")
@@ -369,6 +385,35 @@ def editar_punto(request, punto_id):
     }
     
     return render(request, 'admin_connect/editar_punto.html', context)
+
+@staff_member_required
+def cambiar_estado_punto(request, punto_id):
+    """Vista para cambiar el estado de servicio de un punto de carga"""
+    estacion = get_object_or_404(EstacioCarrega, id_punt=punto_id)
+    
+    if request.method == 'POST':
+        # Si se envía el formulario con el motivo
+        motivo = request.POST.get('motivo_fuera_servicio', '')
+        estacion.fuera_de_servicio = True
+        estacion.motivo_fuera_servicio = motivo
+        estacion.save()
+        
+        messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
+        return redirect('admin_connect:gestionar_puntos')
+    else:
+        # Si se está activando (cambio de estado)
+        if estacion.fuera_de_servicio:
+            estacion.fuera_de_servicio = False
+            estacion.motivo_fuera_servicio = None
+            estacion.save()
+            messages.success(request, f"Punto de carga {punto_id} marcado como en servicio")
+            return redirect('admin_connect:gestionar_puntos')
+        else:
+            # Si se está desactivando, mostrar formulario para indicar motivo
+            return render(request, 'admin_connect/desactivar_punto.html', {
+                'estacion': estacion,
+                'title': 'Desactivar Punto de Carga',
+            })
 
 @staff_member_required
 def eliminar_punto(request, punto_id):
