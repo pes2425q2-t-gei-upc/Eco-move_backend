@@ -127,6 +127,8 @@ class EstacioCarrega(Punt):
     # tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
     tipus_velocitat = models.ManyToManyField('TipusVelocitat', related_name='estacions_de_carrega')
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
+    fuera_de_servicio = models.BooleanField(default=False, help_text="Indica si la estación está fuera de servicio")
+    motivo_fuera_servicio = models.CharField(max_length=255, blank=True, null=True, help_text="Motivo por el que la estación está fuera de servicio")
 
     def __str__(self):
         return f"Estació {self.id_punt} - {self.lat}, {self.lng}"
