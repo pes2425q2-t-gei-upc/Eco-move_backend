@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'cloudinary',
     'cloudinary_storage',
+    'estaciones_bici',
 
     # auth
     'rest_framework',

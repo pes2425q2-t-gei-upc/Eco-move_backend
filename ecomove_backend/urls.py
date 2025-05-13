@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/social/', include('social_community.urls')),
     path('api-auth/', include('rest_framework.urls')),
     path('social/', include('social_community.urls')),
+    path('api/bicing/', include('estaciones_bici.urls')),
 
     path('me/', MeView.as_view(), name='me'),
     path('profile/foto/', PerfilFotoView.as_view(), name='perfil-foto'),
