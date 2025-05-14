@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from api_punts_carrega.models import (
     Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, 
     ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion,
-    TextItem
+    TextItem, ReporteEstacion
 )
 
 class TipusCarregadorInline(admin.TabularInline):
@@ -80,3 +80,55 @@ class TipusCarregadorAdmin(admin.ModelAdmin):
 class TextItemAdmin(admin.ModelAdmin):
     list_display = ('key', 'text_ca', 'text_en', 'text_es')
     search_fields = ('key',)
+
+@admin.register(ReporteEstacion)
+class ReporteEstacionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'estacion',
+        'tipo_error_display',
+        'estado_display',
+        'usuario_reporta',
+        'fecha_reporte',
+        'fecha_ultima_modificacion',
+    )
+
+    list_filter = (
+        'estado',
+        'tipo_error',
+        'fecha_reporte',
+        'estacion',
+    )
+
+    search_fields = (
+        'id',
+        'estacion__id_punt',
+        'estacion__direccio',
+        'usuario_reporta__username',
+        'usuario_reporta__email',
+        'comentario_usuario',
+    )
+
+    readonly_fields = (
+        'fecha_reporte',
+        'fecha_ultima_modificacion',
+        'usuario_reporta',
+    )
+
+    fieldsets = (
+        (None, {
+            'fields': ('estacion', 'tipo_error', 'comentario_usuario')
+        }),
+        ('Gestión del Reporte', {
+            'fields': ('estado', 'fecha_reporte', 'fecha_ultima_modificacion', 'usuario_reporta')
+        }),
+    )
+
+    def tipo_error_display(self, obj):
+        return obj.get_tipo_error_display()
+    tipo_error_display.short_description = 'Tipo de Error'
+
+    def estado_display(self, obj):
+        return obj.get_estado_display()
+    estado_display.short_description = 'Estado'
+
