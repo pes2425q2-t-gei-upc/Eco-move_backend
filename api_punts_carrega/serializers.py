@@ -224,7 +224,6 @@ class ReporteEstacionSerializer(serializers.ModelSerializer):
         queryset=EstacioCarrega.objects.all(),
         source='estacion',
         write_only=True,
-        pk_field='id_punt',
         help_text="ID (id_punt) de la estación a reportar."
     )
 
