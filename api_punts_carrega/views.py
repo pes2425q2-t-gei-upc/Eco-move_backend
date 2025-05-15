@@ -15,7 +15,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import  (
+from .models import (
     Punt,
     EstacioCarrega,
     TipusCarregador,
@@ -26,7 +26,7 @@ from .models import  (
     Usuario,
     ValoracionEstacion,
     TextItem,
-    Idiomas
+    Idiomas, TipoErrorEstacion
 )
 from .permissions import EsElMismoUsuarioOReadOnly
 
@@ -838,3 +838,13 @@ class ValoracionEstacionViewSet(viewsets.ModelViewSet):
 class TextItemViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TextItem.objects.all()
     serializer_class = TextItemSerializer
+
+@api_view(['GET'])
+def obtener_tipos_error_estacion(request):
+    tipos_de_error = []
+    for valor, display_text in TipoErrorEstacion.choices:
+        tipos_de_error.append({
+            'valor': valor,
+            'display': display_text
+        })
+    return Response(tipos_de_error)

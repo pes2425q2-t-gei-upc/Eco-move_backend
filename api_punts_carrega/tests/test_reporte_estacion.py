@@ -7,40 +7,31 @@ from api_punts_carrega.models import Usuario, EstacioCarrega, ReporteEstacion, T
 
 class ReporteEstacionAPITests(APITestCase):
     def setUp(self):
-        # --- Crear Usuario de Prueba y Asignar DNI ---
         self.user1 = Usuario.objects.create_user(
             username='reporter_user1',
             email='reporter1@example.com',
             password='password123'
-            # No pasar 'dni' aquí
         )
-        self.user1.dni = 'TESTDNI001R' # Asignar DNI después
-        # Si tienes otros campos obligatorios que no están en AbstractUser, asígnalos aquí
-        # self.user1.idioma = 'Català' # Ejemplo si fuera obligatorio y no tuviera default
-        self.user1.save() # Guardar los campos adicionales
+        self.user1.dni = 'TESTDNI001R'
+        self.user1.save()
 
         self.token1 = Token.objects.create(user=self.user1)
         self.auth_header1 = f'Token {self.token1.key}'
 
-        # Crear otro usuario (si lo necesitas para otros tests)
         self.other_user = Usuario.objects.create_user(
-            username='other_user_report', # Username diferente
-            email='other_report@example.com', # Email diferente
+            username='other_user_report',
+            email='other_report@example.com',
             password='password123'
         )
-        self.other_user.dni = 'TESTDNI002S' # DNI diferente
+        self.other_user.dni = 'TESTDNI002S'
         self.other_user.save()
 
-        # --- Crear Estación de Carga de Prueba ---
         self.estacion1 = EstacioCarrega.objects.create(
             id_punt="REP-EST-001",
             lat=41.123, lng=2.123,
-            nplaces="2", # Asegúrate que es el tipo correcto, ej: si es CharField o IntegerField
+            nplaces="2",
             gestio="TestGestReport", tipus_acces="TestAccReport"
         )
-
-        # URL para la acción de reportar error
-        # (El try-except para el nombre de la URL se mantiene como antes)
         try:
             self.report_url_estacion1 = reverse('estacion-reportar-error', kwargs={'pk': self.estacion1.pk})
         except:
