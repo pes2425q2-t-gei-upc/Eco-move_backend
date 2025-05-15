@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from api_punts_carrega.models import (
-    Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, 
-    ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion,
-    TextItem, ReporteEstacion,
+    Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle,
+    RefugioClimatico, Usuario, ValoracionEstacion,
+    TextItem, ReporteEstacion
 )
 
 class TipusCarregadorInline(admin.TabularInline):
@@ -19,11 +19,11 @@ class EstacioCarregaAdmin(admin.ModelAdmin):
     search_fields = ('id_punt', 'direccio', 'ciutat')
     inlines = [TipusCarregadorInline]
     exclude = ('tipus_carregador',)
-    
+
     def get_tipus_velocitat(self, obj):
         return ", ".join([t.nom_velocitat for t in obj.tipus_velocitat.all()])
     get_tipus_velocitat.short_description = "Velocidad de carga"
-    
+
     def get_places(self, obj):
         return obj.nplaces or "No especificado"
     get_places.short_description = "Plazas"
@@ -37,15 +37,9 @@ class ReservaAdmin(admin.ModelAdmin):
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ('matricula', 'model_cotxe', 'propietari', 'carrega_actual', 'capacitat_bateria')
-    list_filter = ('model_cotxe__marca',)
-    search_fields = ('matricula', 'propietari__username', 'model_cotxe__marca', 'model_cotxe__model')
-
-@admin.register(ModelCotxe)
-class ModelCotxeAdmin(admin.ModelAdmin):
-    list_display = ('marca', 'model', 'any_model')
-    list_filter = ('marca', 'any_model')
-    search_fields = ('marca', 'model')
+    list_display = ('matricula',  'propietari', 'carrega_actual', 'capacitat_bateria','marca', 'model','any_model')
+    list_filter = ('marca', 'model','any_model','propietari')
+    search_fields = ('matricula', 'propietari__username', 'marca', 'model')
 
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
