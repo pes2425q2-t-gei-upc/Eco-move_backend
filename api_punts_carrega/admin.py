@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from api_punts_carrega.models import (
     Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, 
     ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion,
-    TextItem, ReporteEstacion
+    TextItem, ReporteEstacion,
 )
 
 class TipusCarregadorInline(admin.TabularInline):
