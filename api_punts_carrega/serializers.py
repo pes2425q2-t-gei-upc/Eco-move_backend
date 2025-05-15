@@ -12,7 +12,9 @@ from .models import (
     Usuario,
     ValoracionEstacion,
     TextItem,
-    Idiomas
+    Idiomas,
+    Trofeo,
+    UsuarioTrofeo
 )
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
@@ -205,3 +207,15 @@ class TextItemSerializer(serializers.ModelSerializer):
         lang = get_language()
         fallback = obj.text
         return getattr(obj, f'text_{lang}', fallback)  # Default to Catalan if language not found
+
+class TrofeoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Trofeo
+        fields = ['id_trofeo', 'nombre', 'descripcion', 'puntos_necesarios']
+
+class UsuarioTrofeoSerializer(serializers.ModelSerializer):
+    trofeo = TrofeoSerializer(read_only=True)
+    
+    class Meta:
+        model = UsuarioTrofeo
+        fields = ['trofeo', 'fecha_obtencion']
