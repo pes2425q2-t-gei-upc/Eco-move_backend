@@ -18,5 +18,11 @@ urlpatterns = [
     path('usuarios/modificar_puntos/<int:usuario_id>/', admin_views.modificar_puntos_usuario, name='modificar_puntos_usuario'),
 
     path('estadisticas/estaciones/', admin_views.estadisticas_estaciones, name='estadisticas_estaciones'),
+
+    path('gestionar-puntos/', admin_views.gestionar_puntos, name='gestionar_puntos'),
+    path('añadir-punto/', admin_views.añadir_punto, name='añadir_punto'),
+    path('editar-punto/<str:punto_id>/', admin_views.editar_punto, name='editar_punto'),
+    path('eliminar-punto/<str:punto_id>/', admin_views.eliminar_punto, name='eliminar_punto'),
+    path('cambiar-estado-punto/<str:punto_id>/', admin_views.cambiar_estado_punto, name='cambiar_estado_punto'),
     
 ]

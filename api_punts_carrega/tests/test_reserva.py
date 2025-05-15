@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 import json
 from datetime import date, datetime, timedelta, time
-from api_punts_carrega.models import EstacioCarrega, Reserva, Usuario, Vehicle, ModelCotxe, TipusCarregador
+from api_punts_carrega.models import EstacioCarrega, Reserva, Usuario, Vehicle, TipusCarregador
 from rest_framework.authtoken.models import Token
 
 class ReservaAPITests(TestCase):
@@ -16,13 +16,17 @@ class ReservaAPITests(TestCase):
         self.auth_header = f'Token {self.token.key}'
 
         self.common_charger_type = TipusCarregador.objects.create(id_carregador="TEST-CCS-S", nom_tipus="CCS Setup", tipus_connector="CCS2", tipus_corrent="DC")
-        self.test_model_coche = ModelCotxe.objects.create(marca="TestMarcaS", model="TestModelS", any_model=2024)
-        self.test_model_coche.tipus_carregador.add(self.common_charger_type)
-
+        
         self.test_vehicle = Vehicle.objects.create(
-            matricula="TESTVEH", propietari=self.test_user, model_cotxe=self.test_model_coche,
-            carrega_actual=50.0, capacitat_bateria=70.0
+            matricula="TESTVEH", 
+            propietari=self.test_user, 
+            marca="TestMarcaS", 
+            model="TestModelS", 
+            any_model=2024,
+            carrega_actual=50.0, 
+            capacitat_bateria=70.0
         )
+        self.test_vehicle.tipus_carregador.add(self.common_charger_type)
 
         self.estacio = EstacioCarrega.objects.create(
             id_punt="TEST-EST-SETUP", lat=41.3, lng=2.1, nplaces="1", gestio="TestG", tipus_acces="TestA"
@@ -48,6 +52,7 @@ class ReservaAPITests(TestCase):
         self.modificar_url = reverse('reserva-modificar', kwargs={'pk': self.reserva.pk})
         self.eliminar_url = reverse('reserva-eliminar', kwargs={'pk': self.reserva.pk})
 
+    # Los métodos de test permanecen sin cambios
     def test_get_all_reservations_authenticated(self):
         response = self.client.get(self.list_url, HTTP_AUTHORIZATION=self.auth_header)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -142,6 +142,8 @@ class EstacioCarrega(Punt):
     # tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
     tipus_velocitat = models.ManyToManyField('TipusVelocitat', related_name='estacions_de_carrega')
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
+    fuera_de_servicio = models.BooleanField(default=False, help_text="Indica si la estación está fuera de servicio")
+    motivo_fuera_servicio = models.CharField(max_length=255, blank=True, null=True, help_text="Motivo por el que la estación está fuera de servicio")
 
     def __str__(self):
         return f"Estació {self.id_punt} - {self.lat}, {self.lng}"
@@ -187,20 +189,14 @@ class Vehicle(models.Model):
     matricula = models.CharField(max_length=10, primary_key=True)
     carrega_actual = models.FloatField()
     capacitat_bateria = models.FloatField()
-    model_cotxe = models.ForeignKey('ModelCotxe', on_delete=models.CASCADE, related_name='vehicles')
     propietari = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='vehicles')
-
-    def __str__(self):
-        return f"Vehicle {self.model_cotxe.marca} {self.model_cotxe.model} ({self.matricula}) de {self.propietari}"
-
-class ModelCotxe(models.Model):
     model = models.CharField(max_length=100)
     marca = models.CharField(max_length=100)
     any_model = models.IntegerField()
     tipus_carregador = models.ManyToManyField(TipusCarregador, related_name='tipus_carregador')
 
     def __str__(self):
-        return f"Model {self.marca} {self.model} ({self.any_model})"
+        return f"Vehicle {self.marca} {self.model} ({self.matricula}) de {self.propietari}"
 
 class ValoracionEstacion(models.Model):
     estacion = models.ForeignKey(EstacioCarrega, on_delete=models.CASCADE, related_name="valoraciones")
