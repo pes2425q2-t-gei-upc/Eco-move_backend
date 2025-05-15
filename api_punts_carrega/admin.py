@@ -75,7 +75,7 @@ class TextItemAdmin(admin.ModelAdmin):
     list_display = ('key', 'text_ca', 'text_en', 'text_es')
     search_fields = ('key',)
 
-#Reportar estación
+#Reportar estació
 @admin.register(ReporteEstacion)
 class ReporteEstacionAdmin(admin.ModelAdmin):
     list_display = (
