@@ -8,9 +8,7 @@ from .models import (
     TipusCarregador,
     Reserva,
     Vehicle,
-    ModelCotxe,
     RefugioClimatico,
-   
     Usuario,
     ValoracionEstacion,
     TextItem,
@@ -36,15 +34,12 @@ class TipusCarregadorSerializer(serializers.ModelSerializer):
         model = TipusCarregador
         fields = '__all__'
     
-class ModelCotxeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ModelCotxe
-        fields = '__all__'
 
-class VehicleSerializer(serializers.ModelSerializer):   
+class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
-        fields = '__all__'
+        fields = ['matricula', 'carrega_actual', 'capacitat_bateria', 'model', 'marca', 'any_model', 'tipus_carregador']
+        read_only_fields = ['propietari']
 
 class NearestPuntCarregaSerializer(serializers.ModelSerializer):
     latitud = serializers.FloatField(required=True)

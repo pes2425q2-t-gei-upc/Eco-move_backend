@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from rest_framework import status
 from datetime import date, datetime, timedelta, time
-from api_punts_carrega.models import EstacioCarrega, Reserva, Usuario, Vehicle, ModelCotxe, TipusCarregador
+from api_punts_carrega.models import EstacioCarrega, Reserva, Usuario, Vehicle, TipusCarregador
 from rest_framework.authtoken.models import Token
 
 class ReservaFiltradoAPITests(TestCase):
@@ -14,10 +14,34 @@ class ReservaFiltradoAPITests(TestCase):
         self.token_user1 = Token.objects.create(user=self.user1)
         self.auth_header_user1 = f'Token {self.token_user1.key}'
 
-        model_coche = ModelCotxe.objects.create(marca="FMarca", model="FModel", any_model=2024)
-        vehiculo1 = Vehicle.objects.create(matricula="FIL1", propietari=self.user1, model_cotxe=model_coche, carrega_actual=50, capacitat_bateria=70)
-        vehiculo2 = Vehicle.objects.create(matricula="FIL2", propietari=self.user2, model_cotxe=model_coche, carrega_actual=50, capacitat_bateria=70)
+        # Crear tipo de cargador para los vehículos
+        self.tipus_carregador = TipusCarregador.objects.create(id_carregador="TEST-CCS", nom_tipus="CCS", tipus_connector="CCS2", tipus_corrent="DC")
+        
+        # Crear vehículos con el nuevo modelo unificado
+        vehiculo1 = Vehicle.objects.create(
+            matricula="FIL1", 
+            propietari=self.user1, 
+            marca="FMarca", 
+            model="FModel", 
+            any_model=2024,
+            carrega_actual=50, 
+            capacitat_bateria=70
+        )
+        vehiculo1.tipus_carregador.add(self.tipus_carregador)
+        
+        vehiculo2 = Vehicle.objects.create(
+            matricula="FIL2", 
+            propietari=self.user2, 
+            marca="FMarca", 
+            model="FModel", 
+            any_model=2024,
+            carrega_actual=50, 
+            capacitat_bateria=70
+        )
+        vehiculo2.tipus_carregador.add(self.tipus_carregador)
+        
         estacio = EstacioCarrega.objects.create(id_punt="TESTFIL", lat=41.1, lng=2.2, nplaces="2", gestio="Test", tipus_acces="Test")
+        estacio.tipus_carregador.add(self.tipus_carregador)
 
         self.reserva_u1_d19 = Reserva.objects.create(usuario=self.user1, estacion=estacio, fecha=date(2025, 3, 19), hora=time(10, 0), duracion=timedelta(hours=1), vehicle=vehiculo1)
         self.reserva_u1_d20 = Reserva.objects.create(usuario=self.user1, estacion=estacio, fecha=date(2025, 3, 20), hora=time(11, 0), duracion=timedelta(hours=1), vehicle=vehiculo1)

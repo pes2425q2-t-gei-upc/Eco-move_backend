@@ -4,7 +4,6 @@ from api_punts_carrega.models import (
     Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, 
     ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion,
     TextItem, ReporteEstacion
-)
 
 class TipusCarregadorInline(admin.TabularInline):
     model = EstacioCarrega.tipus_carregador.through
@@ -37,15 +36,9 @@ class ReservaAdmin(admin.ModelAdmin):
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ('matricula', 'model_cotxe', 'propietari', 'carrega_actual', 'capacitat_bateria')
-    list_filter = ('model_cotxe__marca',)
-    search_fields = ('matricula', 'propietari__username', 'model_cotxe__marca', 'model_cotxe__model')
-
-@admin.register(ModelCotxe)
-class ModelCotxeAdmin(admin.ModelAdmin):
-    list_display = ('marca', 'model', 'any_model')
-    list_filter = ('marca', 'any_model')
-    search_fields = ('marca', 'model')
+    list_display = ('matricula',  'propietari', 'carrega_actual', 'capacitat_bateria','marca', 'model','any_model')
+    list_filter = ('marca', 'model','any_model','propietari')
+    search_fields = ('matricula', 'propietari__username', 'marca', 'model')
 
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
