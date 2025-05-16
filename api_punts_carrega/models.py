@@ -29,6 +29,21 @@ class Idiomas(models.TextChoices):
     CASTELLANO = "Castellano"
     ENGLISH = "English"
 
+class TipoErrorEstacion(models.TextChoices):
+    NO_FUNCIONA = 'NO_FUNCIONA', 'No funciona / Sin energía'
+    CARGA_LENTA = 'CARGA_LENTA', 'Carga inesperadamente lenta'
+    CONECTOR_DANADO = 'CONECTOR_DANADO', 'Conector dañado o bloqueado'
+    PANTALLA_APAGADA = 'PANTALLA_APAGADA', 'Pantalla apagada o ilegible'
+    PAGO_FALLIDO = 'PAGO_FALLIDO', 'Problema con el sistema de pago'
+    OBSTACULO = 'OBSTACULO_FISICO', 'Obstáculo físico / Plaza bloqueada'
+    OTRO = 'OTRO', 'Otro problema (ver comentario)'
+
+class EstadoReporteEstacion(models.TextChoices):
+    ABIERTO = 'ABIERTO', 'Abierto'
+    EN_PROGRESO = 'EN_PROGRESO', 'En Progreso'
+    RESUELTO = 'RESUELTO', 'Resuelto'
+    CERRADO_SIN_SOLUCION = 'CERRADO_SIN_SOLUCION', 'Cerrado (Sin Solución)'
+    DUPLICADO = 'DUPLICADO', 'Duplicado'
 
 # ---------------- MODELOS ---------------- #
 
@@ -266,3 +281,52 @@ class TextItem(models.Model):
     
     def __str__(self):
         return self.key
+
+class ReporteEstacion(models.Model):
+    estacion = models.ForeignKey(
+        EstacioCarrega,
+        on_delete=models.CASCADE,
+        related_name='reportes_errores',
+        verbose_name="Estación Reportada"
+    )
+    usuario_reporta = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=False,
+        related_name='reportes_estacion_realizados',
+        verbose_name="Usuario que Reporta"
+    )
+    tipo_error = models.CharField(
+        max_length=50,
+        choices=TipoErrorEstacion.choices,
+        verbose_name="Tipo de Error"
+    )
+    comentario_usuario = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Comentario del Usuario"
+    )
+    estado = models.CharField(
+        max_length=30,
+        choices=EstadoReporteEstacion.choices,
+        default=EstadoReporteEstacion.ABIERTO,
+        verbose_name="Estado del Reporte"
+    )
+    fecha_reporte = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha del Reporte"
+    )
+    fecha_ultima_modificacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Modificación"
+    )
+
+    class Meta:
+        verbose_name = "Reporte de Estación"
+        verbose_name_plural = "Reportes de Estaciones"
+        ordering = ['-fecha_reporte']
+
+    def __str__(self):
+        usuario_str = self.usuario_reporta.username if self.usuario_reporta else "Usuario Desconocido"
+        return f"Reporte en '{self.estacion.id_punt}' por {usuario_str} ({self.get_tipo_error_display()}) - {self.get_estado_display()}"
