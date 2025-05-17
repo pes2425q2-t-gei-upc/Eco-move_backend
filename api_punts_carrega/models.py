@@ -300,7 +300,7 @@ class ReporteEstacion(models.Model):
     )
     comentario_usuario = models.TextField(
         blank=True,
-         
+        null=True,
         verbose_name="Comentario del Usuario"
     )
     estado = models.CharField(
