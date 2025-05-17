@@ -32,7 +32,7 @@ class AlertsViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        instance = serializer.save(sender=self.request.user)
+        serializer.save(sender=self.request.user)
            
     def get_queryset(self):
         return PuntEmergencia.objects.filter(is_active=True)
@@ -161,7 +161,6 @@ class ChatViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path="my_chats")
     def my_chats(self, request):
-        user = request.user
         chats = Chat.objects.filter(
             Q(creador=request.user) | Q(receptor=request.user)
         ).annotate(
