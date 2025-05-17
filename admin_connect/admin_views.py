@@ -274,6 +274,10 @@ def gestionar_puntos(request):
     
     return render(request, 'admin_connect/gestionar_puntos.html', context)
 
+AÑADIR_PUNTO_TEMPLATE = 'admin_connect/añadir_punto.html'
+AÑADIR_PUNTO_TITLE = 'Añadir Punto de Carga'
+GESTIONAR_PUNTOS_URL = 'admin_connect:gestionar_puntos'
+
 @staff_member_required
 def añadir_punto(request):
     """Vista para añadir un nuevo punto de carga"""
@@ -295,8 +299,8 @@ def añadir_punto(request):
         # Validar que el ID no exista ya
         if EstacioCarrega.objects.filter(id_punt=id_punt).exists():
             messages.error(request, f"Ya existe un punto de carga con el ID {id_punt}")
-            return render(request, 'admin_connect/añadir_punto.html', {
-                'title': 'Añadir Punto de Carga',
+            return render(request, AÑADIR_PUNTO_TEMPLATE, {
+                'title': AÑADIR_PUNTO_TITLE,
                 'error': f"Ya existe un punto de carga con el ID {id_punt}"
             })
         
@@ -323,17 +327,17 @@ def añadir_punto(request):
             estacion.save()
             
             messages.success(request, f"Punto de carga {id_punt} añadido correctamente")
-            return redirect('admin_connect:gestionar_puntos')
+            return redirect(GESTIONAR_PUNTOS_URL)
         except Exception as e:
             messages.error(request, f"Error al añadir el punto de carga: {str(e)}")
-            return render(request, 'admin_connect/añadir_punto.html', {
-                'title': 'Añadir Punto de Carga',
+            return render(request, AÑADIR_PUNTO_TEMPLATE, {
+                'title': AÑADIR_PUNTO_TITLE,
                 'error': f"Error al añadir el punto de carga: {str(e)}"
             })
     
     # Si es GET, mostrar el formulario
-    return render(request, 'admin_connect/añadir_punto.html', {
-        'title': 'Añadir Punto de Carga'
+    return render(request, AÑADIR_PUNTO_TEMPLATE, {
+        'title': AÑADIR_PUNTO_TITLE
     })
 
 @staff_member_required
@@ -375,7 +379,7 @@ def editar_punto(request, punto_id):
             estacion.save()
             
             messages.success(request, f"Punto de carga {punto_id} actualizado correctamente")
-            return redirect('admin_connect:gestionar_puntos')
+            return redirect(GESTIONAR_PUNTOS_URL)
         except Exception as e:
             messages.error(request, f"Error al actualizar el punto de carga: {str(e)}")
     
@@ -399,7 +403,7 @@ def cambiar_estado_punto(request, punto_id):
         estacion.save()
         
         messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
-        return redirect('admin_connect:gestionar_puntos')
+        return redirect(GESTIONAR_PUNTOS_URL)
     else:
         # Si se está activando (cambio de estado)
         if estacion.fuera_de_servicio:
@@ -407,7 +411,7 @@ def cambiar_estado_punto(request, punto_id):
             estacion.motivo_fuera_servicio = None
             estacion.save()
             messages.success(request, f"Punto de carga {punto_id} marcado como en servicio")
-            return redirect('admin_connect:gestionar_puntos')
+            return redirect(GESTIONAR_PUNTOS_URL)
         else:
             # Si se está desactivando, mostrar formulario para indicar motivo
             return render(request, 'admin_connect/desactivar_punto.html', {
@@ -425,7 +429,7 @@ def eliminar_punto(request, punto_id):
         reservas_count = Reserva.objects.filter(estacion=estacion).count()
         if reservas_count > 0:
             messages.error(request, f"No se puede eliminar el punto de carga {punto_id} porque tiene {reservas_count} reservas asociadas")
-            return redirect('admin_connect:gestionar_puntos')
+            return redirect(GESTIONAR_PUNTOS_URL)
         
         try:
             # Eliminar valoraciones asociadas
@@ -438,7 +442,7 @@ def eliminar_punto(request, punto_id):
         except Exception as e:
             messages.error(request, f"Error al eliminar el punto de carga: {str(e)}")
         
-        return redirect('admin_connect:gestionar_puntos')
+        return redirect(GESTIONAR_PUNTOS_URL)
     
     # Si es GET, redirigir a la página de gestión
-    return redirect('admin_connect:gestionar_puntos')
+    return redirect(GESTIONAR_PUNTOS_URL)
