@@ -1,6 +1,5 @@
 {% extends "admin_connect/base_custom.html" %}
 {% load static %}
-
 {% block extrastyle %}
 <style>
   .card {
@@ -167,19 +166,16 @@
   }
 </style>
 {% endblock %}
-
 {% block content %}
 <div style="margin-bottom: 20px;">
   <a href="{% url 'admin_connect:admin_dashboard' %}" class="back-button">
     &larr; Volver al Dashboard
   </a>
 </div>
-
 <div class="header-actions">
   <h1>Gestionar Puntos de Carga</h1>
   <a href="{% url 'admin_connect:añadir_punto' %}" class="add-button">+ Añadir Nuevo Punto de Carga</a>
 </div>
-
 <div class="card">
   <div class="search-container">
     <form method="get">
@@ -242,7 +238,6 @@
     </table>
   </div>
 </div>
-
 <!-- Modal de confirmación para eliminar -->
 <div id="modalEliminar" class="modal">
   <div class="modal-content">
@@ -256,7 +251,6 @@
     </form>
   </div>
 </div>
-
 <script>
   // Funciones para el modal de confirmación
   var modal = document.getElementById("modalEliminar");

@@ -6,11 +6,9 @@ from django.utils import timezone
 from datetime import timedelta
 import requests
 import json
-
 from api_punts_carrega.models import (
     EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion
 )
-
 @staff_member_required
 def admin_dashboard(request):
     # Estadísticas generales
@@ -55,7 +53,6 @@ def admin_dashboard(request):
     }
     
     return render(request, 'admin_connect/dashboard.html', context)
-
 @staff_member_required
 def sincronizar_refugios_admin(request):
     if request.method == 'POST':
@@ -103,7 +100,6 @@ def sincronizar_refugios_admin(request):
     }
     
     return render(request, 'admin_connect/sincronizar_refugios.html', context)
-
 @staff_member_required
 def gestionar_usuarios(request):
     usuarios = Usuario.objects.all().order_by('username')
@@ -113,7 +109,6 @@ def gestionar_usuarios(request):
     }
     
     return render(request, 'admin_connect/gestionar_usuarios.html', context)
-
 @staff_member_required
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -166,8 +161,6 @@ def editar_usuario(request, usuario_id):
     }
      
     return render(request, 'admin_connect/editar_usuario.html', context)
-
-
 @staff_member_required
 def modificar_puntos_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -195,7 +188,6 @@ def modificar_puntos_usuario(request, usuario_id):
     }
     
     return render(request, 'admin_connect/modificar_puntos.html', context)
-
 @staff_member_required
 def estadisticas_estaciones(request):
     # Estaciones con más reservas
@@ -250,7 +242,6 @@ def estadisticas_estaciones(request):
     }
     
     return render(request, 'admin_connect/estadisticas_estaciones.html', context)
-
 @staff_member_required
 def gestionar_puntos(request):
     """Vista para gestionar los puntos de carga"""
@@ -273,11 +264,9 @@ def gestionar_puntos(request):
     }
     
     return render(request, 'admin_connect/gestionar_puntos.html', context)
-
 AÑADIR_PUNTO_TEMPLATE = 'admin_connect/añadir_punto.html'
 AÑADIR_PUNTO_TITLE = 'Añadir Punto de Carga'
 GESTIONAR_PUNTOS_URL = 'admin_connect:gestionar_puntos'
-
 @staff_member_required
 def añadir_punto(request):
     """Vista para añadir un nuevo punto de carga"""
@@ -339,7 +328,6 @@ def añadir_punto(request):
     return render(request, AÑADIR_PUNTO_TEMPLATE, {
         'title': AÑADIR_PUNTO_TITLE
     })
-
 @staff_member_required
 def editar_punto(request, punto_id):
     """Vista para editar un punto de carga existente"""
@@ -389,7 +377,6 @@ def editar_punto(request, punto_id):
     }
     
     return render(request, 'admin_connect/editar_punto.html', context)
-
 @staff_member_required
 def cambiar_estado_punto(request, punto_id):
     """Vista para cambiar el estado de servicio de un punto de carga"""
@@ -418,7 +405,6 @@ def cambiar_estado_punto(request, punto_id):
                 'estacion': estacion,
                 'title': 'Desactivar Punto de Carga',
             })
-
 @staff_member_required
 def eliminar_punto(request, punto_id):
     """Vista para eliminar un punto de carga"""

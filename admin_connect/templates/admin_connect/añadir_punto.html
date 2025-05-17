@@ -1,6 +1,5 @@
 {% extends "admin_connect/base_custom.html" %}
 {% load static %}
-
 {% block extrastyle %}
 <style>
   .card {
@@ -81,16 +80,13 @@
   }
 </style>
 {% endblock %}
-
 {% block content %}
 <div style="margin-bottom: 20px;">
   <a href="{% url 'admin_connect:gestionar_puntos' %}" class="back-button">
     &larr; Volver a Gestionar Puntos
   </a>
 </div>
-
 <h1>Añadir Nuevo Punto de Carga</h1>
-
 <div class="card">
   <form method="post">
     {% csrf_token %}
@@ -164,7 +160,6 @@
     </div>
   </form>
 </div>
-
 <script>
   // Mostrar/ocultar el campo de motivo según el estado del checkbox
   document.getElementById('fuera_de_servicio').addEventListener('change', function() {
