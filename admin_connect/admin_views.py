@@ -1,14 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg,Q
 from django.utils import timezone
 from datetime import timedelta
 import requests
+
 import json
 
 from api_punts_carrega.models import (
-    EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion
+    EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion,
+)
+
+from social_community.models import (
+    Report, Chat, Missatge,
 )
 
 @staff_member_required
@@ -165,6 +170,43 @@ def editar_usuario(request, usuario_id):
          'usuario': usuario,
     }
      
+    return render(request, 'admin_connect/editar_usuario.html', context)
+
+@staff_member_required
+def bloquear_usuario(request, usuario_id):
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+    
+    if request.method == 'POST':
+        if usuario.is_admin == True:
+            messages.error(request, f'No se puede bloquear al usuario {usuario.username} porque es administrador.')
+            return redirect('admin_connect:gestionar_usuarios')
+        usuario.bloqueado = True
+        usuario.save()
+        
+        messages.success(request, f'Usuario {usuario.username} bloqueado correctamente.')
+        return redirect('admin_connect:gestionar_usuarios')
+    
+    context = {
+        'usuario': usuario,
+    }
+    
+    return render(request, 'admin_connect/editar_usuario.html', context)
+
+@staff_member_required
+def desbloquear_usuario(request, usuario_id):
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+    
+    if request.method == 'POST':
+        usuario.bloqueado = False
+        usuario.save()
+        
+        messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
+        return redirect('admin_connect:gestionar_usuarios')
+    
+    context = {
+        'usuario': usuario,
+    }
+    
     return render(request, 'admin_connect/editar_usuario.html', context)
 
 
@@ -442,3 +484,90 @@ def eliminar_punto(request, punto_id):
     
     # Si es GET, redirigir a la página de gestión
     return redirect('admin_connect:gestionar_puntos')
+
+@staff_member_required
+def gestionar_reports(request):
+    """
+    Vista para administrar los reportes de usuarios
+    """
+    # Obtener parámetro de estado (activo/resuelto)
+    estado = request.GET.get('estado', 'activos')
+    
+    # Filtrar reportes según el estado
+    if estado == 'resueltos':
+        reports = Report.objects.filter(is_active=False).order_by('-timestamp')
+        titulo = 'Reportes Resueltos'
+    else:  # Por defecto, mostrar activos
+        reports = Report.objects.filter(is_active=True).order_by('-timestamp')
+        titulo = 'Reportes Activos'
+    
+    context = {
+        'reports': reports,
+        'title': titulo,
+        'estado_actual': estado
+    }
+    
+    return render(request, 'admin_connect/gestionar_reports.html', context)
+
+@staff_member_required
+def detalle_report(request, report_id):
+    """
+    Vista para ver el detalle de un reporte específico
+    """
+    report = get_object_or_404(Report, id_report=report_id)
+    
+    # Obtener los mensajes del chat entre estos usuarios si existe alguno
+    chats = Chat.objects.filter(
+        Q(creador=report.creador, receptor=report.receptor) | 
+        Q(creador=report.receptor, receptor=report.creador)
+    )
+    
+    chat_messages = []
+    if chats.exists():
+        # Usar el chat más reciente si hay varios
+        chat = chats.order_by('-inicida_en').first()
+        # Obtener los mensajes recientes (últimos 20) ordenados por fecha
+        chat_messages = Missatge.objects.filter(chat=chat).order_by('-timestamp')[:20]
+        # Revertir para mostrar en orden cronológico
+        chat_messages = reversed(list(chat_messages))
+    
+    context = {
+        'report': report,
+        'chat_messages': chat_messages,
+        'title': f'Detalle del Reporte #{report.id_report}'
+    }
+    
+    return render(request, 'admin_connect/detalle_report.html', context)
+
+@staff_member_required
+def resolver_report(request, report_id):
+    """
+    Vista para marcar un reporte como resuelto
+    """
+    report = get_object_or_404(Report, id_report=report_id)
+    
+    if request.method == 'POST':
+        report.is_active = False
+        report.save()
+        messages.success(request, f'Reporte #{report.id_report} marcado como resuelto')
+        return redirect('admin_connect:gestionar_reports')
+    
+    context = {
+        'report': report,
+        'title': f'Resolver Reporte #{report.id_report}'
+    }
+    
+    return render(request, 'admin_connect/resolver_report.html', context)
+
+@staff_member_required
+def reactivar_report(request, report_id):
+    """
+    Vista para reactivar un reporte que estaba resuelto
+    """
+    report = get_object_or_404(Report, id_report=report_id)
+    
+    report.is_active = True
+    report.save()
+    
+    messages.success(request, f'Reporte #{report.id_report} reactivado correctamente')
+    return redirect('admin_connect:gestionar_reports')

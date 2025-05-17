@@ -132,11 +132,24 @@
       <label for="new_password">Nueva contraseña (dejar en blanco para mantener la actual):</label>
       <input type="password" name="new_password" id="new_password" class="form-control">
     </div>
+
+      {% if usuario.bloqueado %}
+        <form action="{% url 'admin_connect:desbloquear_usuario' usuario.id %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="button button-secondary">Desbloquear</button>
+        </form>
+      {% else %}
+        <form action="{% url 'admin_connect:bloquear_usuario' usuario.id %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="button button-secondary">Bloquear</button>
+        </form>
+      {% endif %}
     
     <div class="button-group">
       <button type="submit" class="button button-primary">Guardar cambios</button>
       <a href="{% url 'admin_connect:gestionar_usuarios' %}" class="button button-secondary">Cancelar</a>
     </div>
+
   </form>
 </div>
 {% endblock %}

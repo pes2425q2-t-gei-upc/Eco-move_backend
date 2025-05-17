@@ -62,6 +62,7 @@ class Usuario(AbstractUser):
     _punts = models.IntegerField(default=0, db_column='punts')  # _ és per fer privat a python
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
+    bloqueado = models.BooleanField(default=False)
     
     #valorar si permitir iniciar sesion con email y/o username, mas trabajo
     USERNAME_FIELD = 'email'
@@ -217,33 +218,6 @@ class ValoracionEstacion(models.Model):
     def __str__(self):
         return f"Valoración de {self.usuario.username} para {self.estacion.id_punt}: {self.puntuacion}/5"
 
-
-class Report(models.Model):
-    id_report = models.CharField(max_length=20, primary_key=True)
-    reportador = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="reports_emesos")
-    reportat = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="reports_rebuts")
-    administrador_assignat = models.ForeignKey(
-        Usuario,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True, related_name="reports_assignats",
-        limit_choices_to={'is_admin': True}
-    )
-    missatge = models.TextField()
-    #imatge = models.ImageField(upload_to='reports/')
-    data = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Report {self.id_report} de {self.reportador} a {self.reportat}"
-
-class RespostaReport(models.Model):
-    report = models.OneToOneField(Report, on_delete=models.CASCADE, related_name="resposta")
-    resolucio = models.CharField(max_length=50, choices=Resolucio.choices)
-    missatge = models.TextField()
-    data_resolucio = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Resposta a {self.report.id_report} - {self.resolucio}"
 
 class Descomptes(models.Model):
     id_descompte = models.CharField(max_length=20, primary_key=True)

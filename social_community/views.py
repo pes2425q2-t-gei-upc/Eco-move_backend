@@ -15,12 +15,14 @@ from .models import  (
     PuntEmergencia,
     Missatge,
     Chat,
+    Report,
 )
 from api_punts_carrega.models import Usuario
 from .serializers import ( 
     ChatSerializer,
     AlertSerializer,
     MessagesSerializer,
+    ReportSerializer,
 )
 
 class TenPerPagePagination(PageNumberPagination):
@@ -32,6 +34,9 @@ class AlertsViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        if self.request.user.bloqueado == True:
+            raise PermissionDenied("Usuario bloqueado: no puedes crear alertas.")
+        
         instance = serializer.save(sender=self.request.user)
            
     def get_queryset(self):
@@ -55,6 +60,12 @@ class AlertsViewSet(viewsets.ModelViewSet):
         lng_usuario = request.query_params.get('lng')
         active_only = request.query_params.get('active_only', 'true').lower() == 'true'
         since_param = request.query_params.get('since')
+
+        if request.user.bloqueado == True:
+            return Response(
+                {'error': 'Usuario bloqueado: no puedes ver alertas.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
         
         if not lat_usuario or not lng_usuario:
             return Response(
@@ -143,6 +154,13 @@ class ChatViewSet(viewsets.ModelViewSet):
             return Response({"error": "Cannot create a chat with yourself."}, status=status.HTTP_400_BAD_REQUEST)
         
         receptor = get_object_or_404(Usuario, email=receptor_email)
+
+        receptor = get_object_or_404(Usuario, email=receptor_email)
+        if receptor.bloqueado == True:
+            return Response({"error": "Usuario bloquedo: no puedes chatear con el."}, status=status.HTTP_400_BAD_REQUEST)
+        creador = request.user
+        if creador.bloqueado == True:
+            return Response({"error": "Usuario bloqueado: no puedes crear un chat."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Prevent duplicate chats between users that do not involve an alert
         existing = Chat.objects.filter(
@@ -221,6 +239,9 @@ class MessageViewSet(viewsets.ModelViewSet):
         # Ensure that the sender is part of the chat
         if self.request.user not in [chat.creador, chat.receptor]:
             raise PermissionDenied("You are not part of this chat.")
+
+        if self.request.user.bloqueado == True:
+            raise PermissionDenied("Usuario bloqueado: no puedes enviar mensajes.")
         
         serializer.save(sender=self.request.user, chat=chat)
         
@@ -250,3 +271,98 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     distance = R * c
     
     return distance
+
+class ReportViewSet(viewsets.ModelViewSet):
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        # Admin users can see all reports
+        if self.request.user.is_staff:
+            return Report.objects.all().order_by('-timestamp')
+        # Regular users can only see reports they created
+        return Report.objects.filter(creador=self.request.user).order_by('-timestamp')
+    
+    def perform_create(self, serializer):
+        serializer.save(creador=self.request.user)
+    
+    @action(detail=False, methods=['post'], url_path='report_from_chat')
+    def report_from_chat(self, request):
+        """
+        Create a report based on a chat conversation.
+        Requires chat_id and descripcio in the payload.
+        """
+        chat_id = request.data.get('chat_id')
+        descripcio = request.data.get('descripcio')
+        
+        if not chat_id or not descripcio:
+            return Response(
+                {'error': 'Se requieren los campos chat_id y descripcio'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Get the chat
+        chat = get_object_or_404(Chat, id=chat_id)
+        
+        # Verify the user is part of the chat
+        if request.user not in [chat.creador, chat.receptor]:
+            return Response(
+                {'error': 'No puedes reportar a un usuario con el que no tienes un chat'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        # Determine which user to report (the other user in the chat)
+        receptor = chat.receptor if request.user == chat.creador else chat.creador
+        
+        # Check if a report for this user from this chat already exists
+        existing_report = Report.objects.filter(
+            creador=request.user,
+            receptor=receptor,
+            is_active=True
+        ).first()
+        
+        if existing_report:
+            return Response(
+                {'error': 'Ya has reportado a este usuario y el reporte sigue activo'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Create the report
+        report = Report.objects.create(
+            creador=request.user,
+            receptor=receptor,
+            descripcio=descripcio
+        )
+        
+        serializer = self.get_serializer(report)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=['get'], url_path='my_reports')
+    def my_reports(self, request):
+        """
+        Get all reports created by the authenticated user
+        """
+        reports = Report.objects.filter(creador=request.user).order_by('-timestamp')
+        serializer = self.get_serializer(reports, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], url_path='resolve')
+    def resolve_report(self, request, pk=None):
+        """
+        Mark a report as resolved (inactive)
+        Only admins can resolve reports
+        """
+        report = self.get_object()
+        
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Solo los administradores pueden resolver reportes'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        report.is_active = False
+        report.save()
+        
+        serializer = self.get_serializer(report)
+        return Response(serializer.data)
