@@ -15,7 +15,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import  (
+from .models import (
     Punt,
     EstacioCarrega,
     TipusCarregador,
@@ -27,12 +27,13 @@ from .models import  (
     TextItem,
     Idiomas,
     Trofeo,
-    UsuarioTrofeo
+    UsuarioTrofeo,
+    TipoErrorEstacion
 )
 from .permissions import EsElMismoUsuarioOReadOnly
 
 
-from .serializers import ( 
+from .serializers import (
     PuntSerializer,
     EstacioCarregaSerializer,
     NearestPuntCarregaSerializer,
@@ -48,7 +49,8 @@ from .serializers import (
     PerfilPublicoSerializer,
     FotoPerfilSerializer,
     TrofeoSerializer,
-    UsuarioTrofeoSerializer
+    UsuarioTrofeoSerializer,
+    ReporteEstacionSerializer,
 )
 
 
@@ -109,6 +111,25 @@ class EstacioCarregaViewSet(viewsets.ModelViewSet):
             stats['media'] = round(stats['media'], 1)
             
         return Response(stats)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def reportar_error(self, request, pk=None):
+        estacion_reportada = self.get_object()
+
+        data_reporte = {
+            'estacion_id': estacion_reportada.pk,
+            'tipo_error': request.data.get('tipo_error'),
+            'comentario_usuario': request.data.get('comentario_usuario')
+        }
+
+        serializer = ReporteEstacionSerializer(data=data_reporte, context={'request': request})
+
+        if serializer.is_valid():
+            serializer.save(usuario_reporta=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -910,3 +931,12 @@ class TrofeoViewSet(viewsets.ModelViewSet):
             'mensaje': f'Se han creado {trofeos_creados} trofeos predeterminados',
             'total_trofeos': Trofeo.objects.count()
         }, status=status.HTTP_200_OK)
+@api_view(['GET'])
+def obtener_tipos_error_estacion(request):
+    tipos_de_error = []
+    for valor, display_text in TipoErrorEstacion.choices:
+        tipos_de_error.append({
+            'valor': valor,
+            'display': display_text
+        })
+    return Response(tipos_de_error)

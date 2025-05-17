@@ -219,3 +219,44 @@ class UsuarioTrofeoSerializer(serializers.ModelSerializer):
     class Meta:
         model = UsuarioTrofeo
         fields = ['trofeo', 'fecha_obtencion']
+from rest_framework import serializers
+from .models import ReporteEstacion, EstacioCarrega, Usuario
+
+class ReporteEstacionSerializer(serializers.ModelSerializer):
+    usuario_reporta = UsuarioSerializer(read_only=True)
+    estacion = EstacioCarregaSerializer(read_only=True)
+    tipo_error_display = serializers.CharField(source='get_tipo_error_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+
+    estacion_id = serializers.PrimaryKeyRelatedField(
+        queryset=EstacioCarrega.objects.all(),
+        source='estacion',
+        write_only=True,
+        help_text="ID (id_punt) de la estación a reportar."
+    )
+
+    class Meta:
+        model = ReporteEstacion
+        fields = [
+            'id',
+            'estacion',
+            'usuario_reporta',
+            'tipo_error',
+            'tipo_error_display',
+            'comentario_usuario',
+            'estado',
+            'estado_display',
+            'fecha_reporte',
+            'fecha_ultima_modificacion',
+            'estacion_id',
+        ]
+        read_only_fields = [
+            'id',
+            'usuario_reporta',
+            'estacion',
+            'tipo_error_display',
+            'estado',
+            'estado_display',
+            'fecha_reporte',
+            'fecha_ultima_modificacion',
+        ]

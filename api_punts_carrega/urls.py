@@ -5,7 +5,7 @@ from .views import (
     EstacioCarregaViewSet,
     punt_mes_proper,
     TipusCarregadorViewSet,
-    ReservaViewSet, 
+    ReservaViewSet,
     obtenir_preu_actual_kwh,
     VehicleViewSet,
     RefugioClimaticoViewSet,
@@ -20,6 +20,7 @@ from .views import (
     ValoracionEstacionViewSet,
     TextItemViewSet,
     TrofeoViewSet,
+    obtener_tipos_error_estacion,
 )
 
 router = DefaultRouter()
@@ -47,4 +48,5 @@ urlpatterns = [
     path('filtrar_estacions/', filtrar_estacions, name='filtrar_estacions'),
     path('estacions/<str:estacion_id>/valoraciones/', ValoracionEstacionViewSet.as_view({'get': 'list', 'post': 'create'}), name='estacion-valoraciones'),
     path('inicializarTrofeos/', TrofeoViewSet.as_view({'get': 'inicializar_trofeos'}), name='inicializar-trofeos'),
+    path('tipos_error_estacion/', obtener_tipos_error_estacion, name='tipos-error-estacion')
 ]
