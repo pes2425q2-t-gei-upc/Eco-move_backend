@@ -70,7 +70,7 @@ def sincronizar_refugios_admin(request):
             for refugio_data in refugios_data:
                 refugio_id = refugio_data['id']
                 
-                refugio, created = RefugioClimatico.objects.update_or_create(
+                created = RefugioClimatico.objects.update_or_create(
                     id_punt=refugio_id,
                     defaults={
                         'nombre': refugio_data['nombre'],

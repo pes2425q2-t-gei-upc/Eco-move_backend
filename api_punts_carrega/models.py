@@ -9,13 +9,13 @@ from ecomove_backend import settings
 
 # ---------------- ENUMS ---------------- #
 
-class Velocitat_de_carrega(models.TextChoices):
+class VelocitatDeCarrega(models.TextChoices):
     LENTA = "Càrrega lenta"
     SEMI_RAPIDA = "Càrrega semi-ràpida"
     RAPIDA = "Càrrega ràpida"
     ULTRA_RAPIDA = "Càrrega ultra-ràpida"
 
-class Tipus_de_Corrent(models.TextChoices):
+class TipusDeCorrent(models.TextChoices):
     AC = "Corrent alterna"
     DC = "Corrent continua"
 
@@ -49,7 +49,7 @@ class EstadoReporteEstacion(models.TextChoices):
 
 class TipusVelocitat(models.Model):
     id_velocitat = models.CharField(max_length=100, primary_key=True)
-    nom_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices)
+    nom_velocitat = models.CharField(max_length=100, choices=VelocitatDeCarrega.choices)
     
     def __str__(self):
         return f"{self.nom_velocitat}"
@@ -124,9 +124,9 @@ class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
     lat = models.FloatField(null=False)
     lng = models.FloatField(null=False)
-    direccio = models.CharField(max_length=255, null=True, blank=True)
-    ciutat = models.CharField(max_length=100, null=True, blank=True)
-    provincia = models.CharField(max_length=100, null=True, blank=True)
+    direccio = models.CharField(max_length=255,   blank=True)
+    ciutat = models.CharField(max_length=100,   blank=True)
+    provincia = models.CharField(max_length=100,   blank=True)
 
     def __str__(self):
         return f"Punto {self.id_punt} en {self.lat}, {self.lng}"
@@ -137,13 +137,12 @@ class Punt(models.Model):
 class EstacioCarrega(Punt):
     gestio = models.CharField(max_length=100)
     tipus_acces = models.CharField(max_length=100)
-    nplaces = models.CharField(max_length=20, null=True)
+    nplaces = models.CharField(max_length=20)
     potencia = models.IntegerField(null=True)
-    # tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
     tipus_velocitat = models.ManyToManyField('TipusVelocitat', related_name='estacions_de_carrega')
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
     fuera_de_servicio = models.BooleanField(default=False, help_text="Indica si la estación está fuera de servicio")
-    motivo_fuera_servicio = models.CharField(max_length=255, blank=True, null=True, help_text="Motivo por el que la estación está fuera de servicio")
+    motivo_fuera_servicio = models.CharField(max_length=255, blank=True, help_text="Motivo por el que la estación está fuera de servicio")
 
     def __str__(self):
         return f"Estació {self.id_punt} - {self.lat}, {self.lng}"
@@ -152,7 +151,7 @@ class TipusCarregador(models.Model):
     id_carregador = models.CharField(max_length=100, primary_key=True)
     nom_tipus = models.CharField(max_length=100)
     tipus_connector = models.CharField(max_length=100)
-    tipus_corrent = models.CharField(max_length=100, choices=Tipus_de_Corrent.choices)
+    tipus_corrent = models.CharField(max_length=100, choices=TipusDeCorrent.choices)
 
     def __str__(self):
         return f"{self.nom_tipus} - {self.tipus_connector} ({self.tipus_corrent})"
@@ -180,7 +179,6 @@ class ReservaFinalitzada(models.Model):
     reserva = models.OneToOneField(Reserva, on_delete=models.CASCADE, related_name="finalitzada")
     punts_obtinguts = models.IntegerField(default=0)
     preu = models.DecimalField(max_digits=6, decimal_places=2)
-    #usuari = models.ForeignKey(Usuari, on_delete=models.CASCADE, related_name="reserves")
 
     def __str__(self):
         return f"Reserva Finalitzada: {self.reserva}"
@@ -205,7 +203,7 @@ class ValoracionEstacion(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text="Valoración entre 1 y 5"
     )
-    comentario = models.TextField(blank=True, null=True)
+    comentario = models.TextField(blank=True,  )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -230,7 +228,6 @@ class Report(models.Model):
         limit_choices_to={'is_admin': True}
     )
     missatge = models.TextField()
-    #imatge = models.ImageField(upload_to='reports/')
     data = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -249,7 +246,6 @@ class Descomptes(models.Model):
     id_descompte = models.CharField(max_length=20, primary_key=True)
     nom = models.CharField(max_length=100)
     descripcio = models.TextField()
-    #icona = models.ImageField(upload_to='icones/')
     punts_necessaris = models.IntegerField()
     usuaris = models.ManyToManyField(Usuario, through='DataDescompte', related_name="descomptes")
 
@@ -270,7 +266,7 @@ class DataDescompte(models.Model):
 
 class RefugioClimatico(Punt):
     nombre = models.CharField(max_length=255)
-    numero_calle = models.CharField(max_length=20, null=True, blank=True)
+    numero_calle = models.CharField(max_length=20,   blank=True)
     
     def __str__(self):
         return f"Refugio {self.nombre} - {self.lat}, {self.lng}"
@@ -304,7 +300,7 @@ class ReporteEstacion(models.Model):
     )
     comentario_usuario = models.TextField(
         blank=True,
-        null=True,
+         
         verbose_name="Comentario del Usuario"
     )
     estado = models.CharField(
