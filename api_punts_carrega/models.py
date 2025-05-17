@@ -124,9 +124,9 @@ class Punt(models.Model):
     id_punt = models.CharField(max_length=100, primary_key=True)
     lat = models.FloatField(null=False)
     lng = models.FloatField(null=False)
-    direccio = models.CharField(max_length=255,   blank=True)
-    ciutat = models.CharField(max_length=100,   blank=True)
-    provincia = models.CharField(max_length=100,   blank=True)
+    direccio = models.CharField(max_length=255, null=True, blank=True)
+    ciutat = models.CharField(max_length=100, null=True, blank=True)
+    provincia = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return f"Punto {self.id_punt} en {self.lat}, {self.lng}"
@@ -137,12 +137,12 @@ class Punt(models.Model):
 class EstacioCarrega(Punt):
     gestio = models.CharField(max_length=100)
     tipus_acces = models.CharField(max_length=100)
-    nplaces = models.CharField(max_length=20)
+    nplaces = models.CharField(max_length=20, null=True)
     potencia = models.IntegerField(null=True)
     tipus_velocitat = models.ManyToManyField('TipusVelocitat', related_name='estacions_de_carrega')
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
     fuera_de_servicio = models.BooleanField(default=False, help_text="Indica si la estación está fuera de servicio")
-    motivo_fuera_servicio = models.CharField(max_length=255, blank=True, help_text="Motivo por el que la estación está fuera de servicio")
+    motivo_fuera_servicio = models.CharField(max_length=255, blank=True, null=True, help_text="Motivo por el que la estación está fuera de servicio")
 
     def __str__(self):
         return f"Estació {self.id_punt} - {self.lat}, {self.lng}"
@@ -203,7 +203,7 @@ class ValoracionEstacion(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text="Valoración entre 1 y 5"
     )
-    comentario = models.TextField(blank=True,  )
+    comentario = models.TextField(blank=True, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -266,7 +266,7 @@ class DataDescompte(models.Model):
 
 class RefugioClimatico(Punt):
     nombre = models.CharField(max_length=255)
-    numero_calle = models.CharField(max_length=20,   blank=True)
+    numero_calle = models.CharField(max_length=20, null=True, blank=True)
     
     def __str__(self):
         return f"Refugio {self.nombre} - {self.lat}, {self.lng}"
