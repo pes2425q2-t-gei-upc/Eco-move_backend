@@ -124,15 +124,17 @@ class ChatViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     # Create a new chat from an alert
+    USUARIO_BLOQUEADO_CHAT_ERROR = "Usuario bloqueado: no puedes crear un chat."
+
     @action(detail=True, methods=['post'], url_path='create_alert_chat')
     def create_alert_chat(self, request, pk=None):
         alert = get_object_or_404(PuntEmergencia, pk=pk)
 
         if request.user.bloqueado == True:
-            return Response({"error": "Usuario bloqueado: no puedes crear un chat."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": self.USUARIO_BLOQUEADO_CHAT_ERROR}, status=status.HTTP_400_BAD_REQUEST)
         
         if alert.sender.bloqueado == True:
-            return Response({"error": "Usuario bloqueado: no puedes crear un chat."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": self.USUARIO_BLOQUEADO_CHAT_ERROR}, status=status.HTTP_400_BAD_REQUEST)
         
         # Check that the alert is active
         if not alert.is_active:
@@ -160,8 +162,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         if receptor_email == request.user.email:
             return Response({"error": "Cannot create a chat with yourself."}, status=status.HTTP_400_BAD_REQUEST)
         
-        receptor = get_object_or_404(Usuario, email=receptor_email)
-
         receptor = get_object_or_404(Usuario, email=receptor_email)
         if receptor.bloqueado == True:
             return Response({"error": "Usuario bloquedo: no puedes chatear con el."}, status=status.HTTP_400_BAD_REQUEST)

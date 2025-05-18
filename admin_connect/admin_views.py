@@ -105,6 +105,9 @@ def sincronizar_refugios_admin(request):
     }
     
     return render(request, 'admin_connect/sincronizar_refugios.html', context)
+
+GESTIONAR_USUARIOS_URL = 'admin_connect:gestionar_usuarios'
+
 @staff_member_required
 def gestionar_usuarios(request):
     usuarios = Usuario.objects.all().order_by('username')
@@ -114,6 +117,9 @@ def gestionar_usuarios(request):
     }
     
     return render(request, 'admin_connect/gestionar_usuarios.html', context)
+
+EDITAR_USUARIO_TEMPLATE = 'admin_connect/editar_usuario.html'
+
 @staff_member_required
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -157,15 +163,14 @@ def editar_usuario(request, usuario_id):
         if new_password:
             usuario.set_password(new_password)
          
-        usuario.save()
         messages.success(request, f'Usuario {username} actualizado correctamente.')
-        return redirect('admin_connect:gestionar_usuarios')
+        return redirect(GESTIONAR_USUARIOS_URL)
      
     context = {
          'usuario': usuario,
     }
      
-    return render(request, 'admin_connect/editar_usuario.html', context)
+    return render(request, EDITAR_USUARIO_TEMPLATE, context)
 
 @staff_member_required
 def bloquear_usuario(request, usuario_id):
@@ -174,18 +179,18 @@ def bloquear_usuario(request, usuario_id):
     if request.method == 'POST':
         if usuario.is_admin == True:
             messages.error(request, f'No se puede bloquear al usuario {usuario.username} porque es administrador.')
-            return redirect('admin_connect:gestionar_usuarios')
+            return redirect(GESTIONAR_USUARIOS_URL)
         usuario.bloqueado = True
         usuario.save()
         
         messages.success(request, f'Usuario {usuario.username} bloqueado correctamente.')
-        return redirect('admin_connect:gestionar_usuarios')
+        return redirect(GESTIONAR_USUARIOS_URL)
     
     context = {
         'usuario': usuario,
     }
     
-    return render(request, 'admin_connect/editar_usuario.html', context)
+    return render(request, EDITAR_USUARIO_TEMPLATE, context)
 
 
 @staff_member_required
@@ -197,13 +202,13 @@ def desbloquear_usuario(request, usuario_id):
         usuario.save()
         
         messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
-        return redirect('admin_connect:gestionar_usuarios')
+        return redirect(GESTIONAR_USUARIOS_URL)
     
     context = {
         'usuario': usuario,
     }
     
-    return render(request, 'admin_connect/editar_usuario.html', context)
+    return render(request, EDITAR_USUARIO_TEMPLATE, context)
 
 
 
@@ -216,7 +221,7 @@ def desbloquear_usuario(request, usuario_id):
         usuario.save()
         
         messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
-        return redirect('admin_connect:gestionar_usuarios')
+        return redirect(GESTIONAR_USUARIOS_URL)
     
     context = {
         'usuario': usuario,
@@ -243,7 +248,7 @@ def modificar_puntos_usuario(request, usuario_id):
         except ValueError as e:
             messages.error(request, str(e))
         
-        return redirect('admin_connect:gestionar_usuarios')
+        return redirect(GESTIONAR_USUARIOS_URL)
     
     context = {
         'usuario': usuario,
