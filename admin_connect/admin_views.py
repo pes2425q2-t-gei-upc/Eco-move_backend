@@ -161,6 +161,43 @@ def editar_usuario(request, usuario_id):
     }
      
     return render(request, 'admin_connect/editar_usuario.html', context)
+
+@staff_member_required
+def bloquear_usuario(request, usuario_id):
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+    
+    if request.method == 'POST':
+        if usuario.is_admin == True:
+            messages.error(request, f'No se puede bloquear al usuario {usuario.username} porque es administrador.')
+            return redirect('admin_connect:gestionar_usuarios')
+        usuario.bloqueado = True
+        usuario.save()
+        
+        messages.success(request, f'Usuario {usuario.username} bloqueado correctamente.')
+        return redirect('admin_connect:gestionar_usuarios')
+    
+    context = {
+        'usuario': usuario,
+    }
+    
+    return render(request, 'admin_connect/editar_usuario.html', context)
+
+@staff_member_required
+def desbloquear_usuario(request, usuario_id):
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+    
+    if request.method == 'POST':
+        usuario.bloqueado = False
+        usuario.save()
+        
+        messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
+        return redirect('admin_connect:gestionar_usuarios')
+    
+    context = {
+        'usuario': usuario,
+    }
+    
+    return render(request, 'admin_connect/editar_usuario.html', context)
 @staff_member_required
 def modificar_puntos_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)

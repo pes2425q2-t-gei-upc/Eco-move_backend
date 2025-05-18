@@ -32,6 +32,9 @@ class AlertsViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        if self.request.user.bloqueado == True:
+            raise PermissionDenied("Usuario bloqueado: no puedes crear alertas.")
+        
         serializer.save(sender=self.request.user)
            
     def get_queryset(self):
