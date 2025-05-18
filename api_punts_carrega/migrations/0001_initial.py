@@ -62,6 +62,18 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name='Trofeo',
+            fields=[
+                ('id_trofeo', models.IntegerField(primary_key=True, serialize=False)),
+                ('nombre', models.CharField(max_length=100)),
+                ('descripcion', models.TextField()),
+                ('puntos_necesarios', models.IntegerField(unique=True)),
+            ],
+            options={
+                'ordering': ['puntos_necesarios'],
+            },
+        ),
+        migrations.CreateModel(
             name='Usuario',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -223,6 +235,18 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Reporte de Estación',
                 'verbose_name_plural': 'Reportes de Estaciones',
                 'ordering': ['-fecha_reporte'],
+            },
+        ),
+        migrations.CreateModel(
+            name='UsuarioTrofeo',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('fecha_obtencion', models.DateTimeField(auto_now_add=True)),
+                ('trofeo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api_punts_carrega.trofeo')),
+                ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'unique_together': {('usuario', 'trofeo')},
             },
         ),
         migrations.CreateModel(
