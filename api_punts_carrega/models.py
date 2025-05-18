@@ -62,6 +62,7 @@ class Usuario(AbstractUser):
     _punts = models.IntegerField(default=0, db_column='punts')  # _ és per fer privat a python
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
+    bloqueado = models.BooleanField(default=False)
     
     #valorar si permitir iniciar sesion con email y/o username, mas trabajo
     USERNAME_FIELD = 'email'
