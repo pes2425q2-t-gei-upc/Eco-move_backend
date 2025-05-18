@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import EstacionBici, DisponibilidadEstacionBici, UltimaActualizacionBicing 
+from .models import EstacionBici, DisponibilidadEstacionBici, UltimaActualizacionBicing, ReservaBici
 
 class EstacionBiciSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,3 +28,9 @@ class EstacionBiciDetalleSerializer(serializers.ModelSerializer):
     class Meta:
         model = EstacionBici
         fields = ['id', 'station_id', 'name', 'address', 'lat', 'lon', 'capacity', 'is_charging_station', 'estado']
+
+class ReservaBiciSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReservaBici
+        fields = '__all__'
+        read_only_fields = ['usuario', 'creada_en', 'expiracion', 'activa']
