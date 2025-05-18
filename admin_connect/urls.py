@@ -24,5 +24,10 @@ urlpatterns = [
     path('editar-punto/<str:punto_id>/', admin_views.editar_punto, name='editar_punto'),
     path('eliminar-punto/<str:punto_id>/', admin_views.eliminar_punto, name='eliminar_punto'),
     path('cambiar-estado-punto/<str:punto_id>/', admin_views.cambiar_estado_punto, name='cambiar_estado_punto'),
-    
+    path('reports/', admin_views.gestionar_reports, name='gestionar_reports'),
+    path('reports/<int:report_id>/', admin_views.detalle_report, name='detalle_report'),
+    path('reports/<int:report_id>/resolver/', admin_views.resolver_report, name='resolver_report'),
+    path('reports/<int:report_id>/reactivar/', admin_views.reactivar_report, name='reactivar_report'),
+    path('usuarios/editar/<int:usuario_id>/bloquear/', admin_views.bloquear_usuario, name='bloquear_usuario'),
+    path('usuarios/editar/<int:usuario_id>/desbloquear/', admin_views.desbloquear_usuario, name='desbloquear_usuario'),
 ]

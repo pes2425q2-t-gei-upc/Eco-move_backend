@@ -18,14 +18,18 @@
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
+    
   }
   .form-control {
     width: 100%;
     padding: 8px;
+    font-size: 16px;
     border: 1px solid #ddd;
     border-radius: 4px;
     box-sizing: border-box;
   }
+
+  
   .checkbox-group {
     display: flex;
     align-items: center;
@@ -132,11 +136,25 @@
       <label for="new_password">Nueva contraseña (dejar en blanco para mantener la actual):</label>
       <input type="password" name="new_password" id="new_password" class="form-control">
     </div>
-    
+
     <div class="button-group">
       <button type="submit" class="button button-primary">Guardar cambios</button>
       <a href="{% url 'admin_connect:gestionar_usuarios' %}" class="button button-secondary">Cancelar</a>
     </div>
   </form>
+
+  <div class="button-group" style="margin-top: 20px;">
+    {% if usuario.bloqueado %}
+      <form action="{% url 'admin_connect:desbloquear_usuario' usuario.id %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="button button-secondary">Desbloquear</button>
+      </form>
+    {% else %}
+      <form action="{% url 'admin_connect:bloquear_usuario' usuario.id %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="button button-secondary">Bloquear</button>
+      </form>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
