@@ -75,11 +75,11 @@ class ReservaSerializer(serializers.ModelSerializer):
     hora = serializers.TimeField(format='%H:%M')
     estacion = serializers.PrimaryKeyRelatedField(
         queryset=EstacioCarrega.objects.all(),
-        #pk_field='id_punt'
+        
     )
     vehicle = serializers.PrimaryKeyRelatedField(
         queryset=Vehicle.objects.all(),
-        #pk_field='id_punt',
+        
         required=False,
         allow_null=True
     )

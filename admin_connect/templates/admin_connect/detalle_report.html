@@ -10,20 +10,20 @@
         <div class="fieldset">
             <div class="form-row">
                 <div class="field-box">
-                    <label>ID del Reporte:</label>
-                    <div class="readonly">{{ report.id_report }}</div>
+                    <label for="id_id_report">ID del Reporte:</label>
+                    <div id="id_id_report" class="readonly">{{ report.id_report }}</div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="field-box">
-                    <label>Fecha de Creación:</label>
-                    <div class="readonly">{{ report.timestamp|date:"d/m/Y H:i" }}</div>
+                    <label for="id_fecha_creacion">Fecha de Creación:</label>
+                    <div id="id_fecha_creacion" class="readonly">{{ report.timestamp|date:"d/m/Y H:i" }}</div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="field-box">
-                    <label>Estado:</label>
-                    <div class="readonly">
+                    <label for="id_estado">Estado:</label>
+                    <div id="id_estado" class="readonly">
                         {% if report.is_active %}
                         <span style="color: red;">Activo</span>
                         {% else %}
@@ -38,20 +38,20 @@
         <div class="fieldset">
             <div class="form-row">
                 <div class="field-box">
-                    <label>Nombre Completo:</label>
-                    <div class="readonly">{{ report.creador.get_full_name }}</div>
+                    <label for="id_creador_nombre_completo">Nombre Completo:</label>
+                    <div id="id_creador_nombre_completo" class="readonly">{{ report.creador.get_full_name }}</div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="field-box">
-                    <label>Nombre de Usuario:</label>
-                    <div class="readonly">{{ report.creador.username }}</div>
+                    <label for="id_creador_username">Nombre de Usuario:</label>
+                    <div id="id_creador_username" class="readonly">{{ report.creador.username }}</div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="field-box">
-                    <label>Email:</label>
-                    <div class="readonly">{{ report.creador.email }}</div>
+                    <label for="id_creador_email">Email:</label>
+                    <div id="id_creador_email" class="readonly">{{ report.creador.email }}</div>
                 </div>
             </div>
         </div>
@@ -60,20 +60,20 @@
         <div class="fieldset">
             <div class="form-row">
                 <div class="field-box">
-                    <label>Nombre Completo:</label>
-                    <div class="readonly">{{ report.receptor.get_full_name }}</div>
+                    <label for="id_receptor_nombre_completo">Nombre Completo:</label>
+                    <div id="id_receptor_nombre_completo" class="readonly">{{ report.receptor.get_full_name }}</div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="field-box">
-                    <label>Nombre de Usuario:</label>
-                    <div class="readonly">{{ report.receptor.username }}</div>
+                    <label for="id_receptor_username">Nombre de Usuario:</label>
+                    <div id="id_receptor_username" class="readonly">{{ report.receptor.username }}</div>
                 </div>
             </div>
             <div class="form-row">
                 <div class="field-box">
-                    <label>Email:</label>
-                    <div class="readonly">{{ report.receptor.email }}</div>
+                    <label for="id_receptor_email">Email:</label>
+                    <div id="id_receptor_email" class="readonly">{{ report.receptor.email }}</div>
                 </div>
             </div>
         </div>

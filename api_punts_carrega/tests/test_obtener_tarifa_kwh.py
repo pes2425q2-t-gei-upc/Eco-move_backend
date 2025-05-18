@@ -83,10 +83,10 @@ class ObtenirPreuActualKwhTests(unittest.TestCase):
         self.assertEqual(len(response.data['precios_hoy']), 2)
         precio_hora_1 = response.data['precios_hoy'][0]
         self.assertEqual(precio_hora_1['hora'], '00:00')
-        self.assertEqual(precio_hora_1['precio_kwh'], round(100.50 / 1000, 5))
+        self.assertAlmostEqual(precio_hora_1['precio_kwh'], 100.50 / 1000, places=5)
         precio_hora_2 = response.data['precios_hoy'][1]
         self.assertEqual(precio_hora_2['hora'], '01:00')
-        self.assertEqual(precio_hora_2['precio_kwh'], round(95.20 / 1000, 5))
+        self.assertAlmostEqual(precio_hora_2['precio_kwh'], 95.20 / 1000, places=5)
         mock_requests_get.assert_called_once()
 
 

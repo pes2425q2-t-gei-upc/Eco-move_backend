@@ -1,6 +1,5 @@
 {% extends "admin_connect/base_custom.html" %}
 {% load static %}
-
 {% block extrastyle %}
 <style>
   .card {
@@ -69,16 +68,13 @@
   }
 </style>
 {% endblock %}
-
 {% block content %}
 <div style="margin-bottom: 20px;">
   <a href="{% url 'admin_connect:gestionar_usuarios' %}" class="back-button">
     &larr; Volver a Gestionar Usuarios
   </a>
 </div>
-
 <h1>Editar Usuario</h1>
-
 <div class="card">
   <form method="post">
     {% csrf_token %}

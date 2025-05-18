@@ -32,9 +32,10 @@ class ReporteEstacionAPITests(APITestCase):
             nplaces="2",
             gestio="TestGestReport", tipus_acces="TestAccReport"
         )
+        from django.urls.exceptions import NoReverseMatch
         try:
             self.report_url_estacion1 = reverse('estacion-reportar-error', kwargs={'pk': self.estacion1.pk})
-        except:
+        except NoReverseMatch:
             self.report_url_estacion1 = reverse('estaciocarrega-reportar-error', kwargs={'pk': self.estacion1.pk})
     def test_crear_reporte_exitoso(self):
         data = {
@@ -91,11 +92,12 @@ class ReporteEstacionAPITests(APITestCase):
         self.assertIn('tipo_error', response.data)
         self.assertEqual(ReporteEstacion.objects.count(), 0)
 
-    def test_crear_reporte_estacion_inexistente_falla(self):
         url_estacion_inexistente = ""
+        from django.urls.exceptions import NoReverseMatch
         try:
             url_estacion_inexistente = reverse('estacion-reportar-error', kwargs={'pk': "ID_FANTASMA"})
-        except:
+        except NoReverseMatch:
+            url_estacion_inexistente = reverse('estaciocarrega-reportar-error', kwargs={'pk': "ID_FANTASMA"})
             url_estacion_inexistente = reverse('estaciocarrega-reportar-error', kwargs={'pk': "ID_FANTASMA"})
 
         data = {
