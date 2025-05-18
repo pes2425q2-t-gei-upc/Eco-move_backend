@@ -38,3 +38,14 @@ class Chat(models.Model):
         if self.alerta:
             return f"Chat entre {self.creador} i {self.receptor} sobre {self.alerta.titol}"
         return f"Chat entre {self.creador} i {self.receptor}"
+    
+class Report(models.Model):
+    id_report = models.AutoField(primary_key=True)
+    descripcio = models.TextField()
+    creador = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="reports_sent")
+    receptor = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="reports_recibidos")
+    is_active = models.BooleanField(default=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Report de {self.sender} sobre l'usuari {self.receptor}"

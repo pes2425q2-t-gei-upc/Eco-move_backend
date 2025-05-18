@@ -58,8 +58,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'first_name', 'last_name', 'email', 'username',
-            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts','foto'
-        ]
+            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts','foto','bloqueado']
         read_only_fields = ['id', 'punts']
 
 class PerfilPublicoSerializer(serializers.ModelSerializer):
@@ -78,11 +77,11 @@ class ReservaSerializer(serializers.ModelSerializer):
     hora = serializers.TimeField(format='%H:%M')
     estacion = serializers.PrimaryKeyRelatedField(
         queryset=EstacioCarrega.objects.all(),
-        #pk_field='id_punt'
+        
     )
     vehicle = serializers.PrimaryKeyRelatedField(
         queryset=Vehicle.objects.all(),
-        #pk_field='id_punt',
+        
         required=False,
         allow_null=True
     )

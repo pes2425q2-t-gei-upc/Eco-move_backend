@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="module">
+    
+    <div class="report-info">
+        <p>Estás a punto de marcar como resuelto el reporte #{{ report.id_report }}.</p>
+        <p><strong>Usuario que reporta:</strong> {{ report.creador.get_full_name }} ({{ report.creador.username }})</p>
+        <p><strong>Usuario reportado:</strong> {{ report.receptor.get_full_name }} ({{ report.receptor.username }})</p>
+        <p><strong>Fecha del reporte:</strong> {{ report.timestamp|date:"d/m/Y H:i" }}</p>
+        
+        <div class="report-description">
+            <h3>Descripción del reporte:</h3>
+            <p style="white-space: pre-wrap;">{{ report.descripcio }}</p>
+        </div>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="actions">
+            <input type="submit" value="Marcar como Resuelto" class="default">
+            <a href="{% url 'admin_connect:detalle_report' report.id_report %}" class="button">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .report-info {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #333;
+        border: 1px solid white;
+    }
+    .report-description {
+        margin-top: 15px;
+        padding: 10px;
+        color: #333;
+        background-color: #fff;
+        border: 1px solid #ddd;
+    }
+
+    .report-description h3 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+    .actions {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}

@@ -9,13 +9,13 @@ from ecomove_backend import settings
 
 # ---------------- ENUMS ---------------- #
 
-class Velocitat_de_carrega(models.TextChoices):
+class VelocitatDeCarrega(models.TextChoices):
     LENTA = "Càrrega lenta"
     SEMI_RAPIDA = "Càrrega semi-ràpida"
     RAPIDA = "Càrrega ràpida"
     ULTRA_RAPIDA = "Càrrega ultra-ràpida"
 
-class Tipus_de_Corrent(models.TextChoices):
+class TipusDeCorrent(models.TextChoices):
     AC = "Corrent alterna"
     DC = "Corrent continua"
 
@@ -49,7 +49,7 @@ class EstadoReporteEstacion(models.TextChoices):
 
 class TipusVelocitat(models.Model):
     id_velocitat = models.CharField(max_length=100, primary_key=True)
-    nom_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices)
+    nom_velocitat = models.CharField(max_length=100, choices=VelocitatDeCarrega.choices)
     
     def __str__(self):
         return f"{self.nom_velocitat}"
@@ -62,6 +62,7 @@ class Usuario(AbstractUser):
     _punts = models.IntegerField(default=0, db_column='punts')  # _ és per fer privat a python
     # Forzamos que el email sea único y lo usamos para login
     email = models.EmailField(unique=True)
+    bloqueado = models.BooleanField(default=False)
     
     #valorar si permitir iniciar sesion con email y/o username, mas trabajo
     USERNAME_FIELD = 'email'
@@ -155,7 +156,6 @@ class EstacioCarrega(Punt):
     tipus_acces = models.CharField(max_length=100)
     nplaces = models.CharField(max_length=20, null=True)
     potencia = models.IntegerField(null=True)
-    # tipus_velocitat = models.CharField(max_length=100, choices=Velocitat_de_carrega.choices, null=True)
     tipus_velocitat = models.ManyToManyField('TipusVelocitat', related_name='estacions_de_carrega')
     tipus_carregador = models.ManyToManyField('TipusCarregador', related_name='estacions_de_carrega')
     fuera_de_servicio = models.BooleanField(default=False, help_text="Indica si la estación está fuera de servicio")
@@ -168,7 +168,7 @@ class TipusCarregador(models.Model):
     id_carregador = models.CharField(max_length=100, primary_key=True)
     nom_tipus = models.CharField(max_length=100)
     tipus_connector = models.CharField(max_length=100)
-    tipus_corrent = models.CharField(max_length=100, choices=Tipus_de_Corrent.choices)
+    tipus_corrent = models.CharField(max_length=100, choices=TipusDeCorrent.choices)
 
     def __str__(self):
         return f"{self.nom_tipus} - {self.tipus_connector} ({self.tipus_corrent})"
@@ -196,7 +196,6 @@ class ReservaFinalitzada(models.Model):
     reserva = models.OneToOneField(Reserva, on_delete=models.CASCADE, related_name="finalitzada")
     punts_obtinguts = models.IntegerField(default=0)
     preu = models.DecimalField(max_digits=6, decimal_places=2)
-    #usuari = models.ForeignKey(Usuari, on_delete=models.CASCADE, related_name="reserves")
 
     def __str__(self):
         return f"Reserva Finalitzada: {self.reserva}"
@@ -233,39 +232,10 @@ class ValoracionEstacion(models.Model):
     def __str__(self):
         return f"Valoración de {self.usuario.username} para {self.estacion.id_punt}: {self.puntuacion}/5"
 
-
-class Report(models.Model):
-    id_report = models.CharField(max_length=20, primary_key=True)
-    reportador = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="reports_emesos")
-    reportat = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="reports_rebuts")
-    administrador_assignat = models.ForeignKey(
-        Usuario,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True, related_name="reports_assignats",
-        limit_choices_to={'is_admin': True}
-    )
-    missatge = models.TextField()
-    #imatge = models.ImageField(upload_to='reports/')
-    data = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Report {self.id_report} de {self.reportador} a {self.reportat}"
-
-class RespostaReport(models.Model):
-    report = models.OneToOneField(Report, on_delete=models.CASCADE, related_name="resposta")
-    resolucio = models.CharField(max_length=50, choices=Resolucio.choices)
-    missatge = models.TextField()
-    data_resolucio = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Resposta a {self.report.id_report} - {self.resolucio}"
-
 class Descomptes(models.Model):
     id_descompte = models.CharField(max_length=20, primary_key=True)
     nom = models.CharField(max_length=100)
     descripcio = models.TextField()
-    #icona = models.ImageField(upload_to='icones/')
     punts_necessaris = models.IntegerField()
     usuaris = models.ManyToManyField(Usuario, through='DataDescompte', related_name="descomptes")
 

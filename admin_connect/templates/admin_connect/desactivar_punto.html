@@ -1,6 +1,5 @@
 {% extends "admin_connect/base_custom.html" %}
 {% load static %}
-
 {% block extrastyle %}
 <style>
   .card {
@@ -70,20 +69,16 @@
   }
 </style>
 {% endblock %}
-
 {% block content %}
 <div style="margin-bottom: 20px;">
   <a href="{% url 'admin_connect:gestionar_puntos' %}" class="back-button">
     &larr; Volver a Gestionar Puntos
   </a>
 </div>
-
 <h1>Desactivar Punto de Carga</h1>
-
 <div class="alert-warning">
   <p>Estás a punto de marcar el punto de carga <strong>{{ estacion.id_punt }}</strong> como fuera de servicio. Por favor, indica el motivo.</p>
 </div>
-
 <div class="card">
   <form method="post" action="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}">
     {% csrf_token %}

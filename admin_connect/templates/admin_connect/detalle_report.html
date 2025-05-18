@@ -1,0 +1,187 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="module">
+    <h2>{{ title }}</h2>
+    
+    <div class="report-details">
+        <h3>Información del Reporte</h3>
+        <div class="fieldset">
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_id_report">ID del Reporte:</label>
+                    <div id="id_id_report" class="readonly">{{ report.id_report }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_fecha_creacion">Fecha de Creación:</label>
+                    <div id="id_fecha_creacion" class="readonly">{{ report.timestamp|date:"d/m/Y H:i" }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_estado">Estado:</label>
+                    <div id="id_estado" class="readonly">
+                        {% if report.is_active %}
+                        <span style="color: red;">Activo</span>
+                        {% else %}
+                        <span style="color: green;">Resuelto</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h3>Usuario que Reporta</h3>
+        <div class="fieldset">
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_creador_nombre_completo">Nombre Completo:</label>
+                    <div id="id_creador_nombre_completo" class="readonly">{{ report.creador.get_full_name }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_creador_username">Nombre de Usuario:</label>
+                    <div id="id_creador_username" class="readonly">{{ report.creador.username }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_creador_email">Email:</label>
+                    <div id="id_creador_email" class="readonly">{{ report.creador.email }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <h3>Usuario Reportado</h3>
+        <div class="fieldset">
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_receptor_nombre_completo">Nombre Completo:</label>
+                    <div id="id_receptor_nombre_completo" class="readonly">{{ report.receptor.get_full_name }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_receptor_username">Nombre de Usuario:</label>
+                    <div id="id_receptor_username" class="readonly">{{ report.receptor.username }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field-box">
+                    <label for="id_receptor_email">Email:</label>
+                    <div id="id_receptor_email" class="readonly">{{ report.receptor.email }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <h3>Descripción del Reporte</h3>
+        <div class="fieldset">
+            <div class="form-row">
+                <div class="field-box">
+                    <div class="readonly" style="white-space: pre-wrap;">{{ report.descripcio }}</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if chat_messages %}
+        <h3>Mensajes Recientes del Chat</h3>
+        <div class="chat-messages">
+            {% for message in chat_messages %}
+            <div class="message {% if message.sender == report.creador %}message-reporter{% else %}message-reported{% endif %}">
+                <div class="message-header">
+                    <strong>{{ message.sender.get_full_name }} ({{ message.sender.username }})</strong>
+                    <span class="message-time">{{ message.timestamp|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="message-content">
+                    {{ message.content }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="fieldset">
+            <p>No se encontró un chat entre estos usuarios.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="actions">
+        <a href="{% url 'admin_connect:gestionar_reports' %}" class="button">Volver a la Lista</a>
+        {% if report.is_active %}
+        <form method="post" action="{% url 'admin_connect:resolver_report' report.id_report %}">
+            {% csrf_token %}
+            <button class="button">Marcar como Resuelto</button>
+        </form>
+        {% else %}
+        <a href="{% url 'admin_connect:reactivar_report' report.id_report %}" class="button">Reactivar Reporte</a>
+        {% endif %}
+        <a href="{% url 'admin_connect:editar_usuario' report.receptor.id %}" class="button">Gestionar Usuario Reportado</a>
+    </div>
+</div>
+
+<style>
+.botton {
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    width: 150px; /* ancho fijo */
+    display: inline-block;
+    text-align: center;
+}
+    .report-details h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        background-color: #333;
+        padding: 5px 10px;
+    }
+    .fieldset {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #eee;
+    }
+    .chat-messages {
+        border: 1px solid #ddd;
+        padding: 10px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .message-reporter {
+        background-color: #333;
+
+    }
+    .message-reported {
+        background-color: #fff0f0;
+        border-left: 3px solid #ff8080;
+    }
+    .message-header {
+        margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+    }
+    .message-time {
+        font-size: 0.8em;
+        color: #666;
+    }
+    .message-content {
+        white-space: pre-wrap;
+    }
+    .actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+    }
+    .actions form {
+        margin: 0;
+    }
+</style>
+{% endblock %}

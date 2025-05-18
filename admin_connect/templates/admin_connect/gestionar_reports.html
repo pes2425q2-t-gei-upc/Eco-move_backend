@@ -1,0 +1,78 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="module">
+    
+    <div class="actions" style="margin-bottom: 20px;">
+        <a href="{% url 'admin_connect:gestionar_reports' %}?estado=activos" class="button {% if estado_actual == 'activos' %}default{% endif %}" style="margin-right: 10px;">
+            Reportes Activos
+        </a>
+        <a href="{% url 'admin_connect:gestionar_reports' %}?estado=resueltos" class="button {% if estado_actual == 'resueltos' %}default{% endif %}">
+            Reportes Resueltos
+        </a>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuario que reporta</th>
+                <th>Usuario reportado</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.id_report }}</td>
+                <td>{{ report.creador.get_full_name }} ({{ report.creador.username }})</td>
+                <td>{{ report.receptor.get_full_name }} ({{ report.receptor.username }})</td>
+                <td>{{ report.timestamp|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if report.is_active %}
+                    <span style="color: red;">Activo</span>
+                    {% else %}
+                    <span style="color: green;">Resuelto</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'admin_connect:detalle_report' report.id_report %}" class="button">Ver Detalle</a>
+                    {% if report.is_active %}
+                    <a href="{% url 'admin_connect:resolver_report' report.id_report %}" class="button">Resolver</a>
+                    {% else %}
+                    <a href="{% url 'admin_connect:reactivar_report' report.id_report %}" class="button">Reactivar</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No hay reportes para mostrar</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+
+{
+"username": "lluisv"
+,
+"password": 
+"lluisvila."
+,
+"password2": 
+"lluisvila."
+,
+"email": 
+"lluisv@gm.com"
+
+}
+
+{
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc0NzU4OTA0MCwiaWF0IjoxNzQ3NTAyNjQwLCJqdGkiOiJhNWZkMjMyMjgxNjA0OWZiODA0ODU3ZTY1NzMyYTcyZSIsInVzZXJfaWQiOjR9.d8FUYOQymzMAenV_l1yBoD3BL25hMtY0VIWe_H_f1Bk",
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ3NTg5MDQwLCJpYXQiOjE3NDc1MDI2NDAsImp0aSI6ImQ0NDZkODFhODZjMTQ0ZmQ5ZDQ5MWFjYmFlZjM4ZDEzIiwidXNlcl9pZCI6NH0.5Hqdg4BkBPBIylMXBMO0WAXiLP_HcM2ercuvRpt80fg"
+}

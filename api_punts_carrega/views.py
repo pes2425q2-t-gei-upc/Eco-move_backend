@@ -154,7 +154,7 @@ def sincronizar_refugios(request):
             refugio_id = refugio_data['id']
             
             # Intentar encontrar el refugio existente o crear uno nuevo
-            refugio, created = RefugioClimatico.objects.update_or_create(
+            created = RefugioClimatico.objects.update_or_create(
                 id_punt=refugio_id,
                 defaults={
                     'nombre': refugio_data['nombre'],
@@ -276,57 +276,22 @@ class ReservaViewSet(viewsets.ModelViewSet):
         vehicle_matricula = data.get('vehicle')
 
         try:
-
-            try:
-                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
-            except EstacioCarrega.DoesNotExist:
-                estacio = EstacioCarrega.objects.get(id_punt=estacio_id)
-
-
+            estacio = self._get_estacio(estacio_id)
             fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
-
             hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
-
-            if ':' in duracion_str:
-                partes = duracion_str.split(':')
-                horas = int(partes[0])
-                minutos = int(partes[1])
-                segundos = int(partes[2]) if len(partes) > 2 else 0
-                duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
-            else:
-                duracion_td = timedelta(seconds=int(duracion_str))
-
+            duracion_td = self._parse_duracion(duracion_str)
             hora_fin = (datetime.combine(date.today(), hora_inicio) + duracion_td).time()
 
-            reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha)
-
-            placesReservades = 0
-
-            for reserva_existente in reservas_existentes:
-                hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) +
-                                    reserva_existente.duracion).time()
-
-                if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
-                    placesReservades += 1
-                    if placesReservades >= int(estacio.nplaces):
-                        return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
-
+            if self._hay_solapamiento(estacio, fecha, hora_inicio, hora_fin):
+                return Response({'error': 'No hi ha places lliures en aquest punt de càrrega en aquesta data i hora'}, status=409)
 
             vehicle = None
             if vehicle_matricula:
-                try:
-                    vehicle = Vehicle.objects.get(matricula=vehicle_matricula, propietari=request.user)
-                except Vehicle.DoesNotExist:
-                    return Response({'error': 'Vehicle no trobat'}, status=404)
-
-                vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
-                estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
-
-                if not vehicle_carregadors.intersection(estacio_carregadors):
+                vehicle = self._get_vehicle(vehicle_matricula, request.user)
+                if not self._es_compatible(vehicle, estacio):
                     return Response({'error': 'El vehicle no és compatible amb aquesta estació de càrrega'}, status=400)
 
-
-            reserva = Reserva.objects.create(
+            Reserva.objects.create(
                 usuario=request.user,
                 estacion=estacio,
                 fecha=fecha,
@@ -335,61 +300,128 @@ class ReservaViewSet(viewsets.ModelViewSet):
                 vehicle=vehicle
             )
 
-
             return Response({'message': 'Reserva creada amb éxit'}, status=201)
 
         except EstacioCarrega.DoesNotExist:
             return Response({'error': 'Estació no trobada'}, status=404)
+        except Vehicle.DoesNotExist:
+            return Response({'error': 'Vehicle no trobat'}, status=404)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=400)
+
+    def _get_estacio(self, estacio_id):
+        return EstacioCarrega.objects.get(id_punt=estacio_id)
+
+    def _parse_duracion(self, duracion_str):
+        if ':' in duracion_str:
+            partes = duracion_str.split(':')
+            horas = int(partes[0])
+            minutos = int(partes[1])
+            segundos = int(partes[2]) if len(partes) > 2 else 0
+            return timedelta(hours=horas, minutes=minutos, seconds=segundos)
+        else:
+            return timedelta(seconds=int(duracion_str))
+
+    def _hay_solapamiento(self, estacio, fecha, hora_inicio, hora_fin):
+        reservas_existentes = Reserva.objects.filter(estacion=estacio, fecha=fecha)
+        places_reservades = 0
+        for reserva_existente in reservas_existentes:
+            hora_reserva_fin = (datetime.combine(date.today(), reserva_existente.hora) +
+                                reserva_existente.duracion).time()
+            if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
+                places_reservades += 1
+                if places_reservades >= int(estacio.nplaces):
+                    return True
+        return False
+
+    def _get_vehicle(self, matricula, user):
+        return Vehicle.objects.get(matricula=matricula, propietari=user)
+
+    def _es_compatible(self, vehicle, estacio):
+        vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
+        estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
+        return bool(vehicle_carregadors.intersection(estacio_carregadors))
 
     # @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
-
         try:
             reserva = get_object_or_404(Reserva, id=pk, usuario=request.user)
         except Reserva.DoesNotExist:
             return Response({'error': 'Reserva no encontrada o sin permiso'}, status=status.HTTP_404_NOT_FOUND)
 
-        # if reserva.vehicle is None or reserva.vehicle.propietari != request.user:
-        #     return Response({'error': 'No tens permís per modificar aquesta reserva'}, status=status.HTTP_403_FORBIDDEN)
-
         data = request.data
         try:
-            fecha_str = data.get('fecha', reserva.fecha.strftime('%d/%m/%Y')); fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
-            hora_str = data.get('hora', reserva.hora.strftime('%H:%M')); hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
-            duracion_str = data.get('duracion', str(reserva.duracion))
-            if isinstance(duracion_str, timedelta): duracion_td = duracion_str
-            elif ':' in duracion_str: partes = duracion_str.split(':'); horas, minutos = int(partes[0]), int(partes[1]); segundos = int(partes[2]) if len(partes) > 2 else 0; duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
-            else: duracion_td = timedelta(seconds=int(duracion_str))
-            vehicle_matricula = data.get('vehicle')
-            vehicle = reserva.vehicle
-
+            fecha, hora_inicio, duracion_td = self._parse_reserva_modificacion(data, reserva)
+            vehicle = self._obtener_vehicle_modificacion(data, reserva, request.user)
             hora_fin = (datetime.combine(date.min, hora_inicio) + duracion_td).time()
-            reservas_existentes = Reserva.objects.filter(estacion=reserva.estacion, fecha=fecha).exclude(id=pk)
-            placesReservades = 0
-            for reserva_existente in reservas_existentes:
-                hora_reserva_fin = (datetime.combine(date.min, reserva_existente.hora) + reserva_existente.duracion).time()
-                if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
-                    placesReservades += 1
-                    try: n_places_disponibles = int(reserva.estacion.nplaces)
-                    except(ValueError, TypeError): n_places_disponibles=1
-                    if placesReservades >= n_places_disponibles: return Response({'error': 'No hi ha places lliures...'}, status=409)
 
-            if vehicle_matricula is not None:
-                if vehicle_matricula == "": vehicle = None
-                else:
-                    vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=request.user)
-                    vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
-                    estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
-                    if not vehicle_carregadors.intersection(estacio_carregadors): return Response({'error': 'Nou vehicle no compatible'}, status=400)
-            reserva.fecha = fecha; reserva.hora = hora_inicio; reserva.duracion = duracion_td; reserva.vehicle = vehicle
+            error_solapamiento = self._comprobar_solapamiento(reserva, fecha, hora_inicio, hora_fin, pk)
+            if error_solapamiento:
+                return error_solapamiento
+
+            reserva.fecha = fecha
+            reserva.hora = hora_inicio
+            reserva.duracion = duracion_td
+            reserva.vehicle = vehicle
             reserva.save()
 
             return Response({'message': 'Reserva actualizada con éxito'}, status=200)
 
-        except Vehicle.DoesNotExist: return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=404)
-        except (ValueError, TypeError) as e: return Response({'error': f'Error format dades: {e}'}, status=400)
-        except Exception as e: print(f"Error modificando reserva {pk}: {e}"); return Response({'error': 'Error intern'}, status=500)
+        except Vehicle.DoesNotExist:
+            return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=404)
+        except (ValueError, TypeError) as e:
+            return Response({'error': f'Error format dades: {e}'}, status=400)
+        except Exception as e:
+            print(f"Error modificando reserva {pk}: {e}")
+            return Response({'error': 'Error intern'}, status=500)
+
+    def _parse_reserva_modificacion(self, data, reserva):
+        fecha_str = data.get('fecha', reserva.fecha.strftime('%d/%m/%Y'))
+        fecha = datetime.strptime(fecha_str, '%d/%m/%Y').date()
+        hora_str = data.get('hora', reserva.hora.strftime('%H:%M'))
+        hora_inicio = datetime.strptime(hora_str, '%H:%M').time()
+        duracion_str = data.get('duracion', str(reserva.duracion))
+        if isinstance(duracion_str, timedelta):
+            duracion_td = duracion_str
+        elif ':' in duracion_str:
+            partes = duracion_str.split(':')
+            horas = int(partes[0])
+            minutos = int(partes[1])
+            segundos = int(partes[2]) if len(partes) > 2 else 0
+            duracion_td = timedelta(hours=horas, minutes=minutos, seconds=segundos)
+        else:
+            duracion_td = timedelta(seconds=int(duracion_str))
+        return fecha, hora_inicio, duracion_td
+
+    def _obtener_vehicle_modificacion(self, data, reserva, user):
+        vehicle_matricula = data.get('vehicle')
+        vehicle = reserva.vehicle
+        if vehicle_matricula is not None:
+            if vehicle_matricula == "":
+                vehicle = None
+            else:
+                vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=user)
+                vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
+                estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
+                if not vehicle_carregadors.intersection(estacio_carregadors):
+                    raise ValueError('Nou vehicle no compatible')
+        return vehicle
+
+    def _comprobar_solapamiento(self, reserva, fecha, hora_inicio, hora_fin, pk):
+        reservas_existentes = Reserva.objects.filter(estacion=reserva.estacion, fecha=fecha).exclude(id=pk)
+        places_reservades = 0
+        try:
+            n_places_disponibles = int(reserva.estacion.nplaces)
+        except (ValueError, TypeError):
+            n_places_disponibles = 1
+        for reserva_existente in reservas_existentes:
+            hora_reserva_fin = (datetime.combine(date.min, reserva_existente.hora) + reserva_existente.duracion).time()
+            if not (hora_fin <= reserva_existente.hora or hora_inicio >= hora_reserva_fin):
+                places_reservades += 1
+                if places_reservades >= n_places_disponibles:
+                    return Response({'error': 'No hi ha places lliures...'}, status=409)
+        return None
 
 
     @action(detail=True, methods=['delete'])
@@ -448,7 +480,7 @@ def punt_mes_proper(request):
         
     estacions = EstacioCarrega.objects.all()
 
-    min_distancia = float('inf')
+    
     distancies = []
     
     for estacio in estacions:      
@@ -647,24 +679,7 @@ def obtenir_preu_actual_kwh(request):
         response.raise_for_status()
         data = response.json()
 
-        precios_kwh_hoy = []
-        if "included" in data and data["included"]:
-            indicador_precios = data["included"][0]
-            if "attributes" in indicador_precios and "values" in indicador_precios["attributes"]:
-                valores_horarios = indicador_precios["attributes"]["values"]
-                for valor_hora in valores_horarios:
-                    precio_mwh = valor_hora.get("value")
-                    timestamp_str = valor_hora.get("datetime")
-                    if precio_mwh is not None and timestamp_str:
-                        try:
-                            precio_kwh = float(precio_mwh) / 1000
-                            hora_dt = datetime.fromisoformat(timestamp_str)
-                            hora_simple = hora_dt.strftime("%H:%M")
-                            precios_kwh_hoy.append({"hora": hora_simple, "precio_kwh": round(precio_kwh, 5)})
-                        except (ValueError, TypeError) as e:
-                            print(f"Error procesando valor REE {valor_hora}: {e}")
-                            continue
-
+        precios_kwh_hoy = _parse_precios_kwh_ree(data)
         if not precios_kwh_hoy:
             return Response({"error": "No se encontraron datos horarios en la respuesta de la API REE"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -678,19 +693,52 @@ def obtenir_preu_actual_kwh(request):
     except requests.Timeout:
         return Response({"error": "Timeout conectando con API REE"}, status=status.HTTP_504_GATEWAY_TIMEOUT)
     except requests.HTTPError as e:
-        error_detail = f"Error HTTP {e.response.status_code} desde API REE"
-        try:
-            error_data = e.response.json()
-            if "errors" in error_data and error_data["errors"]:
-                error_detail = error_data["errors"][0].get("detail", error_detail)
-        except (json.JSONDecodeError, AttributeError, IndexError, KeyError):
-            pass
+        error_detail = _parse_ree_http_error(e)
         return Response({"error": f"Error al obtener datos de REE: {error_detail}"}, status=e.response.status_code)
     except requests.RequestException as e:
         return Response({"error": f"Fallo conexión con API REE: {str(e)}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     except Exception as e:
         print(f"Error inesperado en obtenir_preu_actual_kwh: {e}")
         return Response({'error': 'Error inesperado en el servidor'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def _procesar_valor_hora(valor_hora):
+    precio_mwh = valor_hora.get("value")
+    timestamp_str = valor_hora.get("datetime")
+    if precio_mwh is not None and timestamp_str:
+        try:
+            precio_kwh = float(precio_mwh) / 1000
+            hora_dt = datetime.fromisoformat(timestamp_str)
+            hora_simple = hora_dt.strftime("%H:%M")
+            return {"hora": hora_simple, "precio_kwh": round(precio_kwh, 5)}
+        except (ValueError, TypeError) as e:
+            print(f"Error procesando valor REE {valor_hora}: {e}")
+    return None
+
+def _parse_precios_kwh_ree(data):
+    precios_kwh_hoy = []
+    valores_horarios = _obtener_valores_horarios(data)
+    for valor_hora in valores_horarios:
+        resultado = _procesar_valor_hora(valor_hora)
+        if resultado:
+            precios_kwh_hoy.append(resultado)
+    return precios_kwh_hoy
+
+def _obtener_valores_horarios(data):
+    if "included" in data and data["included"]:
+        indicador_precios = data["included"][0]
+        if "attributes" in indicador_precios and "values" in indicador_precios["attributes"]:
+            return indicador_precios["attributes"]["values"]
+    return []
+
+def _parse_ree_http_error(e):
+    error_detail = f"Error HTTP {e.response.status_code} desde API REE"
+    try:
+        error_data = e.response.json()
+        if "errors" in error_data and error_data["errors"]:
+            error_detail = error_data["errors"][0].get("detail", error_detail)
+    except (json.JSONDecodeError, AttributeError, IndexError, KeyError):
+        pass
+    return error_detail
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
@@ -869,19 +917,7 @@ class ValoracionEstacionViewSet(viewsets.ModelViewSet):
             
         return queryset
     
-    # def perform_create(self, serializer):
-    #     serializer.save(usuario=self.request.user)
-
-    # def perform_update(self, serializer):
-    #     valoracion = self.get_object()
-    #     if valoracion.usuario != self.request.user:
-    #         raise PermissionDenied("No tienes permiso para modificar esta valoración")
-    #     serializer.save()
-
-    # def perform_destroy(self, instance):
-    #     if instance.usuario != self.request.user and not self.request.user.is_admin:
-    #         raise PermissionDenied("No tienes permiso para eliminar esta valoración")
-    #     instance.delete()
+    
     
 
 class TextItemViewSet(viewsets.ReadOnlyModelViewSet):
