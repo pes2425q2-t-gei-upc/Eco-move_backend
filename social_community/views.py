@@ -126,6 +126,12 @@ class ChatViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='create_alert_chat')
     def create_alert_chat(self, request, pk=None):
         alert = get_object_or_404(PuntEmergencia, pk=pk)
+
+        if request.user.bloqueado == True:
+            return Response({"error": "Usuario bloqueado: no puedes crear un chat."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if alert.sender.bloqueado == True:
+            return Response({"error": "Usuario bloqueado: no puedes crear un chat."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Check that the alert is active
         if not alert.is_active:
@@ -347,22 +353,3 @@ class ReportViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(reports, many=True)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'], url_path='resolve')
-    def resolve_report(self, request, pk=None):
-        """
-        Mark a report as resolved (inactive)
-        Only admins can resolve reports
-        """
-        report = self.get_object()
-        
-        if not request.user.is_staff:
-            return Response(
-                {'error': 'Solo los administradores pueden resolver reportes'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-            
-        report.is_active = False
-        report.save()
-        
-        serializer = self.get_serializer(report)
-        return Response(serializer.data)
