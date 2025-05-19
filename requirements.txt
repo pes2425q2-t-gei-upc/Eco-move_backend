@@ -34,5 +34,3 @@ sqlparse==0.5.3
 sshtunnel==0.4.0
 typing_extensions==4.12.2
 urllib3==2.3.0
-urllib3==2.3.0
-
