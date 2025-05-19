@@ -11,7 +11,7 @@ class Missatge(models.Model):
     is_read = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.remitent} dice: {self.text[:30]}"
+        return f"{self.sender} dice: {self.content[:30]}"
     
     
 class PuntEmergencia(models.Model):
@@ -48,4 +48,4 @@ class Report(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Report de {self.sender} sobre l'usuari {self.receptor}"
+        return f"Report de {self.creador} sobre l'usuari {self.receptor}"

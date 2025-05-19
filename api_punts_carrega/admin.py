@@ -3,7 +3,8 @@ from django.utils.html import format_html
 from api_punts_carrega.models import (
     Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle,
     RefugioClimatico, Usuario, ValoracionEstacion,
-    TextItem, ReporteEstacion
+    TextItem, ReporteEstacion,
+    Trofeo, UsuarioTrofeo
 )
 
 class TipusCarregadorInline(admin.TabularInline):
@@ -127,3 +128,15 @@ class ReporteEstacionAdmin(admin.ModelAdmin):
         return obj.get_estado_display()
     estado_display.short_description = 'Estado'
 
+@admin.register(Trofeo)
+class TrofeoAdmin(admin.ModelAdmin):
+    list_display = ('id_trofeo', 'nombre', 'puntos_necesarios')
+    search_fields = ('nombre',)
+    ordering = ('puntos_necesarios',)
+
+
+@admin.register(UsuarioTrofeo)
+class UsuarioTrofeoAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'trofeo', 'fecha_obtencion')
+    list_filter = ('trofeo', 'fecha_obtencion')
+    search_fields = ('usuario__username', 'trofeo__nombre')
