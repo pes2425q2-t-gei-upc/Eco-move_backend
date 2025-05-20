@@ -291,3 +291,39 @@ class EstacionConValoracionesTest(APITestCase):
         self.assertEqual(response.data['puntuacion_4'], 1)
         self.assertEqual(response.data['puntuacion_5'], 1)
 
+    def test_get_valoraciones_action(self):
+        """Verifica que la acción 'valoraciones' devuelve todas las valoraciones de una estación"""
+        # Usar la URL directamente para la acción valoraciones
+        url = f'/api_punts_carrega/estacions/{self.estacion.id_punt}/valoraciones/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verificar que la respuesta contiene todas las valoraciones de la estación
+        valoraciones = ValoracionEstacion.objects.filter(estacion=self.estacion)
+        serializer = ValoracionEstacionSerializer(valoraciones, many=True)
+        self.assertEqual(len(response.data), 3)
+        
+        # Verificar que los datos de las valoraciones son correctos
+        valoraciones_ids = [item['id'] for item in response.data]
+        self.assertIn(self.valoracion1.id, valoraciones_ids)
+        self.assertIn(self.valoracion2.id, valoraciones_ids)
+        self.assertIn(self.valoracion3.id, valoraciones_ids)
+        
+        # Verificar que los comentarios están presentes
+        comentarios = [item['comentario'] for item in response.data]
+        self.assertIn("Excelente", comentarios)
+        self.assertIn("Normal", comentarios)
+        self.assertIn("Buena", comentarios)
+        
+        # Verificar que las puntuaciones están presentes
+        puntuaciones = [item['puntuacion'] for item in response.data]
+        self.assertIn(5, puntuaciones)
+        self.assertIn(3, puntuaciones)
+        self.assertIn(4, puntuaciones)
+        
+        # Verificar que los nombres de usuario están presentes
+        usernames = [item['username'] for item in response.data]
+        self.assertIn("user1", usernames)
+        self.assertIn("user2", usernames)
+        self.assertIn("user3", usernames)
+
