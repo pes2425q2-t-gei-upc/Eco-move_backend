@@ -411,20 +411,6 @@ class ReservaViewSet(viewsets.ModelViewSet):
             duracion_td = timedelta(seconds=int(duracion_str))
         return fecha, hora_inicio, duracion_td
 
-    def _obtener_vehicle_modificacion(self, data, reserva, user):
-        vehicle_matricula = data.get('vehicle')
-        vehicle = reserva.vehicle
-        if vehicle_matricula is not None:
-            if vehicle_matricula == "":
-                vehicle = None
-            else:
-                vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=user)
-                vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
-                estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
-                if not vehicle_carregadors.intersection(estacio_carregadors):
-                    raise ValueError('Nou vehicle no compatible')
-        return vehicle
-
     def _comprobar_solapamiento(self, reserva, fecha, hora_inicio, hora_fin, pk):
         reservas_existentes = Reserva.objects.filter(estacion=reserva.estacion, fecha=fecha).exclude(id=pk)
         places_reservades = 0
@@ -476,7 +462,6 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 @api_view(['GET'])
 def punt_mes_proper(request):
-    #es podria posar altres criteris de filtratge com potencia, tipus de carrega, etc.
     lat = request.query_params.get('lat')
     lng = request.query_params.get('lng')
     
@@ -778,30 +763,6 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             return Response({
                 "message": f"Se han añadido {punts} puntos al usuario",
                 "puntos_añadidos": punts,
-                "puntos_actuales": nuevos_punts
-            }, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    
-    @action(detail=True, methods=['post', 'get'])
-    def restarPunts(self, request, pk=None):
-        usuario = self.get_object()
-        
-        if request.method == 'GET':
-            punts = request.query_params.get('punts', 0)
-        else:
-            punts = request.data.get('punts', 0)
-        
-        try:
-            punts = int(punts)
-            nuevos_punts = usuario.restar_punts(punts)
-            
-            return Response({
-                "message": f"Se han restado {punts} puntos al usuario",
-                "puntos_restados": punts,
                 "puntos_actuales": nuevos_punts
             }, status=status.HTTP_200_OK)
         except ValueError as e:
