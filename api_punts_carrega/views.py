@@ -825,8 +825,6 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                     # Calcular el progreso como porcentaje
                     if puntos_objetivo > puntos_base:
                         progreso = min(100, max(0, ((puntos_actuales - puntos_base) / (puntos_objetivo - puntos_base)) * 100))
-                    else:
-                        progreso = 100
         
         return Response({
             'trofeos_conseguidos': serializer.data,
