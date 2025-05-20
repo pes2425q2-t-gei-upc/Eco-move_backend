@@ -1,4 +1,5 @@
 import json
+import requests
 from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from django.urls import reverse
@@ -222,12 +223,115 @@ class SincronizarRefugiosTest(APITestCase):
         # Verificar que la respuesta es correcta
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
+        # Verificar que el mensaje indica que se actualizaron refugios
+        self.assertIn('mensaje', response.data)
+        self.assertIn('actualizados', response.data['mensaje'])
+        
         # Verificar que el refugio se actualizó correctamente
         refugio1 = RefugioClimatico.objects.get(id_punt='refugio_api_1')
         self.assertEqual(refugio1.nombre, 'Refugio API 1')  # Nombre actualizado
         self.assertEqual(float(refugio1.lat), 41.3851)  # Latitud actualizada
         self.assertEqual(float(refugio1.lng), 2.1734)  # Longitud actualizada
+        self.assertEqual(refugio1.direccio, 'Calle API, 123')  # Dirección actualizada
+        self.assertEqual(refugio1.numero_calle, '123')  # Número de calle actualizado
     
+    @patch('requests.get')
+    def test_sincronizar_refugios_timeout(self, mock_get):
+        """Verifica que sincronizar_refugios maneja correctamente los timeouts"""
+        # Configurar el mock para simular un timeout
+        mock_get.side_effect = requests.Timeout("Connection timed out")
+        
+        # Autenticar como administrador (si es necesario)
+        self.client.force_authenticate(user=self.admin_user)
+        
+        url = '/api_punts_carrega/sincronizar_refugios/'
+        response = self.client.get(url)
+        
+        # Verificar que la respuesta indica un timeout
+        self.assertEqual(response.status_code, status.HTTP_504_GATEWAY_TIMEOUT)
+        self.assertIn('error', response.data)
+        self.assertIn('Tiempo de espera agotado', response.data['error'])
+    
+    @patch('requests.get')
+    def test_sincronizar_refugios_http_error(self, mock_get):
+        """Verifica que sincronizar_refugios maneja correctamente los errores HTTP"""
+        # Crear una respuesta con error HTTP
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = requests.HTTPError("404 Client Error")
+        mock_response.raise_for_status.side_effect.response = mock_response
+        mock_get.return_value = mock_response
+        
+        # Autenticar como administrador (si es necesario)
+        self.client.force_authenticate(user=self.admin_user)
+        
+        url = '/api_punts_carrega/sincronizar_refugios/'
+        response = self.client.get(url)
+        
+        # Verificar que la respuesta indica un error HTTP
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('error', response.data)
+        self.assertIn('Error HTTP', response.data['error'])
+    
+    @patch('requests.get')
+    def test_sincronizar_refugios_request_exception(self, mock_get):
+        """Verifica que sincronizar_refugios maneja correctamente las excepciones de solicitud"""
+        # Configurar el mock para simular una excepción de solicitud
+        mock_get.side_effect = requests.RequestException("Connection error")
+        
+        # Autenticar como administrador (si es necesario)
+        self.client.force_authenticate(user=self.admin_user)
+        
+        url = '/api_punts_carrega/sincronizar_refugios/'
+        response = self.client.get(url)
+        
+        # Verificar que la respuesta indica un error de conexión
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertIn('error', response.data)
+        self.assertIn('Error de conexión', response.data['error'])
+    
+    @patch('requests.get')
+    def test_sincronizar_refugios_mixed_create_update(self, mock_get):
+        """Verifica que sincronizar_refugios puede crear y actualizar refugios en la misma operación"""
+        # Crear un refugio existente que será actualizado
+        RefugioClimatico.objects.create(
+            id_punt='refugio_api_1',
+            nombre='Nombre Antiguo',
+            lat=40.0,
+            lng=2.0,
+            direccio='Dirección Antigua',
+            numero_calle='999'
+        )
+        
+        # Configurar el mock para simular una respuesta exitosa de la API
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = self.mock_api_data
+        mock_get.return_value = mock_response
+        
+        # Autenticar como administrador (si es necesario)
+        self.client.force_authenticate(user=self.admin_user)
+        
+        url = '/api_punts_carrega/sincronizar_refugios/'
+        response = self.client.get(url)
+        
+        # Verificar que la respuesta es correcta
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verificar que el mensaje indica que se crearon y actualizaron refugios
+        self.assertIn('mensaje', response.data)
+        self.assertIn('nuevos', response.data['mensaje'])
+        self.assertIn('actualizados', response.data['mensaje'])
+        
+        # Verificar que se actualizó el refugio existente
+        refugio1 = RefugioClimatico.objects.get(id_punt='refugio_api_1')
+        self.assertEqual(refugio1.nombre, 'Refugio API 1')
+        
+        # Verificar que se creó el nuevo refugio
+        self.assertTrue(RefugioClimatico.objects.filter(id_punt='refugio_api_2').exists())
+        refugio2 = RefugioClimatico.objects.get(id_punt='refugio_api_2')
+        self.assertEqual(refugio2.nombre, 'Refugio API 2')
+
     @patch('requests.get')
     def test_sincronizar_refugios_api_error(self, mock_get):
         """Verifica que sincronizar_refugios maneja errores de la API correctamente"""

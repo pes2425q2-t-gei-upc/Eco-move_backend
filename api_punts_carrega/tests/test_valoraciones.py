@@ -283,7 +283,7 @@ class EstacionConValoracionesTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         # Verificar estadísticas
-        self.assertEqual(response.data['media'], 4.0)  # (5+3+4)/3 = 4
+        self.assertEqual(response.data['media'], 4.0)
         self.assertEqual(response.data['total'], 3)
         self.assertEqual(response.data['puntuacion_1'], 0)
         self.assertEqual(response.data['puntuacion_2'], 0)
@@ -300,7 +300,7 @@ class EstacionConValoracionesTest(APITestCase):
         
         # Verificar que la respuesta contiene todas las valoraciones de la estación
         valoraciones = ValoracionEstacion.objects.filter(estacion=self.estacion)
-        serializer = ValoracionEstacionSerializer(valoraciones, many=True)
+        ValoracionEstacionSerializer(valoraciones, many=True)
         self.assertEqual(len(response.data), 3)
         
         # Verificar que los datos de las valoraciones son correctos
