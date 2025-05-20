@@ -342,7 +342,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
         estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
         return bool(vehicle_carregadors.intersection(estacio_carregadors))
 
-    # @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
+   
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
         try:
@@ -353,7 +353,24 @@ class ReservaViewSet(viewsets.ModelViewSet):
         data = request.data
         try:
             fecha, hora_inicio, duracion_td = self._parse_reserva_modificacion(data, reserva)
-            vehicle = self._obtener_vehicle_modificacion(data, reserva, request.user)
+            
+            # Obtener vehículo si se especifica
+            vehicle = reserva.vehicle
+            vehicle_matricula = data.get('vehicle')
+            if vehicle_matricula is not None:
+                if vehicle_matricula == "":
+                    vehicle = None
+                else:
+                    try:
+                        vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=request.user)
+                        # Verificar compatibilidad
+                        vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
+                        estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
+                        if not vehicle_carregadors.intersection(estacio_carregadors):
+                            return Response({'error': 'Nou vehicle no compatible'}, status=status.HTTP_400_BAD_REQUEST)
+                    except Vehicle.DoesNotExist:
+                        return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=status.HTTP_404_NOT_FOUND)
+            
             hora_fin = (datetime.combine(date.min, hora_inicio) + duracion_td).time()
 
             error_solapamiento = self._comprobar_solapamiento(reserva, fecha, hora_inicio, hora_fin, pk)
@@ -369,12 +386,12 @@ class ReservaViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Reserva actualizada con éxito'}, status=200)
 
         except Vehicle.DoesNotExist:
-            return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=404)
+            return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=status.HTTP_404_NOT_FOUND)
         except (ValueError, TypeError) as e:
-            return Response({'error': f'Error format dades: {e}'}, status=400)
+            return Response({'error': f'Error format dades: {e}'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(f"Error modificando reserva {pk}: {e}")
-            return Response({'error': 'Error intern'}, status=500)
+            return Response({'error': 'Error intern'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _parse_reserva_modificacion(self, data, reserva):
         fecha_str = data.get('fecha', reserva.fecha.strftime('%d/%m/%Y'))
