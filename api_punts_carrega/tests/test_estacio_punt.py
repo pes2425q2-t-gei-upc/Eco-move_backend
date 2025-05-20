@@ -183,3 +183,50 @@ class TestEstacioCarrega(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(len(response.data) > 0)
         self.assertEqual(response.data[0]['estacio_carrega']['id_punt'], 'estacio_test_propera_1')
+    
+    
+    def test_punt_mes_proper_sin_parametros(self):
+        """Test para verificar que se requieren los parámetros lat y lng"""
+        # Sin parámetros
+        url = reverse('punt_mes_proper')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
+        self.assertIn('Se requieren los parámetros', response.data['error'])
+        
+        # Solo con lat
+        url = reverse('punt_mes_proper') + '?lat=41.3856'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
+        self.assertIn('Se requieren los parámetros', response.data['error'])
+        
+        # Solo con lng
+        url = reverse('punt_mes_proper') + '?lng=2.1737'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
+        self.assertIn('Se requieren los parámetros', response.data['error'])
+    
+    def test_punt_mes_proper_parametros_no_numericos(self):
+        """Test para verificar que los parámetros lat y lng deben ser numéricos"""
+        # lat no numérico
+        url = reverse('punt_mes_proper') + '?lat=abc&lng=2.1737'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('error', response.data)
+        self.assertIn('no son numeros', response.data['error'])
+        
+        # lng no numérico
+        url = reverse('punt_mes_proper') + '?lat=41.3856&lng=abc'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('error', response.data)
+        self.assertIn('no son numeros', response.data['error'])
+        
+        # ambos no numéricos
+        url = reverse('punt_mes_proper') + '?lat=abc&lng=def'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('error', response.data)
+        self.assertIn('no son numeros', response.data['error'])
