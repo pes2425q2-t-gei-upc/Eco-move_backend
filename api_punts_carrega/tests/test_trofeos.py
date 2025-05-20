@@ -202,3 +202,112 @@ class TrofeoAPITests(TestCase):
         # Verificar que se puede acceder a los trofeos
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['trofeos_conseguidos']), 2)  # Debe tener 2 trofeos
+
+    def test_progreso_cero_puntos(self):
+        """Test para verificar que el progreso es 0 cuando el usuario tiene 0 puntos"""
+        # Verificar que el usuario comienza con 0 puntos
+        response = self.client.get(self.get_punts_url, HTTP_AUTHORIZATION=self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['puntos'], 0)
+        
+        # Obtener trofeos y verificar que el progreso es 0
+        response = self.client.get(self.trofeos_user_url, HTTP_AUTHORIZATION=self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['progreso_siguiente'], 0)
+        
+        # Verificar que el siguiente trofeo es el de bronce
+        self.assertEqual(response.data['siguiente_trofeo']['id_trofeo'], self.trofeo_bronce.id_trofeo)
+    
+    def test_progreso_exacto_para_trofeo(self):
+        """Test para verificar que el progreso es 100 cuando el usuario tiene exactamente los puntos necesarios para el siguiente trofeo"""
+        # Sumar exactamente los puntos necesarios para el trofeo de bronce
+        response = self.client.post(
+            self.suma_punts_url,
+            data=json.dumps({'punts': 50}),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header
+        )
+        
+        # Verificar que se han sumado los puntos correctamente
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['puntos_actuales'], 50)
+        
+        # Obtener trofeos y verificar que se ha obtenido el trofeo de bronce
+        response = self.client.get(self.trofeos_user_url, HTTP_AUTHORIZATION=self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['trofeos_conseguidos']), 1)
+        
+        # Verificar que el progreso hacia el siguiente trofeo es 0
+        self.assertEqual(response.data['progreso_siguiente'], 0)
+        
+        # Ahora sumar exactamente los puntos necesarios para llegar al trofeo de plata
+        response = self.client.post(
+            self.suma_punts_url,
+            data=json.dumps({'punts': 100}),  # 50 + 100 = 150 (exactamente los puntos para plata)
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header
+        )
+        
+        # Verificar que se han sumado los puntos correctamente
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['puntos_actuales'], 150)
+        
+        # Obtener trofeos y verificar que se ha obtenido el trofeo de plata
+        response = self.client.get(self.trofeos_user_url, HTTP_AUTHORIZATION=self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['trofeos_conseguidos']), 2)
+        
+        # Verificar que el progreso hacia el siguiente trofeo es 0
+        self.assertEqual(response.data['progreso_siguiente'], 0)
+    
+    def test_progreso_entre_trofeos(self):
+        """Test para verificar el cálculo correcto del progreso entre trofeos"""
+        # Sumar puntos para estar entre el trofeo de bronce y plata
+        response = self.client.post(
+            self.suma_punts_url,
+            data=json.dumps({'punts': 100}),  # Más que bronce (50) pero menos que plata (150)
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header
+        )
+        
+        # Verificar que se han sumado los puntos correctamente
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['puntos_actuales'], 100)
+        
+        # Obtener trofeos y verificar el progreso
+        response = self.client.get(self.trofeos_user_url, HTTP_AUTHORIZATION=self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # El progreso debería ser (100-50)/(150-50) = 50/100 = 50%
+        self.assertEqual(response.data['progreso_siguiente'], 50)
+    
+    def test_progreso_sin_siguiente_trofeo(self):
+        """Test para verificar el comportamiento cuando no hay siguiente trofeo"""
+        # Crear un trofeo máximo
+        Trofeo.objects.create(
+            id_trofeo=99,
+            nombre="Trofeo Máximo",
+            descripcion="Has alcanzado el máximo nivel",
+            puntos_necesarios=1000
+        )
+        
+        # Sumar suficientes puntos para obtener el trofeo máximo
+        response = self.client.post(
+            self.suma_punts_url,
+            data=json.dumps({'punts': 1000}),
+            content_type='application/json',
+            HTTP_AUTHORIZATION=self.auth_header
+        )
+        
+        # Verificar que se han sumado los puntos correctamente
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['puntos_actuales'], 1000)
+        
+        # Obtener trofeos y verificar que se han obtenido todos los trofeos
+        response = self.client.get(self.trofeos_user_url, HTTP_AUTHORIZATION=self.auth_header)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['trofeos_conseguidos']), 4)  
+        
+        # Verificar que no hay siguiente trofeo y el progreso es 0
+        self.assertIsNone(response.data['siguiente_trofeo'])
+        self.assertEqual(response.data['progreso_siguiente'], 0)

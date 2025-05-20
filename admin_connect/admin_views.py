@@ -241,9 +241,6 @@ def modificar_puntos_usuario(request, usuario_id):
             if accion == 'sumar':
                 usuario.sumar_punts(puntos)
                 messages.success(request, f'Se han sumado {puntos} puntos a {usuario.username}')
-            elif accion == 'restar':
-                usuario.restar_punts(puntos)
-                messages.success(request, f'Se han restado {puntos} puntos a {usuario.username}')
             
         except ValueError as e:
             messages.error(request, str(e))

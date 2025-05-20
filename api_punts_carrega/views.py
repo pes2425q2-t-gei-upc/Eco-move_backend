@@ -342,7 +342,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
         estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
         return bool(vehicle_carregadors.intersection(estacio_carregadors))
 
-    # @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
+   
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
         try:
@@ -353,7 +353,24 @@ class ReservaViewSet(viewsets.ModelViewSet):
         data = request.data
         try:
             fecha, hora_inicio, duracion_td = self._parse_reserva_modificacion(data, reserva)
-            vehicle = self._obtener_vehicle_modificacion(data, reserva, request.user)
+            
+            # Obtener vehículo si se especifica
+            vehicle = reserva.vehicle
+            vehicle_matricula = data.get('vehicle')
+            if vehicle_matricula is not None:
+                if vehicle_matricula == "":
+                    vehicle = None
+                else:
+                    try:
+                        vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=request.user)
+                        # Verificar compatibilidad
+                        vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
+                        estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
+                        if not vehicle_carregadors.intersection(estacio_carregadors):
+                            return Response({'error': 'Nou vehicle no compatible'}, status=status.HTTP_400_BAD_REQUEST)
+                    except Vehicle.DoesNotExist:
+                        return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=status.HTTP_404_NOT_FOUND)
+            
             hora_fin = (datetime.combine(date.min, hora_inicio) + duracion_td).time()
 
             error_solapamiento = self._comprobar_solapamiento(reserva, fecha, hora_inicio, hora_fin, pk)
@@ -369,12 +386,12 @@ class ReservaViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Reserva actualizada con éxito'}, status=200)
 
         except Vehicle.DoesNotExist:
-            return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=404)
+            return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=status.HTTP_404_NOT_FOUND)
         except (ValueError, TypeError) as e:
-            return Response({'error': f'Error format dades: {e}'}, status=400)
+            return Response({'error': f'Error format dades: {e}'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(f"Error modificando reserva {pk}: {e}")
-            return Response({'error': 'Error intern'}, status=500)
+            return Response({'error': 'Error intern'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _parse_reserva_modificacion(self, data, reserva):
         fecha_str = data.get('fecha', reserva.fecha.strftime('%d/%m/%Y'))
@@ -393,20 +410,6 @@ class ReservaViewSet(viewsets.ModelViewSet):
         else:
             duracion_td = timedelta(seconds=int(duracion_str))
         return fecha, hora_inicio, duracion_td
-
-    def _obtener_vehicle_modificacion(self, data, reserva, user):
-        vehicle_matricula = data.get('vehicle')
-        vehicle = reserva.vehicle
-        if vehicle_matricula is not None:
-            if vehicle_matricula == "":
-                vehicle = None
-            else:
-                vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=user)
-                vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
-                estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
-                if not vehicle_carregadors.intersection(estacio_carregadors):
-                    raise ValueError('Nou vehicle no compatible')
-        return vehicle
 
     def _comprobar_solapamiento(self, reserva, fecha, hora_inicio, hora_fin, pk):
         reservas_existentes = Reserva.objects.filter(estacion=reserva.estacion, fecha=fecha).exclude(id=pk)
@@ -459,7 +462,6 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 @api_view(['GET'])
 def punt_mes_proper(request):
-    #es podria posar altres criteris de filtratge com potencia, tipus de carrega, etc.
     lat = request.query_params.get('lat')
     lng = request.query_params.get('lng')
     
@@ -769,30 +771,6 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=True, methods=['post', 'get'])
-    def restarPunts(self, request, pk=None):
-        usuario = self.get_object()
-        
-        if request.method == 'GET':
-            punts = request.query_params.get('punts', 0)
-        else:
-            punts = request.data.get('punts', 0)
-        
-        try:
-            punts = int(punts)
-            nuevos_punts = usuario.restar_punts(punts)
-            
-            return Response({
-                "message": f"Se han restado {punts} puntos al usuario",
-                "puntos_restados": punts,
-                "puntos_actuales": nuevos_punts
-            }, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    
     @action(detail=True, methods=['get'])
     def getPunts(self, request, pk=None):
         usuario = self.get_object()
@@ -847,8 +825,6 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                     # Calcular el progreso como porcentaje
                     if puntos_objetivo > puntos_base:
                         progreso = min(100, max(0, ((puntos_actuales - puntos_base) / (puntos_objetivo - puntos_base)) * 100))
-                    else:
-                        progreso = 100
         
         return Response({
             'trofeos_conseguidos': serializer.data,
