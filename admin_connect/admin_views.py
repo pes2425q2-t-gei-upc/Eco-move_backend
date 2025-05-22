@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
-from django.db.models import Count, Avg,Q
+from django.db.models import Count, Avg, Q
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods, require_POST, require_GET
+from django.views.decorators.csrf import csrf_protect
 from datetime import timedelta
 import requests
 
@@ -14,7 +16,9 @@ from api_punts_carrega.models import (
 from social_community.models import (
     Report, Chat, Missatge,
 )
+
 @staff_member_required
+@require_GET
 def admin_dashboard(request):
     # Estadísticas generales
     total_estaciones = EstacioCarrega.objects.count()
@@ -58,7 +62,10 @@ def admin_dashboard(request):
     }
     
     return render(request, 'admin_connect/dashboard.html', context)
+
 @staff_member_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def sincronizar_refugios_admin(request):
     if request.method == 'POST':
         try:
@@ -98,6 +105,7 @@ def sincronizar_refugios_admin(request):
         
         return redirect('admin_connect:sincronizar_refugios')
     
+    # GET request - mostrar la página
     refugios = RefugioClimatico.objects.all().order_by('nombre')
     
     context = {
@@ -109,6 +117,7 @@ def sincronizar_refugios_admin(request):
 GESTIONAR_USUARIOS_URL = 'admin_connect:gestionar_usuarios'
 
 @staff_member_required
+@require_GET
 def gestionar_usuarios(request):
     usuarios = Usuario.objects.all().order_by('username')
     
@@ -121,6 +130,8 @@ def gestionar_usuarios(request):
 EDITAR_USUARIO_TEMPLATE = 'admin_connect/editar_usuario.html'
 
 @staff_member_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
      
@@ -140,12 +151,12 @@ def editar_usuario(request, usuario_id):
         # Verificar si el username ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(username=username).exclude(id=usuario_id).exists():
              messages.error(request, f'El nombre de usuario {username} ya está en uso.')
-             return redirect('admin_connect/editar_usuario', usuario_id=usuario_id)
+             return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
          
         # Verificar si el email ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(email=email).exclude(id=usuario_id).exists():
              messages.error(request, f'El email {email} ya está en uso.')
-             return redirect('admin_connect/editar_usuario', usuario_id=usuario_id)
+             return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
          
          # Actualizar datos del usuario
         usuario.username = username
@@ -162,10 +173,13 @@ def editar_usuario(request, usuario_id):
          # Actualizar contraseña si se proporciona una nueva
         if new_password:
             usuario.set_password(new_password)
+        
+        usuario.save()
          
         messages.success(request, f'Usuario {username} actualizado correctamente.')
         return redirect(GESTIONAR_USUARIOS_URL)
      
+    # GET request - mostrar formulario de edición
     context = {
          'usuario': usuario,
     }
@@ -173,62 +187,36 @@ def editar_usuario(request, usuario_id):
     return render(request, EDITAR_USUARIO_TEMPLATE, context)
 
 @staff_member_required
+@csrf_protect
+@require_POST
 def bloquear_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
     
-    if request.method == 'POST':
-        if usuario.is_admin == True:
-            messages.error(request, f'No se puede bloquear al usuario {usuario.username} porque es administrador.')
-            return redirect(GESTIONAR_USUARIOS_URL)
-        usuario.bloqueado = True
-        usuario.save()
-        
-        messages.success(request, f'Usuario {usuario.username} bloqueado correctamente.')
+    if usuario.is_admin == True:
+        messages.error(request, f'No se puede bloquear al usuario {usuario.username} porque es administrador.')
         return redirect(GESTIONAR_USUARIOS_URL)
     
-    context = {
-        'usuario': usuario,
-    }
+    usuario.bloqueado = True
+    usuario.save()
     
-    return render(request, EDITAR_USUARIO_TEMPLATE, context)
-
+    messages.success(request, f'Usuario {usuario.username} bloqueado correctamente.')
+    return redirect(GESTIONAR_USUARIOS_URL)
 
 @staff_member_required
+@csrf_protect
+@require_POST
 def desbloquear_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
     
-    if request.method == 'POST':
-        usuario.bloqueado = False
-        usuario.save()
-        
-        messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
-        return redirect(GESTIONAR_USUARIOS_URL)
+    usuario.bloqueado = False
+    usuario.save()
     
-    context = {
-        'usuario': usuario,
-    }
-    
-    return render(request, EDITAR_USUARIO_TEMPLATE, context)
-
-
+    messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
+    return redirect(GESTIONAR_USUARIOS_URL)
 
 @staff_member_required
-def desbloquear_usuario(request, usuario_id):
-    usuario = get_object_or_404(Usuario, id=usuario_id)
-    
-    if request.method == 'POST':
-        usuario.bloqueado = False
-        usuario.save()
-        
-        messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
-        return redirect(GESTIONAR_USUARIOS_URL)
-    
-    context = {
-        'usuario': usuario,
-    }
-    
-    return render(request, 'admin_connect/editar_usuario.html', context)
-@staff_member_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def modificar_puntos_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
     
@@ -241,21 +229,21 @@ def modificar_puntos_usuario(request, usuario_id):
             if accion == 'sumar':
                 usuario.sumar_punts(puntos)
                 messages.success(request, f'Se han sumado {puntos} puntos a {usuario.username}')
-            elif accion == 'restar':
-                usuario.restar_punts(puntos)
-                messages.success(request, f'Se han restado {puntos} puntos a {usuario.username}')
             
         except ValueError as e:
             messages.error(request, str(e))
         
         return redirect(GESTIONAR_USUARIOS_URL)
     
+    # GET request - mostrar formulario
     context = {
         'usuario': usuario,
     }
     
     return render(request, 'admin_connect/modificar_puntos.html', context)
+
 @staff_member_required
+@require_GET
 def estadisticas_estaciones(request):
     # Estaciones con más reservas
     estaciones_con_reservas = Reserva.objects.values('estacion__id_punt').annotate(
@@ -309,7 +297,9 @@ def estadisticas_estaciones(request):
     }
     
     return render(request, 'admin_connect/estadisticas_estaciones.html', context)
+
 @staff_member_required
+@require_GET
 def gestionar_puntos(request):
     """Vista para gestionar los puntos de carga"""
     # Obtener parámetro de búsqueda
@@ -331,10 +321,14 @@ def gestionar_puntos(request):
     }
     
     return render(request, 'admin_connect/gestionar_puntos.html', context)
+
 AÑADIR_PUNTO_TEMPLATE = 'admin_connect/añadir_punto.html'
 AÑADIR_PUNTO_TITLE = 'Añadir Punto de Carga'
 GESTIONAR_PUNTOS_URL = 'admin_connect:gestionar_puntos'
+
 @staff_member_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def añadir_punto(request):
     """Vista para añadir un nuevo punto de carga"""
     if request.method == 'POST':
@@ -391,11 +385,14 @@ def añadir_punto(request):
                 'error': f"Error al añadir el punto de carga: {str(e)}"
             })
     
-    # Si es GET, mostrar el formulario
+    # GET request - mostrar el formulario
     return render(request, AÑADIR_PUNTO_TEMPLATE, {
         'title': AÑADIR_PUNTO_TITLE
     })
+
 @staff_member_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def editar_punto(request, punto_id):
     """Vista para editar un punto de carga existente"""
     estacion = get_object_or_404(EstacioCarrega, id_punt=punto_id)
@@ -438,71 +435,81 @@ def editar_punto(request, punto_id):
         except Exception as e:
             messages.error(request, f"Error al actualizar el punto de carga: {str(e)}")
     
+    # GET request - mostrar formulario de edición
     context = {
         'estacion': estacion,
         'title': 'Editar Punto de Carga',
     }
     
     return render(request, 'admin_connect/editar_punto.html', context)
+
 @staff_member_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def cambiar_estado_punto(request, punto_id):
     """Vista para cambiar el estado de servicio de un punto de carga"""
     estacion = get_object_or_404(EstacioCarrega, id_punt=punto_id)
     
     if request.method == 'POST':
-        # Si se envía el formulario con el motivo
-        motivo = request.POST.get('motivo_fuera_servicio', '')
-        estacion.fuera_de_servicio = True
-        estacion.motivo_fuera_servicio = motivo
-        estacion.save()
-        
-        messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
-        return redirect(GESTIONAR_PUNTOS_URL)
-    else:
-        # Si se está activando (cambio de estado)
-        if estacion.fuera_de_servicio:
+        # Si se envía el formulario con el motivo para desactivar
+        if 'desactivar' in request.POST:
+            motivo = request.POST.get('motivo_fuera_servicio', '')
+            estacion.fuera_de_servicio = True
+            estacion.motivo_fuera_servicio = motivo
+            estacion.save()
+            
+            messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
+            return redirect(GESTIONAR_PUNTOS_URL)
+        # Si se confirma la activación
+        elif 'activar' in request.POST:
             estacion.fuera_de_servicio = False
             estacion.motivo_fuera_servicio = None
             estacion.save()
             messages.success(request, f"Punto de carga {punto_id} marcado como en servicio")
             return redirect(GESTIONAR_PUNTOS_URL)
-        else:
-            # Si se está desactivando, mostrar formulario para indicar motivo
-            return render(request, 'admin_connect/desactivar_punto.html', {
-                'estacion': estacion,
-                'title': 'Desactivar Punto de Carga',
-            })
+    
+    # GET request - mostrar formulario según el estado actual
+    if estacion.fuera_de_servicio:
+        # Mostrar formulario de confirmación para activar
+        return render(request, 'admin_connect/activar_punto.html', {
+            'estacion': estacion,
+            'title': 'Activar Punto de Carga',
+        })
+    else:
+        # Mostrar formulario para indicar motivo de desactivación
+        return render(request, 'admin_connect/desactivar_punto.html', {
+            'estacion': estacion,
+            'title': 'Desactivar Punto de Carga',
+        })
+
 @staff_member_required
+@csrf_protect
+@require_POST
 def eliminar_punto(request, punto_id):
     """Vista para eliminar un punto de carga"""
-    if request.method == 'POST':
-        estacion = get_object_or_404(EstacioCarrega, id_punt=punto_id)
-        
-        # Verificar si hay reservas asociadas
-        reservas_count = Reserva.objects.filter(estacion=estacion).count()
-        if reservas_count > 0:
-            messages.error(request, f"No se puede eliminar el punto de carga {punto_id} porque tiene {reservas_count} reservas asociadas")
-            return redirect(GESTIONAR_PUNTOS_URL)
-        
-        try:
-            # Eliminar valoraciones asociadas
-            ValoracionEstacion.objects.filter(estacion=estacion).delete()
-            
-            # Eliminar el punto de carga
-            estacion.delete()
-            
-            messages.success(request, f"Punto de carga {punto_id} eliminado correctamente")
-        except Exception as e:
-            messages.error(request, f"Error al eliminar el punto de carga: {str(e)}")
-        
+    estacion = get_object_or_404(EstacioCarrega, id_punt=punto_id)
+    
+    # Verificar si hay reservas asociadas
+    reservas_count = Reserva.objects.filter(estacion=estacion).count()
+    if reservas_count > 0:
+        messages.error(request, f"No se puede eliminar el punto de carga {punto_id} porque tiene {reservas_count} reservas asociadas")
         return redirect(GESTIONAR_PUNTOS_URL)
     
-    # Si es GET, redirigir a la página de gestión
-
+    try:
+        # Eliminar valoraciones asociadas
+        ValoracionEstacion.objects.filter(estacion=estacion).delete()
+        
+        # Eliminar el punto de carga
+        estacion.delete()
+        
+        messages.success(request, f"Punto de carga {punto_id} eliminado correctamente")
+    except Exception as e:
+        messages.error(request, f"Error al eliminar el punto de carga: {str(e)}")
+    
     return redirect(GESTIONAR_PUNTOS_URL)
 
-
 @staff_member_required
+@require_GET
 def gestionar_reports(request):
     """
     Vista para administrar los reportes de usuarios
@@ -527,6 +534,7 @@ def gestionar_reports(request):
     return render(request, 'admin_connect/gestionar_reports.html', context)
 
 @staff_member_required
+@require_GET
 def detalle_report(request, report_id):
     """
     Vista para ver el detalle de un reporte específico
@@ -557,6 +565,8 @@ def detalle_report(request, report_id):
     return render(request, 'admin_connect/detalle_report.html', context)
 
 @staff_member_required
+@csrf_protect
+@require_http_methods(["GET", "POST"])
 def resolver_report(request, report_id):
     """
     Vista para marcar un reporte como resuelto
@@ -569,6 +579,7 @@ def resolver_report(request, report_id):
         messages.success(request, f'Reporte #{report.id_report} marcado como resuelto')
         return redirect('admin_connect:gestionar_reports')
     
+    # GET request - mostrar formulario de confirmación
     context = {
         'report': report,
         'title': f'Resolver Reporte #{report.id_report}'
@@ -577,6 +588,8 @@ def resolver_report(request, report_id):
     return render(request, 'admin_connect/resolver_report.html', context)
 
 @staff_member_required
+@csrf_protect
+@require_POST
 def reactivar_report(request, report_id):
     """
     Vista para reactivar un reporte que estaba resuelto
@@ -588,4 +601,3 @@ def reactivar_report(request, report_id):
     
     messages.success(request, f'Reporte #{report.id_report} reactivado correctamente')
     return redirect('admin_connect:gestionar_reports')
-
