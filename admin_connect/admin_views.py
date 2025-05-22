@@ -63,6 +63,7 @@ def admin_dashboard(request):
     
     return render(request, 'admin_connect/dashboard.html', context)
 
+# Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -129,6 +130,7 @@ def gestionar_usuarios(request):
 
 EDITAR_USUARIO_TEMPLATE = 'admin_connect/editar_usuario.html'
 
+# Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -214,6 +216,7 @@ def desbloquear_usuario(request, usuario_id):
     messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
     return redirect(GESTIONAR_USUARIOS_URL)
 
+# Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -326,6 +329,7 @@ AÑADIR_PUNTO_TEMPLATE = 'admin_connect/añadir_punto.html'
 AÑADIR_PUNTO_TITLE = 'Añadir Punto de Carga'
 GESTIONAR_PUNTOS_URL = 'admin_connect:gestionar_puntos'
 
+# Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -390,6 +394,7 @@ def añadir_punto(request):
         'title': AÑADIR_PUNTO_TITLE
     })
 
+# Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -443,6 +448,7 @@ def editar_punto(request, punto_id):
     
     return render(request, 'admin_connect/editar_punto.html', context)
 
+# Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
 @csrf_protect
 @require_http_methods(["GET", "POST"])
@@ -564,6 +570,7 @@ def detalle_report(request, report_id):
     
     return render(request, 'admin_connect/detalle_report.html', context)
 
+# Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
 @csrf_protect
 @require_http_methods(["GET", "POST"])
