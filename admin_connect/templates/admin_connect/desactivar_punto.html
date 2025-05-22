@@ -1,0 +1,97 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: rgba(169, 169, 169, 0.181);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+    max-width: 600px;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: white;
+  }
+  .form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .button-primary {
+    background-color: #447e9b;
+    color: white;
+  }
+  .button-warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+  .button-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+  .back-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .alert-warning {
+    background-color: rgba(255, 193, 7, 0.2);
+    border: 1px solid #ffc107;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:gestionar_puntos' %}" class="back-button">
+    &larr; Volver a Gestionar Puntos
+  </a>
+</div>
+<h1>Desactivar Punto de Carga</h1>
+<div class="alert-warning">
+  <p>Estás a punto de marcar el punto de carga <strong>{{ estacion.id_punt }}</strong> como fuera de servicio. Por favor, indica el motivo.</p>
+</div>
+<div class="card">
+  <form method="post" action="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}">
+    {% csrf_token %}
+    
+    <div class="form-group">
+      <label for="motivo_fuera_servicio">Motivo de la desactivación:</label>
+      <input type="text" name="motivo_fuera_servicio" id="motivo_fuera_servicio" class="form-control" required placeholder="Ej: Mantenimiento programado, Avería, etc.">
+    </div>
+    
+    <div class="button-group">
+      <button type="submit" class="button button-warning">Desactivar Punto de Carga</button>
+      <a href="{% url 'admin_connect:gestionar_puntos' %}" class="button button-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

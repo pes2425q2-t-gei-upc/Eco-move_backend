@@ -1,0 +1,278 @@
+{% extends "admin_connect/base_custom.html" %}
+{% load static %}
+{% block extrastyle %}
+<style>
+  .card {
+    background-color: rgba(169, 169, 169, 0.181);
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .table-container {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid black;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+  .button {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 5px;
+  }
+  .button:hover {
+    background-color: #366b81;
+  }
+  .search-container {
+    margin-bottom: 20px;
+  }
+  .search-input {
+    padding: 8px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .search-button {
+    padding: 8px 15px;
+    background-color: #447e9b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .back-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #447e9b;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+  .action-buttons {
+    white-space: nowrap;
+  }
+  .button-danger {
+    background-color: #dc3545;
+  }
+  .button-warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+  .button-success {
+    background-color: #28a745;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    border-radius: 5px;
+  }
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .add-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  .add-button:hover {
+    background-color: #218838;
+  }
+  .status-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .status-active {
+    background-color: #28a745;
+    color: white;
+  }
+  .status-inactive {
+    background-color: #dc3545;
+    color: white;
+  }
+  .tooltip {
+    position: relative;
+    display: inline-block;
+  }
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'admin_connect:admin_dashboard' %}" class="back-button">
+    &larr; Volver al Dashboard
+  </a>
+</div>
+<div class="header-actions">
+  <h1>Gestionar Puntos de Carga</h1>
+  <a href="{% url 'admin_connect:añadir_punto' %}" class="add-button">+ Añadir Nuevo Punto de Carga</a>
+</div>
+<div class="card">
+  <div class="search-container">
+    <form method="get">
+      <input type="text" name="q" placeholder="Buscar por ID o dirección" class="search-input" value="{{ request.GET.q|default:'' }}">
+      <button type="submit" class="search-button">Buscar</button>
+    </form>
+  </div>
+  
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Dirección</th>
+          <th>Ciudad</th>
+          <th>Provincia</th>
+          <th>Coordenadas</th>
+          <th>Potencia</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for estacion in estaciones %}
+        <tr>
+          <td>{{ estacion.id_punt }}</td>
+          <td>{{ estacion.direccio|default:"No especificada" }}</td>
+          <td>{{ estacion.ciutat|default:"No especificada" }}</td>
+          <td>{{ estacion.provincia|default:"No especificada" }}</td>
+          <td>{{ estacion.lat }}, {{ estacion.lng }}</td>
+          <td>{{ estacion.potencia|default:"No especificada" }}</td>
+          <td>
+            {% if estacion.fuera_de_servicio %}
+              <div class="tooltip">
+                <span class="status-indicator status-inactive">Fuera de servicio</span>
+                {% if estacion.motivo_fuera_servicio %}
+                  <span class="tooltiptext">{{ estacion.motivo_fuera_servicio }}</span>
+                {% endif %}
+              </div>
+            {% else %}
+              <span class="status-indicator status-active">En servicio</span>
+            {% endif %}
+          </td>
+          <td class="action-buttons">
+            <a href="{% url 'admin_connect:editar_punto' punto_id=estacion.id_punt %}" class="button">Editar</a>
+            {% if estacion.fuera_de_servicio %}
+              <a href="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}" class="button button-success">Activar</a>
+            {% else %}
+              <a href="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}" class="button button-warning">Desactivar</a>
+            {% endif %}
+            <button class="button button-danger" onclick="confirmarEliminar('{{ estacion.id_punt }}')">Eliminar</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">No hay puntos de carga disponibles</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- Modal de confirmación para eliminar -->
+<div id="modalEliminar" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3>Confirmar eliminación</h3>
+    <p>¿Estás seguro de que deseas eliminar este punto de carga? Esta acción no se puede deshacer.</p>
+    <form id="formEliminar" method="post" action="">
+      {% csrf_token %}
+      <button type="submit" class="button button-primary button-danger">Eliminar</button>
+      <button type="button" class="button button-primary" onclick="cerrarModal()">Cancelar</button>
+    </form>
+  </div>
+</div>
+<script>
+  // Funciones para el modal de confirmación
+  var modal = document.getElementById("modalEliminar");
+  var span = document.getElementsByClassName("close")[0];
+  
+  function confirmarEliminar(puntoId) {
+    modal.style.display = "block";
+    document.getElementById("formEliminar").action = "{% url 'admin_connect:eliminar_punto' punto_id=0 %}".replace('0', puntoId);
+  }
+  
+  function cerrarModal() {
+    modal.style.display = "none";
+  }
+  
+  span.onclick = function() {
+    cerrarModal();
+  }
+  
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      cerrarModal();
+    }
+  }
+</script>
+{% endblock %}

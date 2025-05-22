@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from api_punts_carrega.models import (
-    Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle, 
-    ModelCotxe, RefugioClimatico, Usuario, ValoracionEstacion,
-    TextItem
+    Punt, EstacioCarrega, TipusCarregador, Reserva, Vehicle,
+    RefugioClimatico, Usuario, ValoracionEstacion,
+    TextItem, ReporteEstacion,
+    Trofeo, UsuarioTrofeo
 )
 
 class TipusCarregadorInline(admin.TabularInline):
@@ -19,11 +20,11 @@ class EstacioCarregaAdmin(admin.ModelAdmin):
     search_fields = ('id_punt', 'direccio', 'ciutat')
     inlines = [TipusCarregadorInline]
     exclude = ('tipus_carregador',)
-    
+
     def get_tipus_velocitat(self, obj):
         return ", ".join([t.nom_velocitat for t in obj.tipus_velocitat.all()])
     get_tipus_velocitat.short_description = "Velocidad de carga"
-    
+
     def get_places(self, obj):
         return obj.nplaces or "No especificado"
     get_places.short_description = "Plazas"
@@ -37,15 +38,9 @@ class ReservaAdmin(admin.ModelAdmin):
 
 @admin.register(Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
-    list_display = ('matricula', 'model_cotxe', 'propietari', 'carrega_actual', 'capacitat_bateria')
-    list_filter = ('model_cotxe__marca',)
-    search_fields = ('matricula', 'propietari__username', 'model_cotxe__marca', 'model_cotxe__model')
-
-@admin.register(ModelCotxe)
-class ModelCotxeAdmin(admin.ModelAdmin):
-    list_display = ('marca', 'model', 'any_model')
-    list_filter = ('marca', 'any_model')
-    search_fields = ('marca', 'model')
+    list_display = ('matricula',  'propietari', 'carrega_actual', 'capacitat_bateria','marca', 'model','any_model')
+    list_filter = ('marca', 'model','any_model','propietari')
+    search_fields = ('matricula', 'propietari__username', 'marca', 'model')
 
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
@@ -80,3 +75,68 @@ class TipusCarregadorAdmin(admin.ModelAdmin):
 class TextItemAdmin(admin.ModelAdmin):
     list_display = ('key', 'text_ca', 'text_en', 'text_es')
     search_fields = ('key',)
+
+#Reportar estació
+@admin.register(ReporteEstacion)
+class ReporteEstacionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'estacion',
+        'tipo_error_display',
+        'estado_display',
+        'usuario_reporta',
+        'fecha_reporte',
+        'fecha_ultima_modificacion',
+    )
+
+    list_filter = (
+        'estado',
+        'tipo_error',
+        'fecha_reporte',
+        'estacion',
+    )
+
+    search_fields = (
+        'id',
+        'estacion__id_punt',
+        'estacion__direccio',
+        'usuario_reporta__username',
+        'usuario_reporta__email',
+        'comentario_usuario',
+    )
+
+    readonly_fields = (
+        'fecha_reporte',
+        'fecha_ultima_modificacion',
+        'usuario_reporta',
+    )
+
+    fieldsets = (
+        (None, {
+            'fields': ('estacion', 'tipo_error', 'comentario_usuario')
+        }),
+        ('Gestión del Reporte', {
+            'fields': ('estado', 'fecha_reporte', 'fecha_ultima_modificacion', 'usuario_reporta')
+        }),
+    )
+
+    def tipo_error_display(self, obj):
+        return obj.get_tipo_error_display()
+    tipo_error_display.short_description = 'Tipo de Error'
+
+    def estado_display(self, obj):
+        return obj.get_estado_display()
+    estado_display.short_description = 'Estado'
+
+@admin.register(Trofeo)
+class TrofeoAdmin(admin.ModelAdmin):
+    list_display = ('id_trofeo', 'nombre', 'puntos_necesarios')
+    search_fields = ('nombre',)
+    ordering = ('puntos_necesarios',)
+
+
+@admin.register(UsuarioTrofeo)
+class UsuarioTrofeoAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'trofeo', 'fecha_obtencion')
+    list_filter = ('trofeo', 'fecha_obtencion')
+    search_fields = ('usuario__username', 'trofeo__nombre')

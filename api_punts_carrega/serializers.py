@@ -8,13 +8,13 @@ from .models import (
     TipusCarregador,
     Reserva,
     Vehicle,
-    ModelCotxe,
     RefugioClimatico,
-   
     Usuario,
     ValoracionEstacion,
     TextItem,
-    Idiomas
+    Idiomas,
+    Trofeo,
+    UsuarioTrofeo
 )
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
@@ -36,15 +36,12 @@ class TipusCarregadorSerializer(serializers.ModelSerializer):
         model = TipusCarregador
         fields = '__all__'
     
-class ModelCotxeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ModelCotxe
-        fields = '__all__'
 
-class VehicleSerializer(serializers.ModelSerializer):   
+class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
-        fields = '__all__'
+        fields = ['matricula', 'carrega_actual', 'capacitat_bateria', 'model', 'marca', 'any_model', 'tipus_carregador']
+        read_only_fields = ['propietari']
 
 class NearestPuntCarregaSerializer(serializers.ModelSerializer):
     latitud = serializers.FloatField(required=True)
@@ -61,8 +58,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         model = Usuario
         fields = [
             'id', 'first_name', 'last_name', 'email', 'username',
-            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts','foto'
-        ]
+            'idioma', 'telefon', 'descripcio', 'is_admin', 'punts','foto','bloqueado']
         read_only_fields = ['id', 'punts']
 
 class PerfilPublicoSerializer(serializers.ModelSerializer):
@@ -81,11 +77,11 @@ class ReservaSerializer(serializers.ModelSerializer):
     hora = serializers.TimeField(format='%H:%M')
     estacion = serializers.PrimaryKeyRelatedField(
         queryset=EstacioCarrega.objects.all(),
-        #pk_field='id_punt'
+        
     )
     vehicle = serializers.PrimaryKeyRelatedField(
         queryset=Vehicle.objects.all(),
-        #pk_field='id_punt',
+        
         required=False,
         allow_null=True
     )
@@ -207,6 +203,178 @@ class TextItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'key', 'text']
     
     def get_text(self, obj):
-        lang = get_language()
-        fallback = obj.text
-        return getattr(obj, f'text_{lang}', fallback)  # Default to Catalan if language not found
+        # Obtener el idioma del usuario si está autenticado
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            lang = request.user.idioma.lower()
+            if lang == 'catala':
+                lang = 'ca'
+            elif lang == 'castellano':
+                lang = 'es'
+            elif lang == 'english':
+                lang = 'en'
+        else:
+            # Usar el idioma del sistema si no hay usuario autenticado
+            lang = get_language()
+            
+        # Intentar obtener el texto en el idioma correspondiente
+        text_field = f'text_{lang}'
+        if hasattr(obj, text_field) and getattr(obj, text_field):
+            return getattr(obj, text_field)
+        
+        # Fallback al texto por defecto
+        return obj.text
+
+class TrofeoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Trofeo
+        fields = ['id_trofeo', 'nombre', 'descripcion', 'puntos_necesarios']
+
+class UsuarioTrofeoSerializer(serializers.ModelSerializer):
+    trofeo = TrofeoSerializer(read_only=True)
+    
+    class Meta:
+        model = UsuarioTrofeo
+        fields = ['trofeo', 'fecha_obtencion']
+from rest_framework import serializers
+from .models import ReporteEstacion, EstacioCarrega, Usuario
+
+class ReporteEstacionSerializer(serializers.ModelSerializer):
+    usuario_reporta = UsuarioSerializer(read_only=True)
+    estacion = EstacioCarregaSerializer(read_only=True)
+    tipo_error_display = serializers.CharField(source='get_tipo_error_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+
+    estacion_id = serializers.PrimaryKeyRelatedField(
+        queryset=EstacioCarrega.objects.all(),
+        source='estacion',
+        write_only=True,
+        help_text="ID (id_punt) de la estación a reportar."
+    )
+
+    class Meta:
+        model = ReporteEstacion
+        fields = [
+            'id',
+            'estacion',
+            'usuario_reporta',
+            'tipo_error',
+            'tipo_error_display',
+            'comentario_usuario',
+            'estado',
+            'estado_display',
+            'fecha_reporte',
+            'fecha_ultima_modificacion',
+            'estacion_id',
+        ]
+        read_only_fields = [
+            'id',
+            'usuario_reporta',
+            'estacion',
+            'tipo_error_display',
+            'estado',
+            'estado_display',
+            'fecha_reporte',
+            'fecha_ultima_modificacion',
+        ]
+
+class TrofeoSerializerWithTranslation(serializers.ModelSerializer):
+    nombre_traducido = serializers.SerializerMethodField()
+    descripcion_traducida = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Trofeo
+        fields = ['id_trofeo', 'nombre', 'descripcion', 'puntos_necesarios', 'nombre_traducido', 'descripcion_traducida']
+    
+    def get_nombre_traducido(self, obj):
+        # Obtener el idioma del usuario si está autenticado
+        request = self.context.get('request')
+        lang = None
+        
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            user_lang = request.user.idioma
+            # Añadir log para depuración
+            print(f"Idioma del usuario: {user_lang}")
+            
+            if user_lang == 'Catala':
+                lang = 'ca'
+            elif user_lang == 'Castellano':
+                lang = 'es'
+            elif user_lang == 'English':
+                lang = 'en'
+            
+            # Añadir log para depuración
+            print(f"Código de idioma: {lang}")
+        
+        # Si no se pudo determinar el idioma del usuario, usar el idioma del sistema
+        if not lang:
+            system_lang = get_language()
+            if system_lang:
+                lang = system_lang[:2]  # Tomar solo los primeros 2 caracteres (es, ca, en)
+                print(f"Usando idioma del sistema: {lang}")
+        
+        # Intentar encontrar un TextItem con key que coincida con el patrón del nombre del trofeo
+        key = None
+        if "Bronze" in obj.nombre or "Bronce" in obj.nombre:
+            key = "trophy_bronze_name"
+        elif "Silver" in obj.nombre or "Plata" in obj.nombre:
+            key = "trophy_silver_name"
+        elif "Gold" in obj.nombre or "Oro" in obj.nombre:
+            key = "trophy_gold_name"
+        elif "Platinum" in obj.nombre or "Platino" in obj.nombre:
+            key = "trophy_platinum_name"
+        
+        if key and lang:
+            try:
+                text_item = TextItem.objects.get(key=key)
+                translated_text = getattr(text_item, f'text_{lang}', None)
+                if translated_text:
+                    return translated_text
+            except TextItem.DoesNotExist:
+                pass
+
+        return obj.nombre
+
+    
+    def get_descripcion_traducida(self, obj):
+        # Obtener el idioma del usuario si está autenticado
+        request = self.context.get('request')
+        lang = None
+        
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            user_lang = request.user.idioma
+            
+            if user_lang == 'Catala':
+                lang = 'ca'
+            elif user_lang == 'Castellano':
+                lang = 'es'
+            elif user_lang == 'English':
+                lang = 'en'
+        
+        # Si no se pudo determinar el idioma del usuario, usar el idioma del sistema
+        if not lang:
+            system_lang = get_language()
+            if system_lang:
+                lang = system_lang[:2]  # Tomar solo los primeros 2 caracteres (es, ca, en)
+        
+        # Intentar encontrar un TextItem con key que coincida con el patrón de la descripción del trofeo
+        key = None
+        if "Bronze" in obj.nombre or "Bronce" in obj.nombre:
+            key = "trophy_bronze_description"
+        elif "Silver" in obj.nombre or "Plata" in obj.nombre:
+            key = "trophy_silver_description"
+        elif "Gold" in obj.nombre or "Oro" in obj.nombre:
+            key = "trophy_gold_description"
+        elif "Platinum" in obj.nombre or "Platino" in obj.nombre:
+            key = "trophy_platinum_description"
+        
+        if key and lang:
+            try:
+                text_item = TextItem.objects.get(key=key)
+                translated_text = getattr(text_item, f'text_{lang}', None)
+                if translated_text:
+                    return translated_text
+            except TextItem.DoesNotExist:
+                pass
+        
+        return obj.descripcion

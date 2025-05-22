@@ -1,15 +1,33 @@
 {% extends "admin_connect/base_custom.html" %}
 {% load static %}
-
 {% block extrastyle %}
 <style>
   .card {
-    background-color: #000000;
+    background-color: rgba(169, 169, 169, 0.181);
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     padding: 20px;
     margin-bottom: 20px;
-    max-width: 600px;
+    max-width: 800px;
+  }
+  .info-section {
+    background-color: rgb(26, 25, 25);
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+  }
+  .info-row {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  .info-label {
+    font-weight: bold;
+    min-width: 150px;
+    color: #aaa7a7;
+  }
+  .info-value {
+    color: white;
   }
   .form-group {
     margin-bottom: 15px;
@@ -22,6 +40,7 @@
   .form-control {
     width: 100%;
     padding: 8px;
+    font-size: 16px;
     border: 1px solid #ddd;
     border-radius: 4px;
     box-sizing: border-box;
@@ -45,6 +64,9 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
   }
   .button-primary {
     background-color: #447e9b;
@@ -52,6 +74,14 @@
   }
   .button-secondary {
     background-color: #6c757d;
+    color: white;
+  }
+  .button-danger {
+    background-color: #dc3545;
+    color: white;
+  }
+  .button-success {
+    background-color: #28a745;
     color: white;
   }
   .back-button {
@@ -62,6 +92,65 @@
     text-decoration: none;
     border-radius: 4px;
     margin-bottom: 20px;
+  }
+  .trofeos-section {
+    background-color: rgb(26, 25, 25);
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+  }
+  .trofeo-item {
+    background-color: rgba(169, 169, 169, 0.181);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .trofeo-info {
+    flex-grow: 1;
+  }
+  .trofeo-nombre {
+    font-weight: bold;
+    color: white;
+  }
+  .trofeo-descripcion {
+    color: #aaa7a7;
+    font-size: 14px;
+    margin: 5px 0;
+  }
+  .trofeo-puntos {
+    color: #447e9b;
+    font-size: 12px;
+  }
+  .trofeo-fecha {
+    color: #999;
+    font-size: 12px;
+  }
+  .select-trofeo {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 15px;
+  }
+  .no-trofeos {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
+  }
+  h2 {
+    color: white;
+    border-bottom: 2px solid white;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  h3 {
+    color: white;
+    margin-bottom: 15px;
   }
 </style>
 {% endblock %}
@@ -75,48 +164,125 @@
 
 <h1>Editar Usuario</h1>
 
+<!-- Información del Usuario (Solo Lectura) -->
 <div class="card">
+  <h2>Información del Usuario</h2>
+  <div class="info-section">
+    <div class="info-row">
+      <div class="info-label">Nombre de usuario:</div>
+      <div class="info-value">{{ usuario.username }}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Email:</div>
+      <div class="info-value">{{ usuario.email }}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Nombre:</div>
+      <div class="info-value">{{ usuario.first_name|default:"No especificado" }}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Apellidos:</div>
+      <div class="info-value">{{ usuario.last_name|default:"No especificado" }}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Teléfono:</div>
+      <div class="info-value">{{ usuario.telefon|default:"No especificado" }}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Idioma:</div>
+      <div class="info-value">
+        {% if usuario.idioma == 'es' %}Español
+        {% elif usuario.idioma == 'ca' %}Catalán
+        {% elif usuario.idioma == 'en' %}Inglés
+        {% else %}{{ usuario.idioma }}
+        {% endif %}
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Descripción:</div>
+      <div class="info-value">{{ usuario.descripcio|default:"No especificada" }}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Puntos:</div>
+      <div class="info-value">{{ usuario.punts }}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Estado:</div>
+      <div class="info-value">
+        {% if usuario.bloqueado %}
+          <span style="color: red;">Bloqueado</span>
+        {% elif usuario.is_active %}
+          <span style="color: green;">Activo</span>
+        {% else %}
+          <span style="color: orange;">Inactivo</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gestión de Trofeos -->
+<div class="card">
+  <h2>Gestión de Trofeos</h2>
+  
+  <div class="trofeos-section">
+    <h3>Trofeos del Usuario</h3>
+    {% if trofeos_usuario %}
+      {% for usuario_trofeo in trofeos_usuario %}
+        <div class="trofeo-item">
+          <div class="trofeo-info">
+            <div class="trofeo-nombre">{{ usuario_trofeo.trofeo.nombre }}</div>
+            <div class="trofeo-descripcion">{{ usuario_trofeo.trofeo.descripcion }}</div>
+            <div class="trofeo-puntos">Puntos necesarios: {{ usuario_trofeo.trofeo.puntos_necesarios }}</div>
+            <div class="trofeo-fecha">Obtenido: {{ usuario_trofeo.fecha_obtencion|date:"d/m/Y H:i" }}</div>
+          </div>
+          <div>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="eliminar_trofeo">
+              <input type="hidden" name="trofeo_id" value="{{ usuario_trofeo.trofeo.id_trofeo }}">
+              <button type="submit" class="button button-danger" 
+                      onclick="return confirm('¿Estás seguro de que quieres eliminar este trofeo?')">
+                Eliminar
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="no-trofeos">El usuario no tiene trofeos asignados</div>
+    {% endif %}
+  </div>
+
+  <div class="trofeos-section">
+    <h3>Añadir Trofeo</h3>
+    {% if trofeos_disponibles %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="añadir_trofeo">
+        <div class="select-trofeo">
+          <select name="trofeo_id" class="form-control" style="width: auto; flex-grow: 1;">
+            <option value="">Seleccionar trofeo...</option>
+            {% for trofeo in trofeos_disponibles %}
+              <option value="{{ trofeo.id_trofeo }}">
+                {{ trofeo.nombre }} ({{ trofeo.puntos_necesarios }} puntos)
+              </option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="button button-success">Añadir Trofeo</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="no-trofeos">El usuario ya tiene todos los trofeos disponibles</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Configuración de Permisos -->
+<div class="card">
+  <h2>Configuración de Permisos</h2>
   <form method="post">
     {% csrf_token %}
-    
-    <div class="form-group">
-      <label for="username">Nombre de usuario:</label>
-      <input type="text" name="username" id="username" class="form-control" value="{{ usuario.username }}" required>
-    </div>
-    
-    <div class="form-group">
-      <label for="email">Email:</label>
-      <input type="email" name="email" id="email" class="form-control" value="{{ usuario.email }}" required>
-    </div>
-    
-    <div class="form-group">
-      <label for="first_name">Nombre:</label>
-      <input type="text" name="first_name" id="first_name" class="form-control" value="{{ usuario.first_name }}">
-    </div>
-    
-    <div class="form-group">
-      <label for="last_name">Apellidos:</label>
-      <input type="text" name="last_name" id="last_name" class="form-control" value="{{ usuario.last_name }}">
-    </div>
-    
-    <div class="form-group">
-      <label for="telefon">Teléfono:</label>
-      <input type="text" name="telefon" id="telefon" class="form-control" value="{{ usuario.telefon|default:'' }}">
-    </div>
-    
-    <div class="form-group">
-      <label for="idioma">Idioma:</label>
-      <select name="idioma" id="idioma" class="form-control">
-        <option value="es" {% if usuario.idioma == 'es' %}selected{% endif %}>Español</option>
-        <option value="ca" {% if usuario.idioma == 'ca' %}selected{% endif %}>Catalán</option>
-        <option value="en" {% if usuario.idioma == 'en' %}selected{% endif %}>Inglés</option>
-      </select>
-    </div>
-    
-    <div class="form-group">
-      <label for="descripcio">Descripción:</label>
-      <textarea name="descripcio" id="descripcio" class="form-control" rows="3">{{ usuario.descripcio|default:'' }}</textarea>
-    </div>
     
     <div class="checkbox-group">
       <input type="checkbox" name="is_admin" id="is_admin" {% if usuario.is_admin %}checked{% endif %}>
@@ -132,11 +298,28 @@
       <label for="new_password">Nueva contraseña (dejar en blanco para mantener la actual):</label>
       <input type="password" name="new_password" id="new_password" class="form-control">
     </div>
-    
+
     <div class="button-group">
       <button type="submit" class="button button-primary">Guardar cambios</button>
       <a href="{% url 'admin_connect:gestionar_usuarios' %}" class="button button-secondary">Cancelar</a>
     </div>
   </form>
+
+  <div class="button-group" style="margin-top: 20px;">
+    {% if usuario.bloqueado %}
+      <form action="{% url 'admin_connect:desbloquear_usuario' usuario.id %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="button button-success">Desbloquear Usuario</button>
+      </form>
+    {% else %}
+      <form action="{% url 'admin_connect:bloquear_usuario' usuario.id %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="button button-danger" 
+                onclick="return confirm('¿Estás seguro de que quieres bloquear este usuario?')">
+          Bloquear Usuario
+        </button>
+      </form>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
