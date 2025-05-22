@@ -25,7 +25,10 @@ from .models import (
     Usuario,
     ValoracionEstacion,
     TextItem,
-    Idiomas, TipoErrorEstacion
+    Idiomas,
+    Trofeo,
+    UsuarioTrofeo,
+    TipoErrorEstacion
 )
 from .permissions import EsElMismoUsuarioOReadOnly
 
@@ -44,7 +47,10 @@ from .serializers import (
     TextItemSerializer,
     RegisterSerializer,
     PerfilPublicoSerializer,
-    FotoPerfilSerializer, ReporteEstacionSerializer,
+    FotoPerfilSerializer,
+    TrofeoSerializer,
+    UsuarioTrofeoSerializer,
+    ReporteEstacionSerializer,
 )
 
 
@@ -336,7 +342,7 @@ class ReservaViewSet(viewsets.ModelViewSet):
         estacio_carregadors = set(estacio.tipus_carregador.all().values_list('id_carregador', flat=True))
         return bool(vehicle_carregadors.intersection(estacio_carregadors))
 
-    # @action(detail=True, methods=['put'], permission_classes=[permissions.IsAuthenticated])
+   
     @action(detail=True, methods=['put'])
     def modificar(self, request, pk=None):
         try:
@@ -347,7 +353,24 @@ class ReservaViewSet(viewsets.ModelViewSet):
         data = request.data
         try:
             fecha, hora_inicio, duracion_td = self._parse_reserva_modificacion(data, reserva)
-            vehicle = self._obtener_vehicle_modificacion(data, reserva, request.user)
+            
+            # Obtener vehículo si se especifica
+            vehicle = reserva.vehicle
+            vehicle_matricula = data.get('vehicle')
+            if vehicle_matricula is not None:
+                if vehicle_matricula == "":
+                    vehicle = None
+                else:
+                    try:
+                        vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=request.user)
+                        # Verificar compatibilidad
+                        vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
+                        estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
+                        if not vehicle_carregadors.intersection(estacio_carregadors):
+                            return Response({'error': 'Nou vehicle no compatible'}, status=status.HTTP_400_BAD_REQUEST)
+                    except Vehicle.DoesNotExist:
+                        return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=status.HTTP_404_NOT_FOUND)
+            
             hora_fin = (datetime.combine(date.min, hora_inicio) + duracion_td).time()
 
             error_solapamiento = self._comprobar_solapamiento(reserva, fecha, hora_inicio, hora_fin, pk)
@@ -363,12 +386,12 @@ class ReservaViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Reserva actualizada con éxito'}, status=200)
 
         except Vehicle.DoesNotExist:
-            return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=404)
+            return Response({'error': 'Vehicle especificat no trobat o no pertany a l\'usuari'}, status=status.HTTP_404_NOT_FOUND)
         except (ValueError, TypeError) as e:
-            return Response({'error': f'Error format dades: {e}'}, status=400)
+            return Response({'error': f'Error format dades: {e}'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(f"Error modificando reserva {pk}: {e}")
-            return Response({'error': 'Error intern'}, status=500)
+            return Response({'error': 'Error intern'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _parse_reserva_modificacion(self, data, reserva):
         fecha_str = data.get('fecha', reserva.fecha.strftime('%d/%m/%Y'))
@@ -387,20 +410,6 @@ class ReservaViewSet(viewsets.ModelViewSet):
         else:
             duracion_td = timedelta(seconds=int(duracion_str))
         return fecha, hora_inicio, duracion_td
-
-    def _obtener_vehicle_modificacion(self, data, reserva, user):
-        vehicle_matricula = data.get('vehicle')
-        vehicle = reserva.vehicle
-        if vehicle_matricula is not None:
-            if vehicle_matricula == "":
-                vehicle = None
-            else:
-                vehicle = get_object_or_404(Vehicle, matricula=vehicle_matricula, propietari=user)
-                vehicle_carregadors = set(vehicle.tipus_carregador.all().values_list('id_carregador', flat=True))
-                estacio_carregadors = set(reserva.estacion.tipus_carregador.all().values_list('id_carregador', flat=True))
-                if not vehicle_carregadors.intersection(estacio_carregadors):
-                    raise ValueError('Nou vehicle no compatible')
-        return vehicle
 
     def _comprobar_solapamiento(self, reserva, fecha, hora_inicio, hora_fin, pk):
         reservas_existentes = Reserva.objects.filter(estacion=reserva.estacion, fecha=fecha).exclude(id=pk)
@@ -453,7 +462,6 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 @api_view(['GET'])
 def punt_mes_proper(request):
-    #es podria posar altres criteris de filtratge com potencia, tipus de carrega, etc.
     lat = request.query_params.get('lat')
     lng = request.query_params.get('lng')
     
@@ -488,8 +496,7 @@ def punt_mes_proper(request):
     resultat = []
     
     for estacio, distance in distancies:
-        # Get charging points for this station
-        
+        # Get charging points for this station        
         resultat.append({
             "estacio_carrega": EstacioCarregaSerializer(estacio).data,
             "distancia_km": distance,
@@ -764,30 +771,6 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=True, methods=['post', 'get'])
-    def restarPunts(self, request, pk=None):
-        usuario = self.get_object()
-        
-        if request.method == 'GET':
-            punts = request.query_params.get('punts', 0)
-        else:
-            punts = request.data.get('punts', 0)
-        
-        try:
-            punts = int(punts)
-            nuevos_punts = usuario.restar_punts(punts)
-            
-            return Response({
-                "message": f"Se han restado {punts} puntos al usuario",
-                "puntos_restados": punts,
-                "puntos_actuales": nuevos_punts
-            }, status=status.HTTP_200_OK)
-        except ValueError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    
     @action(detail=True, methods=['get'])
     def getPunts(self, request, pk=None):
         usuario = self.get_object()
@@ -809,6 +792,46 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         usuario.save()
         
         return Response({"message": "Language updated successfully", "Language": usuario.idioma})
+
+    @action(detail=True, methods=['get'])
+    def trofeos(self, request, pk=None):
+        """Obtiene los trofeos del usuario"""
+        usuario = self.get_object()
+        usuario_trofeos = UsuarioTrofeo.objects.filter(usuario=usuario)
+        serializer = UsuarioTrofeoSerializer(usuario_trofeos, many=True)
+        
+        # Obtener también los trofeos que el usuario aún no ha conseguido
+        trofeos_conseguidos = usuario_trofeos.values_list('trofeo_id', flat=True)
+        trofeos_pendientes = Trofeo.objects.exclude(id_trofeo__in=trofeos_conseguidos)
+        trofeos_pendientes_serializer = TrofeoSerializer(trofeos_pendientes, many=True)
+        
+        # Calcular el progreso hacia el siguiente trofeo
+        siguiente_trofeo = None
+        progreso = 0
+        
+        if trofeos_pendientes.exists():
+            siguiente_trofeo = trofeos_pendientes.order_by('puntos_necesarios').first()
+            if siguiente_trofeo.puntos_necesarios > 0:
+                # Si el usuario no tiene puntos, el progreso es 0
+                if usuario.punts == 0:
+                    progreso = 0
+                else:
+                    # Si el usuario tiene puntos pero no ha alcanzado el siguiente trofeo
+                    ultimo_trofeo = usuario_trofeos.order_by('-trofeo__puntos_necesarios').first()
+                    puntos_base = 0 if not ultimo_trofeo else ultimo_trofeo.trofeo.puntos_necesarios
+                    puntos_objetivo = siguiente_trofeo.puntos_necesarios
+                    puntos_actuales = usuario.punts
+                    
+                    # Calcular el progreso como porcentaje
+                    if puntos_objetivo > puntos_base:
+                        progreso = min(100, max(0, ((puntos_actuales - puntos_base) / (puntos_objetivo - puntos_base)) * 100))
+        
+        return Response({
+            'trofeos_conseguidos': serializer.data,
+            'trofeos_pendientes': trofeos_pendientes_serializer.data,
+            'siguiente_trofeo': TrofeoSerializer(siguiente_trofeo).data if siguiente_trofeo else None,
+            'progreso_siguiente': progreso
+        }, status=status.HTTP_200_OK)
 
 class RegisterView(APIView):
     def post(self, request):
@@ -877,6 +900,49 @@ class TextItemViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TextItem.objects.all()
     serializer_class = TextItemSerializer
 
+class TrofeoViewSet(viewsets.ModelViewSet):
+    queryset = Trofeo.objects.all()
+    serializer_class = TrofeoSerializer
+    
+    @action(detail=False, methods=['get'])
+    def inicializar_trofeos(self, request):
+        """Inicializa los trofeos predeterminados si no existen"""
+        trofeos_default = [
+            {
+                'nombre': 'Trofeo Bronce',
+                'descripcion': 'Has alcanzado 50 puntos. ¡Buen comienzo!',
+                'puntos_necesarios': 50,
+            },
+            {
+                'nombre': 'Trofeo Plata',
+                'descripcion': 'Has alcanzado 150 puntos. ¡Sigue así!',
+                'puntos_necesarios': 150,
+            },
+            {
+                'nombre': 'Trofeo Oro',
+                'descripcion': 'Has alcanzado 300 puntos. ¡Impresionante!',
+                'puntos_necesarios': 300,
+            },
+            {
+                'nombre': 'Trofeo Platino',
+                'descripcion': 'Has alcanzado 500 puntos. ¡Eres un experto!',
+                'puntos_necesarios': 500,
+            }
+        ]
+        
+        trofeos_creados = 0
+        for trofeo_data in trofeos_default:
+            trofeo, created = Trofeo.objects.get_or_create(
+                nombre=trofeo_data['nombre'],
+                defaults=trofeo_data
+            )
+            if created:
+                trofeos_creados += 1
+        
+        return Response({
+            'mensaje': f'Se han creado {trofeos_creados} trofeos predeterminados',
+            'total_trofeos': Trofeo.objects.count()
+        }, status=status.HTTP_200_OK)
 @api_view(['GET'])
 def obtener_tipos_error_estacion(request):
     tipos_de_error = []

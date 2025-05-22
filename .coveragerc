@@ -1,0 +1,27 @@
+[run]
+omit =
+    */migrations/*
+    */__init__.py
+    */admin.py
+    */apps.py
+    manage.py
+    */settings.py
+    */wsgi.py
+    */asgi.py
+    */tests/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __str__
+    if self\.debug
+    if __name__ == .__main__.:
+
+    @abstractmethod
+    raise NotImplementedError
+
+    # Ignore debug lines
+    if settings\.DEBUG
+
+show_missing = True
+skip_covered = False

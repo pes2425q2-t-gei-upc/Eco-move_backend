@@ -18,7 +18,9 @@ from .views import (
     filtrar_estacions,
     UsuarioViewSet,
     ValoracionEstacionViewSet,
-    TextItemViewSet, obtener_tipos_error_estacion,
+    TextItemViewSet,
+    TrofeoViewSet,
+    obtener_tipos_error_estacion,
 )
 
 router = DefaultRouter()
@@ -31,6 +33,7 @@ router.register(r'refugios', RefugioClimaticoViewSet)
 router.register(r'usuari', UsuarioViewSet)
 router.register(r'valoraciones_estaciones', ValoracionEstacionViewSet)
 router.register(r'text_items', TextItemViewSet, basename='textitem')
+router.register(r'trofeos', TrofeoViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -44,5 +47,6 @@ urlpatterns = [
     path('opcions_filtres/', obtenir_opcions_filtres, name='obtenir_opcions_filtres'),
     path('filtrar_estacions/', filtrar_estacions, name='filtrar_estacions'),
     path('estacions/<str:estacion_id>/valoraciones/', ValoracionEstacionViewSet.as_view({'get': 'list', 'post': 'create'}), name='estacion-valoraciones'),
+    path('inicializarTrofeos/', TrofeoViewSet.as_view({'get': 'inicializar_trofeos'}), name='inicializar-trofeos'),
     path('tipos_error_estacion/', obtener_tipos_error_estacion, name='tipos-error-estacion')
 ]

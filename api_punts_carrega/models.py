@@ -96,12 +96,28 @@ class Usuario(AbstractUser):
         
         # Refrescar el usuario desde la base de datos para evitar condiciones de carrera
         usuario_actual = Usuario.objects.select_for_update().get(pk=self.pk)
+        puntos_anteriores = usuario_actual._punts
         usuario_actual._punts += cantidad
         usuario_actual.save(update_fields=['_punts'])
+        
+        # Verificar si el usuario ha alcanzado nuevos trofeos
+        self._verificar_trofeos(puntos_anteriores, usuario_actual._punts)
         
         # Actualizar el objeto actual
         self.refresh_from_db(fields=['_punts'])
         return self._punts
+    
+    def _verificar_trofeos(self, puntos_anteriores, puntos_actuales):
+        """Verifica si el usuario ha alcanzado los puntos necesarios para nuevos trofeos"""
+        # Obtener todos los trofeos que el usuario podría haber desbloqueado
+        trofeos_posibles = Trofeo.objects.filter(
+            puntos_necesarios__gt=puntos_anteriores,
+            puntos_necesarios__lte=puntos_actuales
+        )
+        
+        # Otorgar los trofeos al usuario
+        for trofeo in trofeos_posibles:
+            UsuarioTrofeo.objects.get_or_create(usuario=self, trofeo=trofeo)
     
     @transaction.atomic
     def restar_punts(self, cantidad):
@@ -252,6 +268,28 @@ class TextItem(models.Model):
     def __str__(self):
         return self.key
 
+class Trofeo(models.Model):
+    id_trofeo = models.IntegerField(primary_key=True)
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField()
+    puntos_necesarios = models.IntegerField(unique=True)
+    
+    def __str__(self):
+        return self.nombre
+    
+    class Meta:
+        ordering = ['puntos_necesarios']
+
+class UsuarioTrofeo(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    trofeo = models.ForeignKey(Trofeo, on_delete=models.CASCADE)
+    fecha_obtencion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('usuario', 'trofeo')
+
+    def __str__(self):
+        return f"{self.usuario.username} - {self.trofeo.nombre}"
 class ReporteEstacion(models.Model):
     estacion = models.ForeignKey(
         EstacioCarrega,
