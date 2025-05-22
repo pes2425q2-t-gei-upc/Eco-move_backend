@@ -1,0 +1,25 @@
+@admin.register(Trofeo)
+class TrofeoAdmin(admin.ModelAdmin):
+    list_display = ('id_trofeo', 'nombre', 'puntos_necesarios')
+    search_fields = ('nombre',)
+    ordering = ('puntos_necesarios',)
+
+
+@admin.register(UsuarioTrofeo)
+class UsuarioTrofeoAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'trofeo', 'fecha_obtencion')
+    list_filter = ('trofeo', 'fecha_obtencion')
+    search_fields = ('usuario__username', 'trofeo__nombre')
+
+
+@admin.register(Usuario)
+class UsuarioAdmin(admin.ModelAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_admin', 'punts')
+    list_filter = ('is_admin', 'idioma')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    fieldsets = (
+        (None, {'fields': ('username', 'email', 'password')}),
+        ('Información personal', {'fields': ('first_name', 'last_name', 'idioma', 'telefon', 'descripcio', 'foto')}),
+        ('Permisos', {'fields': ('is_active', 'is_staff', 'is_admin', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Puntos', {'fields': ('_punts',)}),
+    )

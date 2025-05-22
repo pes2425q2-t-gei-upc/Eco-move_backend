@@ -8,7 +8,7 @@ import requests
 
 import json
 from api_punts_carrega.models import (
-    EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion,
+    EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion,UsuarioTrofeo,Trofeo
 )
 
 from social_community.models import (
@@ -123,51 +123,71 @@ EDITAR_USUARIO_TEMPLATE = 'admin_connect/editar_usuario.html'
 @staff_member_required
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
+    
+    # Obtener trofeos del usuario y todos los trofeos disponibles
+    trofeos_usuario = UsuarioTrofeo.objects.filter(usuario=usuario).select_related('trofeo')
+    todos_los_trofeos = Trofeo.objects.all().order_by('puntos_necesarios')
+    trofeos_disponibles = todos_los_trofeos.exclude(
+        id_trofeo__in=trofeos_usuario.values_list('trofeo__id_trofeo', flat=True)
+    )
      
     if request.method == 'POST':
-        # Obtener datos del formulario
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        telefon = request.POST.get('telefon')
-        idioma = request.POST.get('idioma')
-        descripcio = request.POST.get('descripcio')
-        is_admin = request.POST.get('is_admin') == 'on'
-        is_active = request.POST.get('is_active') == 'on'
-        new_password = request.POST.get('new_password')
-         
-        # Verificar si el username ya existe (excluyendo el usuario actual)
-        if Usuario.objects.filter(username=username).exclude(id=usuario_id).exists():
-             messages.error(request, f'El nombre de usuario {username} ya está en uso.')
-             return redirect('admin_connect/editar_usuario', usuario_id=usuario_id)
-         
-        # Verificar si el email ya existe (excluyendo el usuario actual)
-        if Usuario.objects.filter(email=email).exclude(id=usuario_id).exists():
-             messages.error(request, f'El email {email} ya está en uso.')
-             return redirect('admin_connect/editar_usuario', usuario_id=usuario_id)
-         
-         # Actualizar datos del usuario
-        usuario.username = username
-        usuario.email = email
-        usuario.first_name = first_name
-        usuario.last_name = last_name
-        usuario.telefon = telefon
-        usuario.idioma = idioma
-        usuario.descripcio = descripcio
-        usuario.is_admin = is_admin
-        usuario.is_staff = is_admin  # Actualizar is_staff junto con is_admin
-        usuario.is_active = is_active
-         
-         # Actualizar contraseña si se proporciona una nueva
-        if new_password:
-            usuario.set_password(new_password)
-         
-        messages.success(request, f'Usuario {username} actualizado correctamente.')
-        return redirect(GESTIONAR_USUARIOS_URL)
+        # Manejar acciones de trofeos
+        if 'action' in request.POST:
+            action = request.POST.get('action')
+            
+            if action == 'eliminar_trofeo':
+                trofeo_id = request.POST.get('trofeo_id')
+                try:
+                    usuario_trofeo = UsuarioTrofeo.objects.get(
+                        usuario=usuario, 
+                        trofeo__id_trofeo=trofeo_id
+                    )
+                    usuario_trofeo.delete()
+                    messages.success(request, f'Trofeo eliminado correctamente.')
+                except UsuarioTrofeo.DoesNotExist:
+                    messages.error(request, 'El trofeo no existe o ya fue eliminado.')
+                return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
+            
+            elif action == 'añadir_trofeo':
+                trofeo_id = request.POST.get('trofeo_id')
+                try:
+                    trofeo = Trofeo.objects.get(id_trofeo=trofeo_id)
+                    usuario_trofeo, created = UsuarioTrofeo.objects.get_or_create(
+                        usuario=usuario, 
+                        trofeo=trofeo
+                    )
+                    if created:
+                        messages.success(request, f'Trofeo "{trofeo.nombre}" añadido correctamente.')
+                    else:
+                        messages.info(request, f'El usuario ya tiene el trofeo "{trofeo.nombre}".')
+                except Trofeo.DoesNotExist:
+                    messages.error(request, 'El trofeo seleccionado no existe.')
+                return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
+        
+        # Manejar actualización de campos editables (solo permisos y estado)
+        else:
+            is_admin = request.POST.get('is_admin') == 'on'
+            is_active = request.POST.get('is_active') == 'on'
+            new_password = request.POST.get('new_password')
+             
+            # Actualizar solo campos de permisos
+            usuario.is_admin = is_admin
+            usuario.is_staff = is_admin  # Actualizar is_staff junto con is_admin
+            usuario.is_active = is_active
+             
+            # Actualizar contraseña si se proporciona una nueva
+            if new_password:
+                usuario.set_password(new_password)
+            
+            usuario.save()
+            messages.success(request, f'Permisos de usuario actualizados correctamente.')
+            return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
      
     context = {
-         'usuario': usuario,
+        'usuario': usuario,
+        'trofeos_usuario': trofeos_usuario,
+        'trofeos_disponibles': trofeos_disponibles,
     }
      
     return render(request, EDITAR_USUARIO_TEMPLATE, context)
@@ -212,22 +232,6 @@ def desbloquear_usuario(request, usuario_id):
 
 
 
-@staff_member_required
-def desbloquear_usuario(request, usuario_id):
-    usuario = get_object_or_404(Usuario, id=usuario_id)
-    
-    if request.method == 'POST':
-        usuario.bloqueado = False
-        usuario.save()
-        
-        messages.success(request, f'Usuario {usuario.username} desbloqueado correctamente.')
-        return redirect(GESTIONAR_USUARIOS_URL)
-    
-    context = {
-        'usuario': usuario,
-    }
-    
-    return render(request, 'admin_connect/editar_usuario.html', context)
 @staff_member_required
 def modificar_puntos_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
