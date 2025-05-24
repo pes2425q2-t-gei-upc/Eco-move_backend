@@ -33,6 +33,8 @@ class AlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = PuntEmergencia
         fields = '__all__'
+        read_only_fields = [
+            'id_emergencia', 'timestamp', 'sender']
     
     def get_sender_email(self, obj):
         return obj.sender.email if obj.sender else 'Unknown Email'
