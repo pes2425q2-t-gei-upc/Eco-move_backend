@@ -143,7 +143,7 @@ class RefugioClimaticoViewSet(viewsets.ModelViewSet):
 def sincronizar_refugios(request):
     try:
         
-        response = requests.get('http://nattech.fib.upc.edu:40430/api/refugios/listar/', timeout=10)
+        response = requests.get('http://nattech.fib.upc.edu:40502/api/refugios/listar/', timeout=10)
         response.raise_for_status()
         
         refugios_data = response.json()
