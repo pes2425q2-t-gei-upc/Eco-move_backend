@@ -936,26 +936,31 @@ class TrofeoViewSet(viewsets.ModelViewSet):
             return TrofeoSerializerWithTranslation
         return TrofeoSerializer
     
+
     @action(detail=False, methods=['get'])
     def inicializar_trofeos(self, request):
         """Inicializa los trofeos predeterminados si no existen"""
         trofeos_default = [
             {
+                'id_trofeo': 1,
                 'nombre': 'Trofeo Bronce',
                 'descripcion': 'Has alcanzado 50 puntos. ¡Buen comienzo!',
                 'puntos_necesarios': 50,
             },
             {
+                'id_trofeo': 2,
                 'nombre': 'Trofeo Plata',
                 'descripcion': 'Has alcanzado 150 puntos. ¡Sigue así!',
                 'puntos_necesarios': 150,
             },
             {
+                'id_trofeo': 3,
                 'nombre': 'Trofeo Oro',
                 'descripcion': 'Has alcanzado 300 puntos. ¡Impresionante!',
                 'puntos_necesarios': 300,
             },
             {
+                'id_trofeo': 4,
                 'nombre': 'Trofeo Platino',
                 'descripcion': 'Has alcanzado 500 puntos. ¡Eres un experto!',
                 'puntos_necesarios': 500,
@@ -965,7 +970,7 @@ class TrofeoViewSet(viewsets.ModelViewSet):
         trofeos_creados = 0
         for trofeo_data in trofeos_default:
             trofeo, created = Trofeo.objects.get_or_create(
-                nombre=trofeo_data['nombre'],
+                id_trofeo=trofeo_data['id_trofeo'],
                 defaults=trofeo_data
             )
             if created:
@@ -975,6 +980,7 @@ class TrofeoViewSet(viewsets.ModelViewSet):
             'mensaje': f'Se han creado {trofeos_creados} trofeos predeterminados',
             'total_trofeos': Trofeo.objects.count()
         }, status=status.HTTP_200_OK)
+
 @api_view(['GET'])
 def obtener_tipos_error_estacion(request):
     tipos_de_error = []
