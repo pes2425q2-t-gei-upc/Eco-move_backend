@@ -95,7 +95,7 @@ class Command(BaseCommand):
                     valid_velocitats = [velocitat for velocitat in velocitats if velocitat and velocitat != "Unknown" and velocitat != ""]
                     
                     for velocitat in valid_velocitats:
-                        tipus_velocitat, created = TipusVelocitat.objects.get_or_create(
+                        tipus_velocitat, _ = TipusVelocitat.objects.get_or_create(
                             id_velocitat = velocitat,
                             defaults={
                                 'nom_velocitat': velocitat,
@@ -115,7 +115,7 @@ class Command(BaseCommand):
                     valid_connectors = [connector for connector in connectors if connector and connector != "Unknown" and connector != ""]
                     
                     for connector in valid_connectors:
-                        tipus_carregador, created = TipusCarregador.objects.get_or_create(
+                        tipus_carregador, _ = TipusCarregador.objects.get_or_create(
                             id_carregador = f"{connector} {ac_dc}",
                             defaults={
                                 'nom_tipus': connector,
