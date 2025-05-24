@@ -75,7 +75,7 @@ class Command(BaseCommand):
         ]
 
         for item in items:
-            obj, created = TextItem.objects.get_or_create(key=item["key"])
+            obj, _ = TextItem.objects.get_or_create(key=item["key"])
             obj.text_ca = item["text_ca"]
             obj.text_en = item["text_en"]
             obj.text_es = item["text_es"]

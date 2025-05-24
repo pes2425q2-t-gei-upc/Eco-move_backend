@@ -287,94 +287,52 @@ class TrofeoSerializerWithTranslation(serializers.ModelSerializer):
         fields = ['id_trofeo', 'nombre', 'descripcion', 'puntos_necesarios', 'nombre_traducido', 'descripcion_traducida']
     
     def get_nombre_traducido(self, obj):
-        # Obtener el idioma del usuario si está autenticado
+        lang = self._resolve_language()
+        key = self._resolve_trophy_key(obj.nombre, "name")
+        if key and lang:
+            translated = self._get_translated_text(key, lang)
+            if translated:
+                return translated
+        return obj.nombre
+
+    def _resolve_language(self):
         request = self.context.get('request')
         lang = None
-        
         if request and hasattr(request, 'user') and request.user.is_authenticated:
             user_lang = request.user.idioma
-            # Añadir log para depuración
-            print(f"Idioma del usuario: {user_lang}")
-            
-            if user_lang == 'Catala':
-                lang = 'ca'
-            elif user_lang == 'Castellano':
-                lang = 'es'
-            elif user_lang == 'English':
-                lang = 'en'
-            
-            # Añadir log para depuración
-            print(f"Código de idioma: {lang}")
-        
-        # Si no se pudo determinar el idioma del usuario, usar el idioma del sistema
+            lang_map = {'Catala': 'ca', 'Castellano': 'es', 'English': 'en'}
+            lang = lang_map.get(user_lang)
         if not lang:
             system_lang = get_language()
             if system_lang:
-                lang = system_lang[:2]  # Tomar solo los primeros 2 caracteres (es, ca, en)
-                print(f"Usando idioma del sistema: {lang}")
-        
-        # Intentar encontrar un TextItem con key que coincida con el patrón del nombre del trofeo
-        key = None
-        if "Bronze" in obj.nombre or "Bronce" in obj.nombre:
-            key = "trophy_bronze_name"
-        elif "Silver" in obj.nombre or "Plata" in obj.nombre:
-            key = "trophy_silver_name"
-        elif "Gold" in obj.nombre or "Oro" in obj.nombre:
-            key = "trophy_gold_name"
-        elif "Platinum" in obj.nombre or "Platino" in obj.nombre:
-            key = "trophy_platinum_name"
-        
-        if key and lang:
-            try:
-                text_item = TextItem.objects.get(key=key)
-                translated_text = getattr(text_item, f'text_{lang}', None)
-                if translated_text:
-                    return translated_text
-            except TextItem.DoesNotExist:
-                pass
+                lang = system_lang[:2]
+        return lang
 
-        return obj.nombre
+    def _resolve_trophy_key(self, nombre, suffix):
+        mapping = [
+            (["Bronze", "Bronce"], "trophy_bronze_"),
+            (["Silver", "Plata"], "trophy_silver_"),
+            (["Gold", "Oro"], "trophy_gold_"),
+            (["Platinum", "Platino"], "trophy_platinum_"),
+        ]
+        for keywords, base in mapping:
+            if any(word in nombre for word in keywords):
+                return f"{base}{suffix}"
+        return None
+
+    def _get_translated_text(self, key, lang):
+        try:
+            text_item = TextItem.objects.get(key=key)
+            return getattr(text_item, f'text_{lang}', None)
+        except TextItem.DoesNotExist:
+            return None
 
     
     def get_descripcion_traducida(self, obj):
-        # Obtener el idioma del usuario si está autenticado
-        request = self.context.get('request')
-        lang = None
-        
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            user_lang = request.user.idioma
-            
-            if user_lang == 'Catala':
-                lang = 'ca'
-            elif user_lang == 'Castellano':
-                lang = 'es'
-            elif user_lang == 'English':
-                lang = 'en'
-        
-        # Si no se pudo determinar el idioma del usuario, usar el idioma del sistema
-        if not lang:
-            system_lang = get_language()
-            if system_lang:
-                lang = system_lang[:2]  # Tomar solo los primeros 2 caracteres (es, ca, en)
-        
-        # Intentar encontrar un TextItem con key que coincida con el patrón de la descripción del trofeo
-        key = None
-        if "Bronze" in obj.nombre or "Bronce" in obj.nombre:
-            key = "trophy_bronze_description"
-        elif "Silver" in obj.nombre or "Plata" in obj.nombre:
-            key = "trophy_silver_description"
-        elif "Gold" in obj.nombre or "Oro" in obj.nombre:
-            key = "trophy_gold_description"
-        elif "Platinum" in obj.nombre or "Platino" in obj.nombre:
-            key = "trophy_platinum_description"
-        
+        lang = self._resolve_language()
+        key = self._resolve_trophy_key(obj.nombre, "description")
         if key and lang:
-            try:
-                text_item = TextItem.objects.get(key=key)
-                translated_text = getattr(text_item, f'text_{lang}', None)
-                if translated_text:
-                    return translated_text
-            except TextItem.DoesNotExist:
-                pass
-        
+            translated = self._get_translated_text(key, lang)
+            if translated:
+                return translated
         return obj.descripcion
