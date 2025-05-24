@@ -129,6 +129,7 @@ def gestionar_usuarios(request):
     return render(request, 'admin_connect/gestionar_usuarios.html', context)
 
 EDITAR_USUARIO_TEMPLATE = 'admin_connect/editar_usuario.html'
+EDITAR_USUARIO_URL = 'admin_connect:editar_usuario'  # Constant for editar_usuario URL name
 
 # Mantenemos la función original para compatibilidad con las plantillas existentes
 @staff_member_required
@@ -159,12 +160,12 @@ def editar_usuario(request, usuario_id):
         # Verificar si el username ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(username=username).exclude(id=usuario_id).exists():
              messages.error(request, f'El nombre de usuario {username} ya está en uso.')
-             return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
+             return redirect(EDITAR_USUARIO_URL, usuario_id=usuario_id)
          
         # Verificar si el email ya existe (excluyendo el usuario actual)
         if Usuario.objects.filter(email=email).exclude(id=usuario_id).exists():
              messages.error(request, f'El email {email} ya está en uso.')
-             return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
+             return redirect(EDITAR_USUARIO_URL, usuario_id=usuario_id)
          
          # Actualizar datos del usuario
         usuario.username = username
@@ -221,8 +222,7 @@ def _handle_trofeo_action(request, usuario, usuario_id):
             else:
                 messages.info(request, f'El usuario ya tiene el trofeo "{trofeo.nombre}".')
         except Trofeo.DoesNotExist:
-            messages.error(request, 'El trofeo seleccionado no existe.')
-    return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
+            return redirect(EDITAR_USUARIO_URL, usuario_id=usuario_id)
 
 def _handle_usuario_update(request, usuario, usuario_id):
     is_admin = request.POST.get('is_admin') == 'on'
