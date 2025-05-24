@@ -112,7 +112,7 @@ class AlertsViewSet(viewsets.ModelViewSet):
         
         return Response({
             'alerts': serializer.data,
-            'timestamp': current_timestamp
+            'timestamp': current_timestamp,
         })
     
     def perform_destroy(self, instance):
