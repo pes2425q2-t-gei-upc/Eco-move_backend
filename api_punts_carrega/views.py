@@ -799,65 +799,56 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         """Obtiene los trofeos del usuario"""
         usuario = self.get_object()
         usuario_trofeos = UsuarioTrofeo.objects.filter(usuario=usuario)
-        
-        # Usar el serializer con traducciones
         trofeo_serializer = TrofeoSerializerWithTranslation
-        
-        # Crear un serializer personalizado para UsuarioTrofeo que use el serializer con traducciones
+
         class UsuarioTrofeoWithTranslationSerializer(UsuarioTrofeoSerializer):
             trofeo = trofeo_serializer(read_only=True)
-        
-        # Pasar el contexto con el request al serializer
+
         serializer = UsuarioTrofeoWithTranslationSerializer(
             usuario_trofeos, 
             many=True, 
             context={'request': request}
         )
-        
-        # Obtener también los trofeos que el usuario aún no ha conseguido
+
         trofeos_conseguidos = usuario_trofeos.values_list('trofeo_id', flat=True)
         trofeos_pendientes = Trofeo.objects.exclude(id_trofeo__in=trofeos_conseguidos)
-        
-        # Pasar el contexto con el request al serializer de trofeos pendientes
+
         trofeos_pendientes_serializer = trofeo_serializer(
             trofeos_pendientes, 
             many=True, 
             context={'request': request}
         )
-        
-        # Calcular el progreso hacia el siguiente trofeo
-        siguiente_trofeo = None
-        progreso = 0
-        
-        if trofeos_pendientes.exists():
-            siguiente_trofeo = trofeos_pendientes.order_by('puntos_necesarios').first()
-            if siguiente_trofeo.puntos_necesarios > 0:
-                # Si el usuario no tiene puntos, el progreso es 0
-                if usuario.punts == 0:
-                    progreso = 0
-                else:
-                    # Si el usuario tiene puntos pero no ha alcanzado el siguiente trofeo
-                    ultimo_trofeo = usuario_trofeos.order_by('-trofeo__puntos_necesarios').first()
-                    puntos_base = 0 if not ultimo_trofeo else ultimo_trofeo.trofeo.puntos_necesarios
-                    puntos_objetivo = siguiente_trofeo.puntos_necesarios
-                    puntos_actuales = usuario.punts
-                    
-                    # Calcular el progreso como porcentaje
-                    if puntos_objetivo > puntos_base:
-                        progreso = min(100, max(0, ((puntos_actuales - puntos_base) / (puntos_objetivo - puntos_base)) * 100))
-    
-        # Pasar el contexto con el request al serializer del siguiente trofeo
+
+        siguiente_trofeo, progreso = self._get_siguiente_trofeo_y_progreso(usuario, usuario_trofeos, trofeos_pendientes)
+
         siguiente_trofeo_serializer = trofeo_serializer(
             siguiente_trofeo, 
             context={'request': request}
         ) if siguiente_trofeo else None
-        
+
         return Response({
             'trofeos_conseguidos': serializer.data,
             'trofeos_pendientes': trofeos_pendientes_serializer.data,
             'siguiente_trofeo': siguiente_trofeo_serializer.data if siguiente_trofeo else None,
             'progreso_siguiente': progreso
         }, status=status.HTTP_200_OK)
+
+    def _get_siguiente_trofeo_y_progreso(self, usuario, usuario_trofeos, trofeos_pendientes):
+        siguiente_trofeo = None
+        progreso = 0
+        if trofeos_pendientes.exists():
+            siguiente_trofeo = trofeos_pendientes.order_by('puntos_necesarios').first()
+            if siguiente_trofeo.puntos_necesarios > 0:
+                if usuario.punts == 0:
+                    progreso = 0
+                else:
+                    ultimo_trofeo = usuario_trofeos.order_by('-trofeo__puntos_necesarios').first()
+                    puntos_base = 0 if not ultimo_trofeo else ultimo_trofeo.trofeo.puntos_necesarios
+                    puntos_objetivo = siguiente_trofeo.puntos_necesarios
+                    puntos_actuales = usuario.punts
+                    if puntos_objetivo > puntos_base:
+                        progreso = min(100, max(0, ((puntos_actuales - puntos_base) / (puntos_objetivo - puntos_base)) * 100))
+        return siguiente_trofeo, progreso
 
 class RegisterView(APIView):
     def post(self, request):
@@ -969,7 +960,7 @@ class TrofeoViewSet(viewsets.ModelViewSet):
         
         trofeos_creados = 0
         for trofeo_data in trofeos_default:
-            trofeo, created = Trofeo.objects.get_or_create(
+            _, created = Trofeo.objects.get_or_create(
                 id_trofeo=trofeo_data['id_trofeo'],
                 defaults=trofeo_data
             )

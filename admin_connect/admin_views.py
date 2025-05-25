@@ -123,74 +123,70 @@ EDITAR_USUARIO_TEMPLATE = 'admin_connect/editar_usuario.html'
 @staff_member_required
 def editar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
-    
-    # Obtener trofeos del usuario y todos los trofeos disponibles
+
     trofeos_usuario = UsuarioTrofeo.objects.filter(usuario=usuario).select_related('trofeo')
     todos_los_trofeos = Trofeo.objects.all().order_by('puntos_necesarios')
     trofeos_disponibles = todos_los_trofeos.exclude(
         id_trofeo__in=trofeos_usuario.values_list('trofeo__id_trofeo', flat=True)
     )
-     
+
     if request.method == 'POST':
-        # Manejar acciones de trofeos
         if 'action' in request.POST:
-            action = request.POST.get('action')
-            
-            if action == 'eliminar_trofeo':
-                trofeo_id = request.POST.get('trofeo_id')
-                try:
-                    usuario_trofeo = UsuarioTrofeo.objects.get(
-                        usuario=usuario, 
-                        trofeo__id_trofeo=trofeo_id
-                    )
-                    usuario_trofeo.delete()
-                    messages.success(request, f'Trofeo eliminado correctamente.')
-                except UsuarioTrofeo.DoesNotExist:
-                    messages.error(request, 'El trofeo no existe o ya fue eliminado.')
-                return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
-            
-            elif action == 'añadir_trofeo':
-                trofeo_id = request.POST.get('trofeo_id')
-                try:
-                    trofeo = Trofeo.objects.get(id_trofeo=trofeo_id)
-                    usuario_trofeo, created = UsuarioTrofeo.objects.get_or_create(
-                        usuario=usuario, 
-                        trofeo=trofeo
-                    )
-                    if created:
-                        messages.success(request, f'Trofeo "{trofeo.nombre}" añadido correctamente.')
-                    else:
-                        messages.info(request, f'El usuario ya tiene el trofeo "{trofeo.nombre}".')
-                except Trofeo.DoesNotExist:
-                    messages.error(request, 'El trofeo seleccionado no existe.')
-                return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
-        
-        # Manejar actualización de campos editables (solo permisos y estado)
+            return _handle_trofeo_action(request, usuario, usuario_id)
         else:
-            is_admin = request.POST.get('is_admin') == 'on'
-            is_active = request.POST.get('is_active') == 'on'
-            new_password = request.POST.get('new_password')
-             
-            # Actualizar solo campos de permisos
-            usuario.is_admin = is_admin
-            usuario.is_staff = is_admin  # Actualizar is_staff junto con is_admin
-            usuario.is_active = is_active
-             
-            # Actualizar contraseña si se proporciona una nueva
-            if new_password:
-                usuario.set_password(new_password)
-            
-            usuario.save()
-            messages.success(request, f'Permisos de usuario actualizados correctamente.')
-            return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
-     
+            return _handle_usuario_update(request, usuario, usuario_id)
+
     context = {
         'usuario': usuario,
         'trofeos_usuario': trofeos_usuario,
         'trofeos_disponibles': trofeos_disponibles,
     }
-     
+
     return render(request, EDITAR_USUARIO_TEMPLATE, context)
+
+def _handle_trofeo_action(request, usuario, usuario_id):
+    action = request.POST.get('action')
+    trofeo_id = request.POST.get('trofeo_id')
+    if action == 'eliminar_trofeo':
+        try:
+            usuario_trofeo = UsuarioTrofeo.objects.get(
+                usuario=usuario,
+                trofeo__id_trofeo=trofeo_id
+            )
+            usuario_trofeo.delete()
+            messages.success(request, 'Trofeo eliminado correctamente.')
+        except UsuarioTrofeo.DoesNotExist:
+            messages.error(request, 'El trofeo no existe o ya fue eliminado.')
+    elif action == 'añadir_trofeo':
+        try:
+            trofeo = Trofeo.objects.get(id_trofeo=trofeo_id)
+            usuario_trofeo, created = UsuarioTrofeo.objects.get_or_create(
+                usuario=usuario,
+                trofeo=trofeo
+            )
+            if created:
+                messages.success(request, f'Trofeo "{trofeo.nombre}" añadido correctamente.')
+            else:
+                messages.info(request, f'El usuario ya tiene el trofeo "{trofeo.nombre}".')
+        except Trofeo.DoesNotExist:
+            messages.error(request, 'El trofeo seleccionado no existe.')
+    return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
+
+def _handle_usuario_update(request, usuario, usuario_id):
+    is_admin = request.POST.get('is_admin') == 'on'
+    is_active = request.POST.get('is_active') == 'on'
+    new_password = request.POST.get('new_password')
+
+    usuario.is_admin = is_admin
+    usuario.is_staff = is_admin
+    usuario.is_active = is_active
+
+    if new_password:
+        usuario.set_password(new_password)
+
+    usuario.save()
+    messages.success(request, 'Permisos de usuario actualizados correctamente.')
+    return redirect('admin_connect:editar_usuario', usuario_id=usuario_id)
 
 @staff_member_required
 def bloquear_usuario(request, usuario_id):

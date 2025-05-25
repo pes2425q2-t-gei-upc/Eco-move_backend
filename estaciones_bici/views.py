@@ -92,7 +92,8 @@ class ReservaBiciViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def mis_reservas(self, request):
-        reservas = self.get_queryset()
+        ReservaBici.objects.filter(usuario=request.user, activa=True, expiracion__lt=now()).update(activa=False)
+        reservas = ReservaBici.objects.filter(usuario=request.user, activa=True)
         serializer = self.get_serializer(reservas, many=True)
         return Response(serializer.data)
     
@@ -120,6 +121,7 @@ class ReservaBiciViewSet(ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def historial(self, request):
+        ReservaBici.objects.filter(usuario=request.user, activa=True, expiracion__lt=now()).update(activa=False)
         reservas = ReservaBici.objects.filter(usuario=request.user, activa=False)
         serializer = self.get_serializer(reservas, many=True)
         return Response(serializer.data)
