@@ -298,7 +298,12 @@ class TrofeoSerializerWithTranslation(serializers.ModelSerializer):
     def _resolve_language(self):
         request = self.context.get('request')
         lang = None
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
+        if request:
+            accept_language = request.headers.get('Accept-Language')
+            if accept_language:
+                lang = accept_language.split(',')[0].lower()[:2] 
+        
+        if not lang and hasattr(request, 'user') and request.user.is_authenticated:
             user_lang = request.user.idioma
             lang_map = {'Catala': 'ca', 'Castellano': 'es', 'English': 'en'}
             lang = lang_map.get(user_lang)
