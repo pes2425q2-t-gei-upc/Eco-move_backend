@@ -58,55 +58,6 @@ def admin_dashboard(request):
     }
     
     return render(request, 'admin_connect/dashboard.html', context)
-@staff_member_required
-def sincronizar_refugios_admin(request):
-    if request.method == 'POST':
-        try:
-            response = requests.get('http://nattech.fib.upc.edu:40430/api/refugios/listar/', timeout=10)
-            response.raise_for_status()
-            
-            refugios_data = response.json()
-            contador_nuevos = 0
-            contador_actualizados = 0
-            
-            for refugio_data in refugios_data:
-                refugio_id = refugio_data['id']
-                
-                created = RefugioClimatico.objects.update_or_create(
-                    id_punt=refugio_id,
-                    defaults={
-                        'nombre': refugio_data['nombre'],
-                        'lat': float(refugio_data['latitud']),
-                        'lng': float(refugio_data['longitud']),
-                        'direccio': refugio_data['direccion'],
-                        'numero_calle': refugio_data['numero_calle'],
-                    }
-                )
-                
-                if created:
-                    contador_nuevos += 1
-                else:
-                    contador_actualizados += 1
-            
-            messages.success(
-                request, 
-                f'Sincronización completada. {contador_nuevos} refugios nuevos, {contador_actualizados} actualizados.'
-            )
-            
-        except Exception as e:
-            messages.error(request, f'Error al sincronizar refugios: {str(e)}')
-        
-        return redirect('admin_connect:sincronizar_refugios')
-    
-    refugios = RefugioClimatico.objects.all().order_by('nombre')
-    
-    context = {
-        'refugios': refugios,
-    }
-    
-    return render(request, 'admin_connect/sincronizar_refugios.html', context)
-
-GESTIONAR_USUARIOS_URL = 'admin_connect:gestionar_usuarios'
 
 @staff_member_required
 def gestionar_usuarios(request):
