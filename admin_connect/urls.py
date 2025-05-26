@@ -9,8 +9,6 @@ urlpatterns = [
 
     path('dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
 
-    path('refugios/sync/', admin_views.sincronizar_refugios_admin, name='sincronizar_refugios'),
-
     path('usuarios/', admin_views.gestionar_usuarios, name='gestionar_usuarios'),
 
     path('usuarios/editar/<int:usuario_id>/', admin_views.editar_usuario, name='editar_usuario'),
