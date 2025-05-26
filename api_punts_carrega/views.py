@@ -10,7 +10,7 @@ from django.db import models
 from django.db.models import Avg, Count, Q
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions, serializers
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.parsers import MultiPartParser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
@@ -893,6 +893,23 @@ class PerfilFotoView(APIView):
         user = request.user
         user.foto.delete(save=True)
         return Response({'message': 'Foto eliminada correctamente'}, status=204)
+    
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def foto_perfil_por_email(request):
+    email = request.query_params.get('email', '').strip().lower().strip('/')
+    
+    if not email:
+        return Response({'error': 'Se requiere el parámetro "email".'}, status=400)
+    
+    try:
+        usuario = Usuario.objects.get(email=email)
+        return Response({
+            'email': usuario.email,
+            'foto': usuario.foto.url if usuario.foto else None
+        })
+    except Usuario.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado.'}, status=404)
 
 class ValoracionEstacionViewSet(viewsets.ModelViewSet):
     queryset = ValoracionEstacion.objects.all()

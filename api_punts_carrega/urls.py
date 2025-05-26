@@ -21,6 +21,7 @@ from .views import (
     TextItemViewSet,
     TrofeoViewSet,
     obtener_tipos_error_estacion,
+    foto_perfil_por_email,
 )
 
 router = DefaultRouter()
@@ -48,5 +49,6 @@ urlpatterns = [
     path('filtrar_estacions/', filtrar_estacions, name='filtrar_estacions'),
     path('estacions/<str:estacion_id>/valoraciones/', ValoracionEstacionViewSet.as_view({'get': 'list', 'post': 'create'}), name='estacion-valoraciones'),
     path('inicializarTrofeos/', TrofeoViewSet.as_view({'get': 'inicializar_trofeos'}), name='inicializar-trofeos'),
-    path('tipos_error_estacion/', obtener_tipos_error_estacion, name='tipos-error-estacion')
+    path('tipos_error_estacion/', obtener_tipos_error_estacion, name='tipos-error-estacion'),
+    path('photo_by_email/', foto_perfil_por_email, name='foto-por-email'),
 ]
