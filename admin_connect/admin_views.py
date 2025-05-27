@@ -14,6 +14,11 @@ from api_punts_carrega.models import (
 from social_community.models import (
     Report, Chat, Missatge,
 )
+
+# Definir constantes para las URLs
+GESTIONAR_USUARIOS_URL = 'admin_connect:gestionar_usuarios'
+GESTIONAR_PUNTOS_URL = 'admin_connect:gestionar_puntos'
+
 @staff_member_required
 def admin_dashboard(request):
     # Estadísticas generales
@@ -61,10 +66,23 @@ def admin_dashboard(request):
 
 @staff_member_required
 def gestionar_usuarios(request):
-    usuarios = Usuario.objects.all().order_by('username')
+    # Obtener parámetro de búsqueda
+    query = request.GET.get('q', '')
+    
+    # Filtrar usuarios según la búsqueda
+    if query:
+        usuarios = Usuario.objects.filter(
+            Q(username__icontains=query) | 
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(email__icontains=query)
+        ).order_by('username')
+    else:
+        usuarios = Usuario.objects.all().order_by('username')
     
     context = {
         'usuarios': usuarios,
+        'query': query,  # Para mantener el valor en el input de búsqueda
     }
     
     return render(request, 'admin_connect/gestionar_usuarios.html', context)
@@ -177,8 +195,6 @@ def desbloquear_usuario(request, usuario_id):
     
     return render(request, EDITAR_USUARIO_TEMPLATE, context)
 
-
-
 @staff_member_required
 def modificar_puntos_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -203,6 +219,7 @@ def modificar_puntos_usuario(request, usuario_id):
     }
     
     return render(request, 'admin_connect/modificar_puntos.html', context)
+
 @staff_member_required
 def estadisticas_estaciones(request):
     # Estaciones con más reservas
@@ -257,6 +274,7 @@ def estadisticas_estaciones(request):
     }
     
     return render(request, 'admin_connect/estadisticas_estaciones.html', context)
+
 @staff_member_required
 def gestionar_puntos(request):
     """Vista para gestionar los puntos de carga"""
@@ -279,9 +297,10 @@ def gestionar_puntos(request):
     }
     
     return render(request, 'admin_connect/gestionar_puntos.html', context)
+
 AÑADIR_PUNTO_TEMPLATE = 'admin_connect/añadir_punto.html'
 AÑADIR_PUNTO_TITLE = 'Añadir Punto de Carga'
-GESTIONAR_PUNTOS_URL = 'admin_connect:gestionar_puntos'
+
 @staff_member_required
 def añadir_punto(request):
     """Vista para añadir un nuevo punto de carga"""
@@ -343,6 +362,7 @@ def añadir_punto(request):
     return render(request, AÑADIR_PUNTO_TEMPLATE, {
         'title': AÑADIR_PUNTO_TITLE
     })
+
 @staff_member_required
 def editar_punto(request, punto_id):
     """Vista para editar un punto de carga existente"""
@@ -392,6 +412,7 @@ def editar_punto(request, punto_id):
     }
     
     return render(request, 'admin_connect/editar_punto.html', context)
+
 @staff_member_required
 def cambiar_estado_punto(request, punto_id):
     """Vista para cambiar el estado de servicio de un punto de carga"""
@@ -420,6 +441,7 @@ def cambiar_estado_punto(request, punto_id):
                 'estacion': estacion,
                 'title': 'Desactivar Punto de Carga',
             })
+
 @staff_member_required
 def eliminar_punto(request, punto_id):
     """Vista para eliminar un punto de carga"""
@@ -446,7 +468,6 @@ def eliminar_punto(request, punto_id):
         return redirect(GESTIONAR_PUNTOS_URL)
     
     # Si es GET, redirigir a la página de gestión
-
     return redirect(GESTIONAR_PUNTOS_URL)
 
 
@@ -536,4 +557,3 @@ def reactivar_report(request, report_id):
     
     messages.success(request, f'Reporte #{report.id_report} reactivado correctamente')
     return redirect('admin_connect:gestionar_reports')
-
