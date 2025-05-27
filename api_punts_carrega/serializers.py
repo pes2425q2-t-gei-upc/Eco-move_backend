@@ -297,21 +297,26 @@ class TrofeoSerializerWithTranslation(serializers.ModelSerializer):
 
     def _resolve_language(self):
         request = self.context.get('request')
-        lang = None
-        if request:
-            accept_language = request.headers.get('Accept-Language')
-            if accept_language:
-                lang = accept_language.split(',')[0].lower()[:2] 
         
-        if not lang and hasattr(request, 'user') and request.user.is_authenticated:
-            user_lang = request.user.idioma
-            lang_map = {'Catala': 'ca', 'Castellano': 'es', 'English': 'en'}
-            lang = lang_map.get(user_lang)
-        if not lang:
-            system_lang = get_language()
-            if system_lang:
-                lang = system_lang[:2]
-        return lang
+        # Lógica similar a TextItemSerializer
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            user_lang = request.user.idioma.lower()
+            if user_lang == 'catala':
+                return 'ca'
+            elif user_lang == 'castellano':
+                return 'es'
+            elif user_lang == 'english':
+                return 'en'
+        
+        # Fallback al idioma del sistema, pero con validación
+        system_lang = get_language()
+        if system_lang:
+            lang_code = system_lang[:2]
+            if lang_code in ['ca', 'es', 'en']:
+                return lang_code
+        
+        # Fallback final
+        return 'es'
 
     def _resolve_trophy_key(self, nombre, suffix):
         mapping = [
