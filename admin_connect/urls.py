@@ -28,4 +28,6 @@ urlpatterns = [
     path('reports/<int:report_id>/reactivar/', admin_views.reactivar_report, name='reactivar_report'),
     path('usuarios/editar/<int:usuario_id>/bloquear/', admin_views.bloquear_usuario, name='bloquear_usuario'),
     path('usuarios/editar/<int:usuario_id>/desbloquear/', admin_views.desbloquear_usuario, name='desbloquear_usuario'),
+    path('estacion/<str:estacion_id>/reportes/', admin_views.ver_reportes_estacion, name='ver_reportes_estacion'),
+    path('reportes/cambiar-estado/', admin_views.cambiar_estado_reporte, name='cambiar_estado_reporte'),
 ]
