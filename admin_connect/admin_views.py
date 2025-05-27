@@ -488,24 +488,39 @@ def cambiar_estado_punto(request, punto_id):
     estacion = get_object_or_404(EstacioCarrega, id_punt=punto_id)
     
     if request.method == 'POST':
-        # Si se envía el formulario con el motivo
+        # Si se envía POST, puede ser para desactivar con motivo o para reactivar
         motivo = request.POST.get('motivo_fuera_servicio', '')
-        estacion.fuera_de_servicio = True
-        estacion.motivo_fuera_servicio = motivo
-        estacion.save()
+        accion = request.POST.get('accion', '')
         
-        messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
-        return redirect(GESTIONAR_PUNTOS_URL)
-    else:
-        # Si se está activando (cambio de estado)
-        if estacion.fuera_de_servicio:
+        if accion == 'reactivar' or not estacion.fuera_de_servicio:
+            # Desactivar estación
+            estacion.fuera_de_servicio = True
+            estacion.motivo_fuera_servicio = motivo
+            estacion.save()
+            messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
+        else:
+            # Reactivar estación
             estacion.fuera_de_servicio = False
             estacion.motivo_fuera_servicio = None
             estacion.save()
-            messages.success(request, f"Punto de carga {punto_id} marcado como en servicio")
+            messages.success(request, f"Punto de carga {punto_id} reactivado correctamente")
+        
+        # Redirigir de vuelta a la página de reportes si venimos de ahí
+        if 'HTTP_REFERER' in request.META and 'reportes' in request.META['HTTP_REFERER']:
+            return redirect('admin_connect:ver_reportes_estacion', estacion_id=punto_id)
+        else:
+            return redirect(GESTIONAR_PUNTOS_URL)
+    else:
+        # GET request - solo para mostrar formulario de desactivación
+        if estacion.fuera_de_servicio:
+            # Si ya está fuera de servicio, reactivar directamente
+            estacion.fuera_de_servicio = False
+            estacion.motivo_fuera_servicio = None
+            estacion.save()
+            messages.success(request, f"Punto de carga {punto_id} reactivado correctamente")
             return redirect(GESTIONAR_PUNTOS_URL)
         else:
-            # Si se está desactivando, mostrar formulario para indicar motivo
+            # Si está en servicio, mostrar formulario para desactivar
             return render(request, 'admin_connect/desactivar_punto.html', {
                 'estacion': estacion,
                 'title': 'Desactivar Punto de Carga',

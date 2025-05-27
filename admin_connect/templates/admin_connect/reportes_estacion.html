@@ -467,7 +467,7 @@
 <!-- Modal para marcar fuera de servicio -->
 <div id="modalFueraServicio" class="modal">
   <div class="modal-content">
-    <span class="close" onclick="cerrarModal()">&times;</span>
+    <button type="button" class="close" onclick="cerrarModal()" aria-label="Cerrar modal">&times;</button>
     <h3>Marcar Estación Fuera de Servicio</h3>
     <form method="post" action="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}">
       {% csrf_token %}
