@@ -123,7 +123,7 @@ class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # Create a new chat from an alert
+    
     USUARIO_BLOQUEADO_CHAT_ERROR = "Usuario bloqueado: no puedes crear un chat."
 
     @action(detail=True, methods=['post'], url_path='create_alert_chat')
