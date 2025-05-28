@@ -62,8 +62,8 @@ class Command(BaseCommand):
                         self.stdout.write(f"\rProcessing station {index + 1}/{total_stations} ({progress:.2f}%) - Skipped: {stations_skipped}", ending="")
                         continue  # Skip this station entirely
                     
-                    direccio = station.get("adre_a", "No address available"),
-                    if not direccio or direccio == "No address available" or direccio == "":
+                    direccio = station.get("adre_a")
+                    if not direccio or direccio == "No address available" or direccio == "" or direccio is None:
                         stations_skipped += 1
                         progress = (index + 1) / total_stations * 100
                         self.stdout.write(f"\rProcessing station {index + 1}/{total_stations} ({progress:.2f}%) - Skipped: {stations_skipped}", ending="")
