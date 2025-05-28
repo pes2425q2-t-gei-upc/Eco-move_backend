@@ -34,7 +34,7 @@ class Command(BaseCommand):
                 "key": "trophy_bronze_description",
                 "text_ca": "Has assolit 50 punts. Bon començament!",
                 "text_en": "You have reached 50 points. Good start!",
-                "text_es": "Has alcanzado 50 puntos. ¡Buen comienzo!",
+                "text_es": "Has alcanzado 50 puntos. Buen comienzo!",
             },
             {
                 "key": "trophy_silver_name",
@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 "key": "trophy_silver_description",
                 "text_ca": "Has assolit 150 punts. Continua així!",
                 "text_en": "You have reached 150 points. Keep it up!",
-                "text_es": "Has alcanzado 150 puntos. ¡Sigue así!",
+                "text_es": "Has alcanzado 150 puntos. Sigue asi!",
             },
             {
                 "key": "trophy_gold_name",
@@ -58,7 +58,7 @@ class Command(BaseCommand):
                 "key": "trophy_gold_description",
                 "text_ca": "Has assolit 300 punts. Impressionant!",
                 "text_en": "You have reached 300 points. Impressive!",
-                "text_es": "Has alcanzado 300 puntos. ¡Impresionante!",
+                "text_es": "Has alcanzado 300 puntos. Impresionante!",
             },
             {
                 "key": "trophy_platinum_name",
@@ -70,7 +70,7 @@ class Command(BaseCommand):
                 "key": "trophy_platinum_description",
                 "text_ca": "Has assolit 500 punts. Ets un expert!",
                 "text_en": "You have reached 500 points. You are an expert!",
-                "text_es": "Has alcanzado 500 puntos. ¡Eres un experto!",
+                "text_es": "Has alcanzado 500 puntos. Eres un experto!",
             },
         ]
 
