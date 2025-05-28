@@ -76,6 +76,9 @@
   .button-success {
     background-color: #28a745;
   }
+  .button-info {
+    background-color: #17a2b8;
+  }
   .modal {
     display: none;
     position: fixed;
@@ -140,6 +143,26 @@
     background-color: #dc3545;
     color: white;
   }
+  .reports-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 5px;
+  }
+  .reports-none {
+    background-color: #28a745;
+    color: white;
+  }
+  .reports-pending {
+    background-color: #ffc107;
+    color: #212529;
+  }
+  .reports-critical {
+    background-color: #dc3545;
+    color: white;
+  }
   .tooltip {
     position: relative;
     display: inline-block;
@@ -195,6 +218,7 @@
           <th>Coordenadas</th>
           <th>Potencia</th>
           <th>Estado</th>
+          <th>Reportes</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -219,7 +243,19 @@
               <span class="status-indicator status-active">En servicio</span>
             {% endif %}
           </td>
+          <td>
+            {% if estacion.reportes_count %}
+              {% if estacion.reportes_count >= 3 %}
+                <span class="reports-indicator reports-critical">{{ estacion.reportes_count }} críticos</span>
+              {% else %}
+                <span class="reports-indicator reports-pending">{{ estacion.reportes_count }} pendientes</span>
+              {% endif %}
+            {% else %}
+              <span class="reports-indicator reports-none">Sin reportes</span>
+            {% endif %}
+          </td>
           <td class="action-buttons">
+            <a href="{% url 'admin_connect:ver_reportes_estacion' estacion_id=estacion.id_punt %}" class="button button-info">Ver Reportes</a>
             <a href="{% url 'admin_connect:editar_punto' punto_id=estacion.id_punt %}" class="button">Editar</a>
             {% if estacion.fuera_de_servicio %}
               <a href="{% url 'admin_connect:cambiar_estado_punto' punto_id=estacion.id_punt %}" class="button button-success">Activar</a>
@@ -231,7 +267,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8">No hay puntos de carga disponibles</td>
+          <td colspan="9">No hay puntos de carga disponibles</td>
         </tr>
         {% endfor %}
       </tbody>
