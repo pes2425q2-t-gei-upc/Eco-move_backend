@@ -62,7 +62,7 @@ class Command(BaseCommand):
             },
             {
                 "key": "trophy_platinum_name",
-                "text_ca": "Trofeu Platí",
+                "text_ca": "Trofeu Plati",
                 "text_en": "Platinum Trophy",
                 "text_es": "Trofeo Platino",
             },
