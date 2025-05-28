@@ -8,7 +8,7 @@ import requests
 
 import json
 from api_punts_carrega.models import (
-    EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion,UsuarioTrofeo,Trofeo
+    EstacioCarrega, Reserva, Vehicle, Usuario, RefugioClimatico, ValoracionEstacion,UsuarioTrofeo,Trofeo, ReporteEstacion
 )
 
 from social_community.models import (
@@ -291,12 +291,81 @@ def gestionar_puntos(request):
     else:
         estaciones = EstacioCarrega.objects.all().order_by('id_punt')
     
+    # Añadir conteo de reportes activos para cada estación
+    estaciones = estaciones.annotate(
+        reportes_count=Count(
+            'reportes_errores',
+            filter=Q(reportes_errores__estado__in=['ABIERTO', 'EN_PROGRESO'])
+        )
+    )
+    
     context = {
         'estaciones': estaciones,
         'title': 'Gestionar Puntos de Carga',
     }
     
     return render(request, 'admin_connect/gestionar_puntos.html', context)
+
+# Nueva vista para ver reportes de una estación específica
+@staff_member_required
+def ver_reportes_estacion(request, estacion_id):
+    """Vista para ver todos los reportes de una estación específica"""
+    estacion = get_object_or_404(EstacioCarrega, id_punt=estacion_id)
+    
+    # Filtro por estado
+    estado_filtro = request.GET.get('estado', 'todos')
+    
+    # Obtener reportes según el filtro
+    reportes = ReporteEstacion.objects.filter(estacion=estacion).select_related('usuario_reporta')
+    
+    if estado_filtro == 'abiertos':
+        reportes = reportes.filter(estado='ABIERTO')
+    elif estado_filtro == 'en_progreso':
+        reportes = reportes.filter(estado='EN_PROGRESO')
+    elif estado_filtro == 'resueltos':
+        reportes = reportes.filter(estado='RESUELTO')
+    
+    reportes = reportes.order_by('-fecha_reporte')
+    
+    # Estadísticas de reportes
+    reportes_abiertos = ReporteEstacion.objects.filter(estacion=estacion, estado='ABIERTO').count()
+    reportes_en_progreso = ReporteEstacion.objects.filter(estacion=estacion, estado='EN_PROGRESO').count()
+    reportes_resueltos = ReporteEstacion.objects.filter(estacion=estacion, estado='RESUELTO').count()
+    total_reportes = ReporteEstacion.objects.filter(estacion=estacion).count()
+    
+    context = {
+        'estacion': estacion,
+        'reportes': reportes,
+        'estado_filtro': estado_filtro,
+        'reportes_abiertos': reportes_abiertos,
+        'reportes_en_progreso': reportes_en_progreso,
+        'reportes_resueltos': reportes_resueltos,
+        'total_reportes': total_reportes,
+    }
+    
+    return render(request, 'admin_connect/reportes_estacion.html', context)
+
+# Nueva vista para cambiar el estado de un reporte
+@staff_member_required
+def cambiar_estado_reporte(request):
+    """Vista para cambiar el estado de un reporte"""
+    if request.method == 'POST':
+        reporte_id = request.POST.get('reporte_id')
+        nuevo_estado = request.POST.get('nuevo_estado')
+        
+        try:
+            reporte = ReporteEstacion.objects.get(id=reporte_id)
+            reporte.estado = nuevo_estado
+            reporte.save()
+            
+            messages.success(request, f'Estado del reporte #{reporte_id} actualizado a {reporte.get_estado_display()}')
+            return redirect('admin_connect:ver_reportes_estacion', estacion_id=reporte.estacion.id_punt)
+        except ReporteEstacion.DoesNotExist:
+            messages.error(request, 'El reporte no existe')
+        except Exception as e:
+            messages.error(request, f'Error al actualizar el reporte: {str(e)}')
+    
+    return redirect('admin_connect:gestionar_puntos')
 
 AÑADIR_PUNTO_TEMPLATE = 'admin_connect/añadir_punto.html'
 AÑADIR_PUNTO_TITLE = 'Añadir Punto de Carga'
@@ -419,24 +488,39 @@ def cambiar_estado_punto(request, punto_id):
     estacion = get_object_or_404(EstacioCarrega, id_punt=punto_id)
     
     if request.method == 'POST':
-        # Si se envía el formulario con el motivo
+        # Si se envía POST, puede ser para desactivar con motivo o para reactivar
         motivo = request.POST.get('motivo_fuera_servicio', '')
-        estacion.fuera_de_servicio = True
-        estacion.motivo_fuera_servicio = motivo
-        estacion.save()
+        accion = request.POST.get('accion', '')
         
-        messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
-        return redirect(GESTIONAR_PUNTOS_URL)
-    else:
-        # Si se está activando (cambio de estado)
-        if estacion.fuera_de_servicio:
+        if accion == 'reactivar' or not estacion.fuera_de_servicio:
+            # Desactivar estación
+            estacion.fuera_de_servicio = True
+            estacion.motivo_fuera_servicio = motivo
+            estacion.save()
+            messages.warning(request, f"Punto de carga {punto_id} marcado como fuera de servicio")
+        else:
+            # Reactivar estación
             estacion.fuera_de_servicio = False
             estacion.motivo_fuera_servicio = None
             estacion.save()
-            messages.success(request, f"Punto de carga {punto_id} marcado como en servicio")
+            messages.success(request, f"Punto de carga {punto_id} reactivado correctamente")
+        
+        # Redirigir de vuelta a la página de reportes si venimos de ahí
+        if 'HTTP_REFERER' in request.META and 'reportes' in request.META['HTTP_REFERER']:
+            return redirect('admin_connect:ver_reportes_estacion', estacion_id=punto_id)
+        else:
+            return redirect(GESTIONAR_PUNTOS_URL)
+    else:
+        # GET request - solo para mostrar formulario de desactivación
+        if estacion.fuera_de_servicio:
+            # Si ya está fuera de servicio, reactivar directamente
+            estacion.fuera_de_servicio = False
+            estacion.motivo_fuera_servicio = None
+            estacion.save()
+            messages.success(request, f"Punto de carga {punto_id} reactivado correctamente")
             return redirect(GESTIONAR_PUNTOS_URL)
         else:
-            # Si se está desactivando, mostrar formulario para indicar motivo
+            # Si está en servicio, mostrar formulario para desactivar
             return render(request, 'admin_connect/desactivar_punto.html', {
                 'estacion': estacion,
                 'title': 'Desactivar Punto de Carga',
