@@ -44,7 +44,7 @@ class Command(BaseCommand):
             },
             {
                 "key": "trophy_silver_description",
-                "text_ca": "Has assolit 150 punts. Continua així!",
+                "text_ca": "Has assolit 150 punts. Continua aixi!",
                 "text_en": "You have reached 150 points. Keep it up!",
                 "text_es": "Has alcanzado 150 puntos. Sigue asi!",
             },
