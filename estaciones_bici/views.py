@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status, serializers
-from .models import EstacionBici, DisponibilidadEstacionBici, ReservaBici
+from .models import EstacionBici, DisponibilidadEstacionBici, ReservaBici, UltimaActualizacionBicing    
 from .serializers import EstacionBiciSerializer, EstacionBiciLiteSerializer, ReservaBiciSerializer
 from .utils import importar_estaciones_bici_desde_api, actualizar_disponibilidad_estaciones
 from rest_framework.decorators import api_view, permission_classes, action
@@ -8,18 +8,35 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils.timezone import now, timedelta
 from rest_framework.viewsets import ModelViewSet
+import threading
 
 RESERVA_BICI_MINUTOS = 15
 
+"""""
 class EstacionBiciViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = EstacionBici.objects.all()
     serializer_class = EstacionBiciSerializer
     permission_classes = [permissions.AllowAny]
+"""""
 
 class EstacionBiciLiteViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = EstacionBici.objects.all()
     serializer_class = EstacionBiciLiteSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        def actualizar_si_es_necesario():
+            try:
+                ultima = UltimaActualizacionBicing.objects.get(tipo="disponibilidad")
+                hace_un_minuto = now() - timedelta(minutes=1)
+                if ultima.fecha_llamada < hace_un_minuto:
+                    actualizar_disponibilidad_estaciones()
+            except UltimaActualizacionBicing.DoesNotExist:
+                actualizar_disponibilidad_estaciones()
+
+        threading.Thread(target=actualizar_si_es_necesario).start()
+
+        return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
