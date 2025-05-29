@@ -20,7 +20,7 @@ def importar_estaciones_bici_desde_api():
 
     headers = get_bicing_headers()
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, verify=False)
     response.raise_for_status()
 
     json_data = response.json()
@@ -54,7 +54,7 @@ def actualizar_disponibilidad_estaciones():
     
     headers = get_bicing_headers()
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, verify=False)
     response.raise_for_status()
 
     json_data = response.json()
